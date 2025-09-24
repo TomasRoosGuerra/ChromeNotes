@@ -1,273 +1,297 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Text to JSON Converter - Chrome Notes</title>
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            background: #f5f5f5;
-        }
-        .container {
-            background: white;
-            border-radius: 12px;
-            padding: 30px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-        }
-        h1 {
-            color: #3b82f6;
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .input-section, .output-section {
-            margin-bottom: 30px;
-        }
-        label {
-            display: block;
-            margin-bottom: 10px;
-            font-weight: 600;
-            color: #374151;
-        }
-        textarea {
-            width: 100%;
-            min-height: 300px;
-            padding: 15px;
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-            font-family: 'Monaco', 'Menlo', monospace;
-            font-size: 14px;
-            resize: vertical;
-        }
-        textarea:focus {
-            outline: none;
-            border-color: #3b82f6;
-        }
-        button {
-            background: #3b82f6;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            margin-right: 10px;
-            margin-bottom: 10px;
-        }
-        button:hover {
-            background: #2563eb;
-        }
-        button:disabled {
-            background: #9ca3af;
-            cursor: not-allowed;
-        }
-        .copy-btn {
-            background: #10b981;
-        }
-        .copy-btn:hover {
-            background: #059669;
-        }
-        .instructions {
-            background: #f0f8ff;
-            border: 2px solid #3b82f6;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 30px;
-        }
-        .instructions h3 {
-            color: #3b82f6;
-            margin-top: 0;
-        }
-        .step {
-            margin-bottom: 15px;
-            padding-left: 20px;
-        }
-        .step strong {
-            color: #3b82f6;
-        }
-        .success {
-            background: #d1fae5;
-            border: 2px solid #10b981;
-            color: #065f46;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 20px;
-            display: none;
-        }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        background: #f5f5f5;
+      }
+      .container {
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #3b82f6;
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .input-section,
+      .output-section {
+        margin-bottom: 30px;
+      }
+      label {
+        display: block;
+        margin-bottom: 10px;
+        font-weight: 600;
+        color: #374151;
+      }
+      textarea {
+        width: 100%;
+        min-height: 300px;
+        padding: 15px;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-family: "Monaco", "Menlo", monospace;
+        font-size: 14px;
+        resize: vertical;
+      }
+      textarea:focus {
+        outline: none;
+        border-color: #3b82f6;
+      }
+      button {
+        background: #3b82f6;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-right: 10px;
+        margin-bottom: 10px;
+      }
+      button:hover {
+        background: #2563eb;
+      }
+      button:disabled {
+        background: #9ca3af;
+        cursor: not-allowed;
+      }
+      .copy-btn {
+        background: #10b981;
+      }
+      .copy-btn:hover {
+        background: #059669;
+      }
+      .instructions {
+        background: #f0f8ff;
+        border: 2px solid #3b82f6;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 30px;
+      }
+      .instructions h3 {
+        color: #3b82f6;
+        margin-top: 0;
+      }
+      .step {
+        margin-bottom: 15px;
+        padding-left: 20px;
+      }
+      .step strong {
+        color: #3b82f6;
+      }
+      .success {
+        background: #d1fae5;
+        border: 2px solid #10b981;
+        color: #065f46;
+        padding: 15px;
+        border-radius: 8px;
+        margin-top: 20px;
+        display: none;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <h1>🔄 Text to JSON Converter</h1>
-        
-        <div class="instructions">
-            <h3>📋 How to Use:</h3>
-            <div class="step">
-                <strong>Step 1:</strong> Paste your copied text from the extension into the input area below
-            </div>
-            <div class="step">
-                <strong>Step 2:</strong> Click "Convert to JSON" to transform it into the proper format
-            </div>
-            <div class="step">
-                <strong>Step 3:</strong> Copy the generated JSON from the output area
-            </div>
-            <div class="step">
-                <strong>Step 4:</strong> Go to your web app and use the import function with this JSON
-            </div>
-        </div>
+      <h1>🔄 Text to JSON Converter</h1>
 
-        <div class="input-section">
-            <label for="input-text">📝 Paste your copied text here:</label>
-            <textarea id="input-text" placeholder="Paste the text you copied from the extension here..."></textarea>
+      <div class="instructions">
+        <h3>📋 How to Use:</h3>
+        <div class="step">
+          <strong>Step 1:</strong> Paste your copied text from the extension
+          into the input area below
         </div>
+        <div class="step">
+          <strong>Step 2:</strong> Click "Convert to JSON" to transform it into
+          the proper format
+        </div>
+        <div class="step">
+          <strong>Step 3:</strong> Copy the generated JSON from the output area
+        </div>
+        <div class="step">
+          <strong>Step 4:</strong> Go to your web app and use the import
+          function with this JSON
+        </div>
+      </div>
 
-        <div style="text-align: center; margin: 20px 0;">
-            <button id="convert-btn" onclick="convertToJson()">🔄 Convert to JSON</button>
-            <button id="copy-btn" class="copy-btn" onclick="copyToClipboard()" disabled>📋 Copy JSON</button>
-        </div>
+      <div class="input-section">
+        <label for="input-text">📝 Paste your copied text here:</label>
+        <textarea
+          id="input-text"
+          placeholder="Paste the text you copied from the extension here..."
+        ></textarea>
+      </div>
 
-        <div class="output-section">
-            <label for="output-json">📄 Generated JSON:</label>
-            <textarea id="output-json" placeholder="Converted JSON will appear here..." readonly></textarea>
-        </div>
+      <div style="text-align: center; margin: 20px 0">
+        <button id="convert-btn" onclick="convertToJson()">
+          🔄 Convert to JSON
+        </button>
+        <button
+          id="copy-btn"
+          class="copy-btn"
+          onclick="copyToClipboard()"
+          disabled
+        >
+          📋 Copy JSON
+        </button>
+      </div>
 
-        <div id="success-message" class="success">
-            ✅ JSON copied to clipboard! You can now import it into the web app.
-        </div>
+      <div class="output-section">
+        <label for="output-json">📄 Generated JSON:</label>
+        <textarea
+          id="output-json"
+          placeholder="Converted JSON will appear here..."
+          readonly
+        ></textarea>
+      </div>
+
+      <div id="success-message" class="success">
+        ✅ JSON copied to clipboard! You can now import it into the web app.
+      </div>
     </div>
 
     <script>
-        function convertToJson() {
-            const inputText = document.getElementById('input-text').value.trim();
-            if (!inputText) {
-                alert('Please paste some text first!');
-                return;
-            }
-
-            try {
-                const jsonData = parseTextToJson(inputText);
-                const jsonString = JSON.stringify(jsonData, null, 2);
-                
-                document.getElementById('output-json').value = jsonString;
-                document.getElementById('copy-btn').disabled = false;
-                
-                console.log('Converted data:', jsonData);
-            } catch (error) {
-                alert('Error converting text: ' + error.message);
-                console.error('Conversion error:', error);
-            }
+      function convertToJson() {
+        const inputText = document.getElementById("input-text").value.trim();
+        if (!inputText) {
+          alert("Please paste some text first!");
+          return;
         }
 
-        function parseTextToJson(text) {
-            const lines = text.split('\n');
-            const tabs = [];
-            let currentTab = null;
-            let currentSubTab = null;
-            let currentContent = [];
-            let inContentMode = false;
+        try {
+          const jsonData = parseTextToJson(inputText);
+          const jsonString = JSON.stringify(jsonData, null, 2);
 
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i];
-                const trimmedLine = line.trim();
+          document.getElementById("output-json").value = jsonString;
+          document.getElementById("copy-btn").disabled = false;
 
-                // Main tab header (e.g., "# 1. Tab Name")
-                if (trimmedLine.match(/^#\s*\d+\.\s*.+/)) {
-                    // Save previous tab if exists
-                    if (currentTab) {
-                        if (currentSubTab) {
-                            currentSubTab.content = currentContent.join('\n');
-                            currentTab.subTabs.push(currentSubTab);
-                        }
-                        tabs.push(currentTab);
-                    }
+          console.log("Converted data:", jsonData);
+        } catch (error) {
+          alert("Error converting text: " + error.message);
+          console.error("Conversion error:", error);
+        }
+      }
 
-                    // Start new main tab
-                    const tabName = trimmedLine.replace(/^#\s*\d+\.\s*/, '');
-                    currentTab = {
-                        id: Date.now() + Math.random(),
-                        name: tabName,
-                        subTabs: []
-                    };
-                    currentSubTab = null;
-                    currentContent = [];
-                    inContentMode = false;
-                }
-                // Sub tab header (e.g., "## 1. Sub Tab Name")
-                else if (trimmedLine.match(/^##\s*\d+\.\s*.+/)) {
-                    // Save previous sub tab if exists
-                    if (currentSubTab) {
-                        currentSubTab.content = currentContent.join('\n');
-                        currentTab.subTabs.push(currentSubTab);
-                    }
+      function parseTextToJson(text) {
+        const lines = text.split("\n");
+        const tabs = [];
+        let currentTab = null;
+        let currentSubTab = null;
+        let currentContent = [];
+        let inContentMode = false;
 
-                    // Start new sub tab
-                    const subTabName = trimmedLine.replace(/^##\s*\d+\.\s*/, '');
-                    currentSubTab = {
-                        id: Date.now() + Math.random(),
-                        name: subTabName,
-                        content: ''
-                    };
-                    currentContent = [];
-                    inContentMode = true;
-                }
-                // Separator line (skip it)
-                else if (trimmedLine.match(/^=+$/)) {
-                    continue;
-                }
-                // Content line (only if we have a current sub tab and we're in content mode)
-                else if (currentSubTab && inContentMode) {
-                    currentContent.push(line); // Keep original line including whitespace
-                }
-                // If we have a current tab but no sub tab yet, skip this line
-                else if (currentTab && !currentSubTab) {
-                    continue;
-                }
-            }
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+          const trimmedLine = line.trim();
 
-            // Save the last tab and sub tab
+          // Main tab header (e.g., "# 1. Tab Name")
+          if (trimmedLine.match(/^##\s*\d+\.\s*.+/)) {
+            // Save previous tab if exists
             if (currentTab) {
-                if (currentSubTab) {
-                    currentSubTab.content = currentContent.join('\n');
-                    currentTab.subTabs.push(currentSubTab);
-                }
-                tabs.push(currentTab);
+              if (currentSubTab) {
+                currentSubTab.content = currentContent.join("\n");
+                currentTab.subTabs.push(currentSubTab);
+              }
+              tabs.push(currentTab);
             }
 
-            // Create the full state object
-            return {
-                mainTabs: tabs,
-                activeMainTabId: tabs.length > 0 ? tabs[0].id : null,
-                activeSubTabId: tabs.length > 0 && tabs[0].subTabs.length > 0 ? tabs[0].subTabs[0].id : null,
-                completedTasks: [],
-                hideCompleted: false,
-                lastSelectedSubTabs: {}
+            // Start new main tab
+            const tabName = trimmedLine.replace(/^##\s*\d+\.\s*/, "");
+            currentTab = {
+              id: Date.now() + Math.random(),
+              name: tabName,
+              subTabs: [],
             };
-        }
-
-        async function copyToClipboard() {
-            const outputText = document.getElementById('output-json').value;
-            if (!outputText) {
-                alert('No JSON to copy!');
-                return;
+            currentSubTab = null;
+            currentContent = [];
+            inContentMode = false;
+          }
+          // Sub tab header (e.g., "## 1. Sub Tab Name")
+          else if (trimmedLine.match(/^#\s*\d+\.\s*.+/)) {
+            // Save previous sub tab if exists
+            if (currentSubTab) {
+              currentSubTab.content = currentContent.join("\n");
+              currentTab.subTabs.push(currentSubTab);
             }
 
-            try {
-                await navigator.clipboard.writeText(outputText);
-                document.getElementById('success-message').style.display = 'block';
-                setTimeout(() => {
-                    document.getElementById('success-message').style.display = 'none';
-                }, 3000);
-            } catch (error) {
-                alert('Failed to copy to clipboard: ' + error.message);
-            }
+            // Start new sub tab
+            const subTabName = trimmedLine.replace(/^#\s*\d+\.\s*/, "");
+            currentSubTab = {
+              id: Date.now() + Math.random(),
+              name: subTabName,
+              content: "",
+            };
+            currentContent = [];
+            inContentMode = true;
+          }
+          // Separator line (skip it)
+          else if (trimmedLine.match(/^=+$/)) {
+            continue;
+          }
+          // Content line (only if we have a current sub tab and we're in content mode)
+          else if (currentSubTab && inContentMode) {
+            currentContent.push(line); // Keep original line including whitespace
+          }
+          // If we have a current tab but no sub tab yet, skip this line
+          else if (currentTab && !currentSubTab) {
+            continue;
+          }
         }
 
-        // Auto-focus the input textarea
-        document.getElementById('input-text').focus();
+        // Save the last tab and sub tab
+        if (currentTab) {
+          if (currentSubTab) {
+            currentSubTab.content = currentContent.join("\n");
+            currentTab.subTabs.push(currentSubTab);
+          }
+          tabs.push(currentTab);
+        }
+
+        // Create the full state object
+        return {
+          mainTabs: tabs,
+          activeMainTabId: tabs.length > 0 ? tabs[0].id : null,
+          activeSubTabId:
+            tabs.length > 0 && tabs[0].subTabs.length > 0
+              ? tabs[0].subTabs[0].id
+              : null,
+          completedTasks: [],
+          hideCompleted: false,
+          lastSelectedSubTabs: {},
+        };
+      }
+
+      async function copyToClipboard() {
+        const outputText = document.getElementById("output-json").value;
+        if (!outputText) {
+          alert("No JSON to copy!");
+          return;
+        }
+
+        try {
+          await navigator.clipboard.writeText(outputText);
+          document.getElementById("success-message").style.display = "block";
+          setTimeout(() => {
+            document.getElementById("success-message").style.display = "none";
+          }, 3000);
+        } catch (error) {
+          alert("Failed to copy to clipboard: " + error.message);
+        }
+      }
+
+      // Auto-focus the input textarea
+      document.getElementById("input-text").focus();
     </script>
-</body>
+  </body>
 </html>

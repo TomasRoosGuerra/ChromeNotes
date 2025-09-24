@@ -1452,7 +1452,7 @@ class ChromeNotesWebApp {
       }
 
       console.log("Parsing imported content..."); // Debug log
-      
+
       // Check if clipboard contains JSON data
       let importedTabs;
       try {
@@ -1460,13 +1460,18 @@ class ChromeNotesWebApp {
         if (jsonData.mainTabs && Array.isArray(jsonData.mainTabs)) {
           console.log("Detected JSON format, importing directly...");
           importedTabs = jsonData.mainTabs;
-          
+
           // Update state with JSON data
-          if (jsonData.activeMainTabId) this.state.activeMainTabId = jsonData.activeMainTabId;
-          if (jsonData.activeSubTabId) this.state.activeSubTabId = jsonData.activeSubTabId;
-          if (jsonData.completedTasks) this.state.completedTasks = jsonData.completedTasks;
-          if (jsonData.hideCompleted !== undefined) this.state.hideCompleted = jsonData.hideCompleted;
-          if (jsonData.lastSelectedSubTabs) this.state.lastSelectedSubTabs = jsonData.lastSelectedSubTabs;
+          if (jsonData.activeMainTabId)
+            this.state.activeMainTabId = jsonData.activeMainTabId;
+          if (jsonData.activeSubTabId)
+            this.state.activeSubTabId = jsonData.activeSubTabId;
+          if (jsonData.completedTasks)
+            this.state.completedTasks = jsonData.completedTasks;
+          if (jsonData.hideCompleted !== undefined)
+            this.state.hideCompleted = jsonData.hideCompleted;
+          if (jsonData.lastSelectedSubTabs)
+            this.state.lastSelectedSubTabs = jsonData.lastSelectedSubTabs;
         } else {
           throw new Error("Invalid JSON format");
         }
@@ -1475,7 +1480,7 @@ class ChromeNotesWebApp {
         // Try parsing as text format
         importedTabs = this.parseImportedContent(clipboardText);
       }
-      
+
       console.log("Parsed tabs:", importedTabs); // Debug log
 
       if (importedTabs.length > 0) {
@@ -1533,7 +1538,7 @@ class ChromeNotesWebApp {
       console.log(`Line ${i}: "${line}" (trimmed: "${trimmedLine}")`); // Debug log
 
       // Main tab header (e.g., "# 1. Tab Name")
-      if (trimmedLine.match(/^#\s*\d+\.\s*.+/)) {
+      if (trimmedLine.match(/^##\s*\d+\.\s*.+/)) {
         console.log("Found main tab:", trimmedLine); // Debug log
 
         // Save previous tab if exists
@@ -1551,7 +1556,7 @@ class ChromeNotesWebApp {
         }
 
         // Start new main tab
-        const tabName = trimmedLine.replace(/^#\s*\d+\.\s*/, "");
+        const tabName = trimmedLine.replace(/^##\s*\d+\.\s*/, "");
         currentTab = {
           id: Date.now() + Math.random(),
           name: tabName,
@@ -1562,7 +1567,7 @@ class ChromeNotesWebApp {
         inContentMode = false;
       }
       // Sub tab header (e.g., "## 1. Sub Tab Name")
-      else if (trimmedLine.match(/^##\s*\d+\.\s*.+/)) {
+      else if (trimmedLine.match(/^#\s*\d+\.\s*.+/)) {
         console.log("Found sub tab:", trimmedLine); // Debug log
 
         // Save previous sub tab if exists
@@ -1576,7 +1581,7 @@ class ChromeNotesWebApp {
         }
 
         // Start new sub tab
-        const subTabName = trimmedLine.replace(/^##\s*\d+\.\s*/, "");
+        const subTabName = trimmedLine.replace(/^#\s*\d+\.\s*/, "");
         currentSubTab = {
           id: Date.now() + Math.random(),
           name: subTabName,
@@ -1794,7 +1799,7 @@ class ChromeNotesWebApp {
       console.log(`Line ${i}: "${line}" (trimmed: "${trimmedLine}")`); // Debug log
 
       // Main tab header (e.g., "# 1. Tab Name")
-      if (trimmedLine.match(/^#\s*\d+\.\s*.+/)) {
+      if (trimmedLine.match(/^##\s*\d+\.\s*.+/)) {
         console.log("Found main tab:", trimmedLine); // Debug log
 
         // Save previous tab if exists
@@ -1812,7 +1817,7 @@ class ChromeNotesWebApp {
         }
 
         // Start new main tab
-        const tabName = trimmedLine.replace(/^#\s*\d+\.\s*/, "");
+        const tabName = trimmedLine.replace(/^##\s*\d+\.\s*/, "");
         currentTab = {
           id: Date.now() + Math.random(),
           name: tabName,
@@ -1823,7 +1828,7 @@ class ChromeNotesWebApp {
         inContentMode = false;
       }
       // Sub tab header (e.g., "## 1. Sub Tab Name")
-      else if (trimmedLine.match(/^##\s*\d+\.\s*.+/)) {
+      else if (trimmedLine.match(/^#\s*\d+\.\s*.+/)) {
         console.log("Found sub tab:", trimmedLine); // Debug log
 
         // Save previous sub tab if exists
@@ -1837,7 +1842,7 @@ class ChromeNotesWebApp {
         }
 
         // Start new sub tab
-        const subTabName = trimmedLine.replace(/^##\s*\d+\.\s*/, "");
+        const subTabName = trimmedLine.replace(/^#\s*\d+\.\s*/, "");
         currentSubTab = {
           id: Date.now() + Math.random(),
           name: subTabName,
@@ -1978,12 +1983,12 @@ class ChromeNotesWebApp {
         const subTabsContent = mainTab.subTabs
           .map((subTab, subIndex) => {
             const formattedContent = this.formatContentForCopy(subTab.content);
-            const subTabHeader = `## ${subIndex + 1}. ${subTab.name}`;
+            const subTabHeader = `# ${subIndex + 1}. ${subTab.name}`;
             return `${subTabHeader}\n\n${formattedContent}`;
           })
           .join("\n\n");
 
-        const mainTabHeader = `# ${mainIndex + 1}. ${mainTab.name}`;
+        const mainTabHeader = `## ${mainIndex + 1}. ${mainTab.name}`;
         return `${mainTabHeader}\n\n${subTabsContent}`;
       })
       .join("\n\n=====================================\n\n");
@@ -2179,12 +2184,12 @@ class ChromeNotesWebApp {
         const subTabsContent = mainTab.subTabs
           .map((subTab, subIndex) => {
             const formattedContent = this.formatContentForCopy(subTab.content);
-            const subTabHeader = `## ${subIndex + 1}. ${subTab.name}`;
+            const subTabHeader = `# ${subIndex + 1}. ${subTab.name}`;
             return `${subTabHeader}\n\n${formattedContent}`;
           })
           .join("\n\n");
 
-        const mainTabHeader = `# ${mainIndex + 1}. ${mainTab.name}`;
+        const mainTabHeader = `## ${mainIndex + 1}. ${mainTab.name}`;
         return `${mainTabHeader}\n\n${subTabsContent}`;
       })
       .join("\n\n=====================================\n\n");
