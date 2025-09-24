@@ -2134,6 +2134,112 @@ class ChromeNotesWebApp {
     }, 3000);
   }
 
+  // Copy all tabs to clipboard
+  async copyAllTabs() {
+    try {
+      const allContent = this.formatTabsForCopy(this.state.mainTabs);
+      await navigator.clipboard.writeText(allContent);
+      this.showNotification("All tabs copied to clipboard!");
+    } catch (err) {
+      console.error("Failed to copy:", err);
+      this.showNotification("Failed to copy to clipboard");
+    }
+  }
+
+  formatTabsForCopy(mainTabs) {
+    if (!mainTabs || mainTabs.length === 0) {
+      return "No tabs found.";
+    }
+
+    return mainTabs
+      .map((mainTab, mainIndex) => {
+        const subTabsContent = mainTab.subTabs
+          .map((subTab, subIndex) => {
+            const formattedContent = this.formatContentForCopy(subTab.content);
+            const subTabHeader = `## ${subIndex + 1}. ${subTab.name}`;
+            return `${subTabHeader}\n\n${formattedContent}`;
+          })
+          .join("\n\n");
+
+        const mainTabHeader = `# ${mainIndex + 1}. ${mainTab.name}`;
+        return `${mainTabHeader}\n\n${subTabsContent}`;
+      })
+      .join("\n\n=====================================\n\n");
+  }
+
+  formatContentForCopy(htmlContent) {
+    if (!htmlContent) return "";
+
+    // Create a temporary div to parse the HTML
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = htmlContent;
+
+    let formattedText = "";
+
+    function processNode(node, depth = 0) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        formattedText += node.textContent;
+        return;
+      }
+
+      const tagName = node.tagName.toLowerCase();
+      const indent = "  ".repeat(depth);
+
+      switch (tagName) {
+        case "div":
+          if (node.textContent.trim()) {
+            formattedText += `${indent}${node.textContent.trim()}\n`;
+          }
+          break;
+        case "ul":
+          formattedText += "\n";
+          Array.from(node.children).forEach((li) => {
+            formattedText += `${indent}• ${li.textContent.trim()}\n`;
+          });
+          formattedText += "\n";
+          break;
+        case "ol":
+          formattedText += "\n";
+          Array.from(node.children).forEach((li, index) => {
+            formattedText += `${indent}${
+              index + 1
+            }. ${li.textContent.trim()}\n`;
+          });
+          formattedText += "\n";
+          break;
+        case "blockquote":
+          formattedText += `${indent}> ${node.textContent.trim()}\n\n`;
+          break;
+        case "h1":
+          formattedText += `\n${indent}# ${node.textContent.trim()}\n\n`;
+          break;
+        case "h2":
+          formattedText += `\n${indent}## ${node.textContent.trim()}\n\n`;
+          break;
+        case "h3":
+          formattedText += `\n${indent}### ${node.textContent.trim()}\n\n`;
+          break;
+        case "strong":
+          formattedText += `**${node.textContent}**`;
+          break;
+        case "em":
+          formattedText += `*${node.textContent}*`;
+          break;
+        default:
+          // For other elements, process children
+          Array.from(node.childNodes).forEach((child) => {
+            processNode(child, depth);
+          });
+      }
+    }
+
+    Array.from(tempDiv.childNodes).forEach((node) => {
+      processNode(node);
+    });
+
+    return formattedText.trim();
+  }
+
   // Helper function to format inline text (bold, italic, etc.)
   formatInlineText(text) {
     // Handle bold text (**text**)
