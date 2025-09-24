@@ -1428,7 +1428,10 @@ class ChromeNotesWebApp {
   async importFromClipboard() {
     try {
       const clipboardText = await navigator.clipboard.readText();
+      console.log("Clipboard text:", clipboardText); // Debug log
+      
       const importedTabs = this.parseImportedContent(clipboardText);
+      console.log("Parsed tabs:", importedTabs); // Debug log
 
       if (importedTabs.length > 0) {
         // Add imported tabs to existing tabs
@@ -1457,18 +1460,25 @@ class ChromeNotesWebApp {
   }
 
   parseImportedContent(text) {
+    console.log("Starting to parse:", text.substring(0, 200) + "..."); // Debug log
+    
     const tabs = [];
     const lines = text.split("\n");
     let currentTab = null;
     let currentSubTab = null;
     let currentContent = [];
-    let inContent = false;
+    let inContentMode = false;
 
     for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
+      const line = lines[i];
+      const trimmedLine = line.trim();
+
+      console.log(`Line ${i}: "${line}" (trimmed: "${trimmedLine}")`); // Debug log
 
       // Main tab header (e.g., "# 1. Tab Name")
-      if (line.match(/^#\s*\d+\.\s*.+/)) {
+      if (trimmedLine.match(/^#\s*\d+\.\s*.+/)) {
+        console.log("Found main tab:", trimmedLine); // Debug log
+        
         // Save previous tab if exists
         if (currentTab) {
           if (currentSubTab) {
@@ -1477,12 +1487,14 @@ class ChromeNotesWebApp {
             );
             currentSubTab.content = formattedContent;
             currentTab.subTabs.push(currentSubTab);
+            console.log("Saved sub tab:", currentSubTab.name); // Debug log
           }
           tabs.push(currentTab);
+          console.log("Saved main tab:", currentTab.name); // Debug log
         }
 
         // Start new main tab
-        const tabName = line.replace(/^#\s*\d+\.\s*/, "");
+        const tabName = trimmedLine.replace(/^#\s*\d+\.\s*/, "");
         currentTab = {
           id: Date.now() + Math.random(),
           name: tabName,
@@ -1490,10 +1502,12 @@ class ChromeNotesWebApp {
         };
         currentSubTab = null;
         currentContent = [];
-        inContent = false;
+        inContentMode = false;
       }
       // Sub tab header (e.g., "## 1. Sub Tab Name")
-      else if (line.match(/^##\s*\d+\.\s*.+/)) {
+      else if (trimmedLine.match(/^##\s*\d+\.\s*.+/)) {
+        console.log("Found sub tab:", trimmedLine); // Debug log
+        
         // Save previous sub tab if exists
         if (currentSubTab) {
           const formattedContent = this.formatImportedContent(
@@ -1501,30 +1515,33 @@ class ChromeNotesWebApp {
           );
           currentSubTab.content = formattedContent;
           currentTab.subTabs.push(currentSubTab);
+          console.log("Saved sub tab:", currentSubTab.name); // Debug log
         }
 
         // Start new sub tab
-        const subTabName = line.replace(/^##\s*\d+\.\s*/, "");
+        const subTabName = trimmedLine.replace(/^##\s*\d+\.\s*/, "");
         currentSubTab = {
           id: Date.now() + Math.random(),
           name: subTabName,
           content: "",
         };
         currentContent = [];
-        inContent = true;
+        inContentMode = true; // We're now in content mode
       }
-      // Separator line
-      else if (line.match(/^=+$/)) {
-        // This is a separator, continue
+      // Separator line (skip it)
+      else if (trimmedLine.match(/^=+$/)) {
+        console.log("Found separator, skipping"); // Debug log
         continue;
       }
-      // Content line
-      else if (inContent && line) {
-        currentContent.push(line);
+      // Content line (only if we have a current sub tab and we're in content mode)
+      else if (currentSubTab && inContentMode) {
+        currentContent.push(line); // Keep original line including whitespace
+        console.log("Added content line:", line); // Debug log
       }
-      // Empty line in content
-      else if (inContent) {
-        currentContent.push("");
+      // If we have a current tab but no sub tab yet, skip this line
+      else if (currentTab && !currentSubTab) {
+        console.log("Skipping line (no sub tab yet):", line); // Debug log
+        continue;
       }
     }
 
@@ -1536,10 +1553,13 @@ class ChromeNotesWebApp {
         );
         currentSubTab.content = formattedContent;
         currentTab.subTabs.push(currentSubTab);
+        console.log("Saved final sub tab:", currentSubTab.name); // Debug log
       }
       tabs.push(currentTab);
+      console.log("Saved final main tab:", currentTab.name); // Debug log
     }
 
+    console.log("Final parsed tabs:", tabs); // Debug log
     return tabs;
   }
 
@@ -1701,18 +1721,25 @@ class ChromeNotesWebApp {
   }
 
   parseImportedContent(text) {
+    console.log("Starting to parse:", text.substring(0, 200) + "..."); // Debug log
+    
     const tabs = [];
     const lines = text.split("\n");
     let currentTab = null;
     let currentSubTab = null;
     let currentContent = [];
-    let inContent = false;
+    let inContentMode = false;
 
     for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
+      const line = lines[i];
+      const trimmedLine = line.trim();
+
+      console.log(`Line ${i}: "${line}" (trimmed: "${trimmedLine}")`); // Debug log
 
       // Main tab header (e.g., "# 1. Tab Name")
-      if (line.match(/^#\s*\d+\.\s*.+/)) {
+      if (trimmedLine.match(/^#\s*\d+\.\s*.+/)) {
+        console.log("Found main tab:", trimmedLine); // Debug log
+        
         // Save previous tab if exists
         if (currentTab) {
           if (currentSubTab) {
@@ -1721,12 +1748,14 @@ class ChromeNotesWebApp {
             );
             currentSubTab.content = formattedContent;
             currentTab.subTabs.push(currentSubTab);
+            console.log("Saved sub tab:", currentSubTab.name); // Debug log
           }
           tabs.push(currentTab);
+          console.log("Saved main tab:", currentTab.name); // Debug log
         }
 
         // Start new main tab
-        const tabName = line.replace(/^#\s*\d+\.\s*/, "");
+        const tabName = trimmedLine.replace(/^#\s*\d+\.\s*/, "");
         currentTab = {
           id: Date.now() + Math.random(),
           name: tabName,
@@ -1734,10 +1763,12 @@ class ChromeNotesWebApp {
         };
         currentSubTab = null;
         currentContent = [];
-        inContent = false;
+        inContentMode = false;
       }
       // Sub tab header (e.g., "## 1. Sub Tab Name")
-      else if (line.match(/^##\s*\d+\.\s*.+/)) {
+      else if (trimmedLine.match(/^##\s*\d+\.\s*.+/)) {
+        console.log("Found sub tab:", trimmedLine); // Debug log
+        
         // Save previous sub tab if exists
         if (currentSubTab) {
           const formattedContent = this.formatImportedContent(
@@ -1745,30 +1776,33 @@ class ChromeNotesWebApp {
           );
           currentSubTab.content = formattedContent;
           currentTab.subTabs.push(currentSubTab);
+          console.log("Saved sub tab:", currentSubTab.name); // Debug log
         }
 
         // Start new sub tab
-        const subTabName = line.replace(/^##\s*\d+\.\s*/, "");
+        const subTabName = trimmedLine.replace(/^##\s*\d+\.\s*/, "");
         currentSubTab = {
           id: Date.now() + Math.random(),
           name: subTabName,
           content: "",
         };
         currentContent = [];
-        inContent = true;
+        inContentMode = true; // We're now in content mode
       }
-      // Separator line
-      else if (line.match(/^=+$/)) {
-        // This is a separator, continue
+      // Separator line (skip it)
+      else if (trimmedLine.match(/^=+$/)) {
+        console.log("Found separator, skipping"); // Debug log
         continue;
       }
-      // Content line
-      else if (inContent && line) {
-        currentContent.push(line);
+      // Content line (only if we have a current sub tab and we're in content mode)
+      else if (currentSubTab && inContentMode) {
+        currentContent.push(line); // Keep original line including whitespace
+        console.log("Added content line:", line); // Debug log
       }
-      // Empty line in content
-      else if (inContent) {
-        currentContent.push("");
+      // If we have a current tab but no sub tab yet, skip this line
+      else if (currentTab && !currentSubTab) {
+        console.log("Skipping line (no sub tab yet):", line); // Debug log
+        continue;
       }
     }
 
@@ -1780,10 +1814,13 @@ class ChromeNotesWebApp {
         );
         currentSubTab.content = formattedContent;
         currentTab.subTabs.push(currentSubTab);
+        console.log("Saved final sub tab:", currentSubTab.name); // Debug log
       }
       tabs.push(currentTab);
+      console.log("Saved final main tab:", currentTab.name); // Debug log
     }
 
+    console.log("Final parsed tabs:", tabs); // Debug log
     return tabs;
   }
 
