@@ -1225,14 +1225,13 @@ class ChromeNotesWebApp {
       this.state.completedTasks = [];
       this.state.hideCompleted = false;
       this.state.lastSelectedSubTabs = {};
+      
       this.render();
       this.saveData();
       this.showNotification("All tabs have been deleted");
     }
   }
-  emailAllTabs() {
-    const subject = `Chrome Notes – ${new Date().toLocaleDateString()}`;
-    const html = this.buildEmailHtml(this.state.mainTabs);
+
     const to = "tomas.roosguerra@gmail.com";
     const url = `https://mail.google.com/mail/u/0/?view=cm&fs=1&to=${encodeURIComponent(
       to
