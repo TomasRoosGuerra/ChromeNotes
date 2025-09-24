@@ -1232,7 +1232,9 @@ class ChromeNotesWebApp {
     }
   }
 
-    const to = "tomas.roosguerra@gmail.com";
+  emailAllTabs() {
+    const subject = `Chrome Notes – ${new Date().toLocaleDateString()}`;
+    const html = this.buildEmailHtml(this.state.mainTabs);    const to = "tomas.roosguerra@gmail.com";
     const url = `https://mail.google.com/mail/u/0/?view=cm&fs=1&to=${encodeURIComponent(
       to
     )}&su=${encodeURIComponent(subject)}&tf=1&body=${encodeURIComponent(html)}`;
