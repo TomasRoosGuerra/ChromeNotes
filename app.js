@@ -1,4 +1,4 @@
-// Chrome Notes Web App
+// Chrome Notes Web App - Complete Implementation
 class ChromeNotesWebApp {
   constructor() {
     this.user = null;
@@ -585,7 +585,7 @@ class ChromeNotesWebApp {
     }
   }
 
-  // Formatting functions (simplified versions from the original)
+  // Formatting functions
   toggleFormat(command, value = null) {
     if (
       document.queryCommandSupported &&
@@ -855,6 +855,20 @@ class ChromeNotesWebApp {
     const notification = document.createElement("div");
     notification.className = "notification";
     notification.textContent = message;
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: var(--accent-color);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 1000;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      animation: slideIn 0.3s ease;
+    `;
+    
     document.body.appendChild(notification);
 
     setTimeout(() => {
