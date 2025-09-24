@@ -1427,19 +1427,6 @@ class ChromeNotesWebApp {
 
   async importFromClipboard() {
     try {
-      // Check if clipboard API is available
-      if (!navigator.clipboard) {
-        this.showNotification("Clipboard API not available. Please paste manually.");
-        return;
-      }
-
-      // Request clipboard permission
-      const permission = await navigator.permissions.query({ name: 'clipboard-read' });
-      if (permission.state === 'denied') {
-        this.showNotification("Clipboard access denied. Please enable clipboard permissions.");
-        return;
-      }
-
       const clipboardText = await navigator.clipboard.readText();
       const importedTabs = this.parseImportedContent(clipboardText);
 
@@ -1465,106 +1452,8 @@ class ChromeNotesWebApp {
       }
     } catch (err) {
       console.error("Failed to read clipboard:", err);
-      
-      // Provide more specific error messages
-      if (err.name === 'NotAllowedError') {
-        this.showNotification("Clipboard access denied. Please allow clipboard permissions and try again.");
-      } else if (err.name === 'NotFoundError') {
-        this.showNotification("No content in clipboard. Please copy some text first.");
-      } else {
-        this.showNotification("Failed to read from clipboard. Please try again or paste manually.");
-        // Show manual paste option
-        this.showManualPasteOption();
-      }
+      this.showNotification("Failed to read from clipboard. Please try again.");
     }
-  }
-
-  showManualPasteOption() {
-    // Create a modal for manual pasting
-    const modal = document.createElement('div');
-    modal.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.5);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    `;
-
-    const content = document.createElement('div');
-    content.style.cssText = `
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      max-width: 500px;
-      width: 90%;
-      max-height: 80%;
-      overflow-y: auto;
-    `;
-
-    content.innerHTML = `
-      <h3 style="margin-top: 0;">Manual Import</h3>
-      <p>Paste your copied content below:</p>
-      <textarea id="manual-import-textarea" 
-                style="width: 100%; height: 200px; margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-family: monospace;"
-                placeholder="Paste your copied content here..."></textarea>
-      <div style="text-align: right;">
-        <button id="cancel-import" style="margin-right: 10px; padding: 8px 16px; border: 1px solid #ccc; background: white; border-radius: 4px;">Cancel</button>
-        <button id="confirm-import" style="padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 4px;">Import</button>
-      </div>
-    `;
-
-    modal.appendChild(content);
-    document.body.appendChild(modal);
-
-    // Focus the textarea
-    const textarea = content.querySelector('#manual-import-textarea');
-    textarea.focus();
-
-    // Add event listeners
-    content.querySelector('#cancel-import').addEventListener('click', () => {
-      document.body.removeChild(modal);
-    });
-
-    content.querySelector('#confirm-import').addEventListener('click', () => {
-      const text = textarea.value.trim();
-      if (text) {
-        const importedTabs = this.parseImportedContent(text);
-        if (importedTabs.length > 0) {
-          // Add imported tabs to existing tabs
-          this.state.mainTabs.push(...importedTabs);
-
-          // Switch to the first imported tab
-          if (importedTabs.length > 0) {
-            this.state.activeMainTabId = importedTabs[0].id;
-            this.state.activeSubTabId = importedTabs[0].subTabs[0].id;
-          }
-
-          this.render();
-          this.saveData();
-
-          this.showNotification(
-            `Imported ${importedTabs.length} tab(s) successfully!`
-          );
-        } else {
-          this.showNotification("No valid tabs found in the pasted content.");
-        }
-      }
-      document.body.removeChild(modal);
-    });
-
-    // Close on escape key
-    const handleEscape = (e) => {
-      if (e.key === 'Escape') {
-        document.body.removeChild(modal);
-        document.removeEventListener('keydown', handleEscape);
-      }
-    };
-    document.addEventListener('keydown', handleEscape);
   }
 
   parseImportedContent(text) {
@@ -1759,119 +1648,80 @@ class ChromeNotesWebApp {
         const mainTabHeader = `# ${mainIndex + 1}. ${mainTab.name}`;
         return `${mainTabHeader}\n\n${subTabsContent}`;
       })
-      .join("\n\n" + "=".repeat(50) + "\n\n");
+      .join("\n\n=====================================\n\n");
   }
 
   formatContentForCopy(htmlContent) {
     if (!htmlContent) return "";
 
+    // Create a temporary div to parse the HTML
     const tempDiv = document.createElement("div");
     tempDiv.innerHTML = htmlContent;
 
     let formattedText = "";
 
     function processNode(node, depth = 0) {
-      const indent = "  ".repeat(depth);
-
       if (node.nodeType === Node.TEXT_NODE) {
-        const text = node.textContent.trim();
-        if (text) {
-          formattedText += text;
-        }
+        formattedText += node.textContent;
         return;
       }
 
-      if (node.nodeType === Node.ELEMENT_NODE) {
-        const tagName = node.tagName.toLowerCase();
+      const tagName = node.tagName.toLowerCase();
+      const indent = "  ".repeat(depth);
 
-        switch (tagName) {
-          case "div":
-            if (node.classList.contains("task-item")) {
-              const checkbox = node.querySelector(".task-item-checkbox");
-              const content = node.querySelector(".task-item-content");
-              const isCompleted = checkbox && checkbox.checked;
-              const taskText = content ? content.textContent.trim() : "";
-
-              if (taskText) {
-                formattedText += `${indent}${
-                  isCompleted ? "☑" : "☐"
-                } ${taskText}\n`;
-              }
-            } else {
-              const children = Array.from(node.childNodes);
-              children.forEach((child) => processNode(child, depth));
-              if (children.length > 0) {
-                formattedText += "\n";
-              }
-            }
-            break;
-
-          case "h1":
-            formattedText += `\n${indent}# ${node.textContent.trim()}\n\n`;
-            break;
-
-          case "h2":
-            formattedText += `\n${indent}## ${node.textContent.trim()}\n\n`;
-            break;
-
-          case "h3":
-            formattedText += `\n${indent}### ${node.textContent.trim()}\n\n`;
-            break;
-
-          case "ul":
-            const ulChildren = Array.from(node.children);
-            ulChildren.forEach((child) => processNode(child, depth));
-            formattedText += "\n";
-            break;
-
-          case "li":
-            formattedText += `${indent}• ${node.textContent.trim()}\n`;
-            break;
-
-          case "ol":
-            const olChildren = Array.from(node.children);
-            olChildren.forEach((child, index) => {
-              if (child.tagName.toLowerCase() === "li") {
-                formattedText += `${indent}${
-                  index + 1
-                }. ${child.textContent.trim()}\n`;
-              }
-            });
-            formattedText += "\n";
-            break;
-
-          case "blockquote":
-            formattedText += `\n${indent}> ${node.textContent.trim()}\n\n`;
-            break;
-
-          case "strong":
-          case "b":
-            formattedText += `**${node.textContent.trim()}**`;
-            break;
-
-          case "em":
-          case "i":
-            formattedText += `*${node.textContent.trim()}*`;
-            break;
-
-          case "br":
-            formattedText += "\n";
-            break;
-
-          default:
-            const defaultChildren = Array.from(node.childNodes);
-            defaultChildren.forEach((child) => processNode(child, depth));
-            break;
-        }
+      switch (tagName) {
+        case "div":
+          if (node.textContent.trim()) {
+            formattedText += `${indent}${node.textContent.trim()}\n`;
+          }
+          break;
+        case "ul":
+          formattedText += "\n";
+          Array.from(node.children).forEach((li) => {
+            formattedText += `${indent}• ${li.textContent.trim()}\n`;
+          });
+          formattedText += "\n";
+          break;
+        case "ol":
+          formattedText += "\n";
+          Array.from(node.children).forEach((li, index) => {
+            formattedText += `${indent}${
+              index + 1
+            }. ${li.textContent.trim()}\n`;
+          });
+          formattedText += "\n";
+          break;
+        case "blockquote":
+          formattedText += `${indent}> ${node.textContent.trim()}\n\n`;
+          break;
+        case "h1":
+          formattedText += `\n${indent}# ${node.textContent.trim()}\n\n`;
+          break;
+        case "h2":
+          formattedText += `\n${indent}## ${node.textContent.trim()}\n\n`;
+          break;
+        case "h3":
+          formattedText += `\n${indent}### ${node.textContent.trim()}\n\n`;
+          break;
+        case "strong":
+          formattedText += `**${node.textContent}**`;
+          break;
+        case "em":
+          formattedText += `*${node.textContent}*`;
+          break;
+        default:
+          // For other elements, process children
+          Array.from(node.childNodes).forEach((child) => {
+            processNode(child, depth);
+          });
       }
     }
 
-    Array.from(tempDiv.childNodes).forEach((node) => processNode(node));
+    Array.from(tempDiv.childNodes).forEach((node) => {
+      processNode(node);
+    });
 
-    return formattedText
-      .replace(/\n\s*\n\s*\n/g, "\n\n")
-      .replace(/^\s+|\s+$/g, "")
-      .trim();
+    return formattedText.trim();
   }
 
   // Undo/Redo functionality
