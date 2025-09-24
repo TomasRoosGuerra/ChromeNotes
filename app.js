@@ -1553,6 +1553,250 @@ class ChromeNotesWebApp {
     let listType = "";
     let listItems = [];
 
+    const closeList = (type, items) => {
+      if (items.length === 0) return "";
+
+      const listItems = items
+        .map((item) => {
+          const formattedItem = this.formatInlineText(item);
+          return `<li>${formattedItem}</li>`;
+        })
+        .join("");
+
+      return `<${type}>${listItems}</${type}>`;
+    };
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const trimmedLine = line.trim();
+
+      // Headers
+      if (trimmedLine.match(/^###\s/)) {
+        // Close any open list
+        if (inList) {
+          htmlContent += closeList(listType, listItems);
+          inList = false;
+          listItems = [];
+        }
+        const headerText = trimmedLine.replace(/^###\s/, "");
+        htmlContent += `<h3>${headerText}</h3>`;
+      } else if (trimmedLine.match(/^##\s/)) {
+        // Close any open list
+        if (inList) {
+          htmlContent += closeList(listType, listItems);
+          inList = false;
+          listItems = [];
+        }
+        const headerText = trimmedLine.replace(/^##\s/, "");
+        htmlContent += `<h2>${headerText}</h2>`;
+      } else if (trimmedLine.match(/^#\s/)) {
+        // Close any open list
+        if (inList) {
+          htmlContent += closeList(listType, listItems);
+          inList = false;
+          listItems = [];
+        }
+        const headerText = trimmedLine.replace(/^#\s/, "");
+        htmlContent += `<h1>${headerText}</h1>`;
+      }
+      // Checkbox items (☐ or ☑)
+      else if (trimmedLine.match(/^[☐☑]\s/)) {
+        // Close any open list
+        if (inList) {
+          htmlContent += closeList(listType, listItems);
+          inList = false;
+          listItems = [];
+        }
+        const isChecked = trimmedLine.startsWith("☑");
+        const taskText = trimmedLine.replace(/^[☐☑]\s/, "");
+        htmlContent += `<div class="task-item ${isChecked ? "completed" : ""}">
+          <input type="checkbox" class="task-item-checkbox" ${
+            isChecked ? "checked" : ""
+          }>
+          <div class="task-item-content" contenteditable="true">${taskText}</div>
+        </div>`;
+      }
+      // Bullet lists
+      else if (trimmedLine.match(/^•\s/)) {
+        if (!inList || listType !== "ul") {
+          // Close previous list
+          if (inList) {
+            htmlContent += closeList(listType, listItems);
+          }
+          // Start new unordered list
+          inList = true;
+          listType = "ul";
+          listItems = [];
+        }
+        const itemText = trimmedLine.replace(/^•\s/, "");
+        listItems.push(itemText);
+      }
+      // Numbered lists
+      else if (trimmedLine.match(/^\d+\.\s/)) {
+        if (!inList || listType !== "ol") {
+          // Close previous list
+          if (inList) {
+            htmlContent += closeList(listType, listItems);
+          }
+          // Start new ordered list
+          inList = true;
+          listType = "ol";
+          listItems = [];
+        }
+        const itemText = trimmedLine.replace(/^\d+\.\s/, "");
+        listItems.push(itemText);
+      }
+      // Blockquotes
+      else if (trimmedLine.match(/^>\s/)) {
+        // Close any open list
+        if (inList) {
+          htmlContent += closeList(listType, listItems);
+          inList = false;
+          listItems = [];
+        }
+        const quoteText = trimmedLine.replace(/^>\s/, "");
+        htmlContent += `<blockquote>${quoteText}</blockquote>`;
+      }
+      // Regular text
+      else if (trimmedLine) {
+        // Close any open list
+        if (inList) {
+          htmlContent += closeList(listType, listItems);
+          inList = false;
+          listItems = [];
+        }
+        // Handle bold and italic formatting
+        const formattedText = this.formatInlineText(trimmedLine);
+        htmlContent += `<div>${formattedText}</div>`;
+      }
+      // Empty line
+      else {
+        // Close any open list
+        if (inList) {
+          htmlContent += closeList(listType, listItems);
+          inList = false;
+          listItems = [];
+        }
+        htmlContent += "<div><br></div>";
+      }
+    }
+
+    // Close any remaining list
+    if (inList) {
+      htmlContent += closeList(listType, listItems);
+    }
+
+    return htmlContent;
+  }
+
+  // Helper function to format inline text (bold, italic, etc.)
+  formatInlineText(text) {
+    // Handle bold text (**text**)
+    text = text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+
+    // Handle italic text (*text*)
+    text = text.replace(/\*(.*?)\*/g, "<em>$1</em>");
+
+    return text;
+  }
+
+  parseImportedContent(text) {
+    const tabs = [];
+    const lines = text.split("\n");
+    let currentTab = null;
+    let currentSubTab = null;
+    let currentContent = [];
+    let inContent = false;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+
+      // Main tab header (e.g., "# 1. Tab Name")
+      if (line.match(/^#\s*\d+\.\s*.+/)) {
+        // Save previous tab if exists
+        if (currentTab) {
+          if (currentSubTab) {
+            const formattedContent = this.formatImportedContent(
+              currentContent.join("\n")
+            );
+            currentSubTab.content = formattedContent;
+            currentTab.subTabs.push(currentSubTab);
+          }
+          tabs.push(currentTab);
+        }
+
+        // Start new main tab
+        const tabName = line.replace(/^#\s*\d+\.\s*/, "");
+        currentTab = {
+          id: Date.now() + Math.random(),
+          name: tabName,
+          subTabs: [],
+        };
+        currentSubTab = null;
+        currentContent = [];
+        inContent = false;
+      }
+      // Sub tab header (e.g., "## 1. Sub Tab Name")
+      else if (line.match(/^##\s*\d+\.\s*.+/)) {
+        // Save previous sub tab if exists
+        if (currentSubTab) {
+          const formattedContent = this.formatImportedContent(
+            currentContent.join("\n")
+          );
+          currentSubTab.content = formattedContent;
+          currentTab.subTabs.push(currentSubTab);
+        }
+
+        // Start new sub tab
+        const subTabName = line.replace(/^##\s*\d+\.\s*/, "");
+        currentSubTab = {
+          id: Date.now() + Math.random(),
+          name: subTabName,
+          content: "",
+        };
+        currentContent = [];
+        inContent = true;
+      }
+      // Separator line
+      else if (line.match(/^=+$/)) {
+        // This is a separator, continue
+        continue;
+      }
+      // Content line
+      else if (inContent && line) {
+        currentContent.push(line);
+      }
+      // Empty line in content
+      else if (inContent) {
+        currentContent.push("");
+      }
+    }
+
+    // Save the last tab and sub tab
+    if (currentTab) {
+      if (currentSubTab) {
+        const formattedContent = this.formatImportedContent(
+          currentContent.join("\n")
+        );
+        currentSubTab.content = formattedContent;
+        currentTab.subTabs.push(currentSubTab);
+      }
+      tabs.push(currentTab);
+    }
+
+    return tabs;
+  }
+
+  // Function to convert imported plain text back to HTML format
+  formatImportedContent(text) {
+    if (!text || text.trim() === "") return "";
+
+    const lines = text.split("\n");
+    let htmlContent = "";
+    let inList = false;
+    let listType = "";
+    let listItems = [];
+
     function closeList() {
       if (inList && listItems.length > 0) {
         const listItemsHtml = listItems
