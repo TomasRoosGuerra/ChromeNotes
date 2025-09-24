@@ -14,7 +14,7 @@ class ChromeNotesWebApp {
     this.undoStack = [];
     this.redoStack = [];
     this.MAX_UNDO_HISTORY = 20;
-    
+
     // Drag and drop variables
     this.draggedElement = null;
     this.draggedIndex = -1;
@@ -805,6 +805,9 @@ class ChromeNotesWebApp {
       .getElementById("copy-all-btn")
       ?.addEventListener("click", () => this.copyAllTabs());
     document
+      .getElementById("email-all-btn")
+      ?.addEventListener("click", () => this.emailAllTabs());
+    document
       .getElementById("toggle-completed-btn")
       ?.addEventListener("click", () => {
         this.state.hideCompleted = !this.state.hideCompleted;
@@ -857,6 +860,7 @@ class ChromeNotesWebApp {
   }
 
   handleKeydown(e) {
+    // Handle undo/redo shortcuts
     if (e.ctrlKey || e.metaKey) {
       if (e.key === "z" && !e.shiftKey) {
         e.preventDefault();
@@ -868,6 +872,315 @@ class ChromeNotesWebApp {
         return;
       }
     }
+
+    // Handle markdown shortcuts on space - works on ANY row
+    if (e.key === " ") {
+      if (this.handleMarkdownShortcuts(e)) return;
+    }
+
+    // Improved Enter key handling
+    if (e.key === "Enter") {
+      if (this.handleEnterKey(e)) return;
+    }
+
+    // Better Tab handling
+    if (e.key === "Tab") {
+      e.preventDefault();
+      document.execCommand(e.shiftKey ? "outdent" : "indent");
+    }
+
+    // Backspace handling - removes empty bullets/checkboxes
+    if (e.key === "Backspace") {
+      if (this.handleBackspaceKey(e)) return;
+    }
+  }
+
+  handleMarkdownShortcuts(e) {
+    const selection = window.getSelection();
+    if (!selection.rangeCount) return false;
+
+    const range = selection.getRangeAt(0);
+    if (!range.collapsed) return false;
+
+    let node = range.startContainer;
+    if (node.nodeType !== Node.TEXT_NODE) return false;
+
+    const textContent = node.textContent.substring(0, range.startOffset);
+    const parentElement = node.parentElement;
+
+    const shortcuts = {
+      "-": () => this.toggleList("ul"),
+      "1.": () => this.toggleList("ol"),
+      ">": () => this.toggleBlockFormat("blockquote"),
+      "#": () => this.toggleBlockFormat("h1"),
+      "##": () => this.toggleBlockFormat("h2"),
+      "###": () => this.toggleBlockFormat("h3"),
+      "-.": () => this.toggleTodoItem(),
+    };
+
+    const handler = shortcuts[textContent.trim()];
+    if (
+      handler &&
+      parentElement !== this.notebook &&
+      parentElement.tagName === "DIV"
+    ) {
+      e.preventDefault();
+      // Clear the shortcut text
+      node.textContent = node.textContent.substring(range.startOffset);
+      // Apply the format
+      handler();
+      return true;
+    }
+
+    return false;
+  }
+
+  handleEnterKey(e) {
+    const selection = window.getSelection();
+    if (!selection.rangeCount) return false;
+
+    const element =
+      selection.anchorNode.nodeType === Node.TEXT_NODE
+        ? selection.anchorNode.parentElement
+        : selection.anchorNode;
+
+    // Handle Enter in todo items
+    const taskItem = element.closest(".task-item");
+    if (taskItem) {
+      e.preventDefault();
+
+      // Check if we're at the end of the current task content
+      const taskContent = taskItem.querySelector(".task-item-content");
+      const range = selection.getRangeAt(0);
+      const isAtEnd = range.endOffset === taskContent.textContent.length;
+
+      if (isAtEnd && taskContent.textContent.trim() !== "") {
+        // Create new todo item after current one
+        const newTodo = this.createTodoElement();
+        taskItem.insertAdjacentElement("afterend", newTodo);
+        this.placeCursorInElement(newTodo.querySelector(".task-item-content"), true);
+      } else {
+        // Create a new div element instead of another todo
+        const newDiv = document.createElement("div");
+        newDiv.innerHTML = "&#8203;"; // Zero-width space
+        taskItem.insertAdjacentElement("afterend", newDiv);
+        this.placeCursorInElement(newDiv, true);
+      }
+      return true;
+    }
+
+    return false;
+  }
+
+  handleBackspaceKey(e) {
+    const selection = window.getSelection();
+    if (!selection.rangeCount || selection.anchorOffset !== 0) return false;
+
+    const range = selection.getRangeAt(0);
+    if (!range.collapsed) return false;
+
+    const element = range.startContainer;
+    const parentElement =
+      element.nodeType === Node.TEXT_NODE ? element.parentElement : element;
+
+    // Handle backspace in empty todo items
+    const taskItem = parentElement.closest(".task-item");
+    if (
+      taskItem &&
+      taskItem.querySelector(".task-item-content").textContent.trim() === ""
+    ) {
+      e.preventDefault();
+      const div = document.createElement("div");
+      div.innerHTML = "&#8203;"; // Zero-width space
+      taskItem.parentElement.replaceChild(div, taskItem);
+      this.placeCursorInElement(div, true);
+      return true;
+    }
+
+    return false;
+  }
+
+  toggleFormat(command, value = null) {
+    if (
+      document.queryCommandSupported &&
+      document.queryCommandSupported(command)
+    ) {
+      document.execCommand(command, false, value);
+    } else {
+      // Fallback for unsupported commands
+      const selection = window.getSelection();
+      if (selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        if (command === "bold") {
+          const strong = document.createElement("strong");
+          try {
+            range.surroundContents(strong);
+          } catch (e) {
+            strong.appendChild(range.extractContents());
+            range.insertNode(strong);
+          }
+        }
+        // Add other fallbacks as needed
+      }
+    }
+  }
+
+  toggleBlockFormat(tagName) {
+    document.execCommand("formatBlock", false, tagName);
+  }
+
+  toggleList(listType) {
+    const command =
+      listType === "ul" ? "insertUnorderedList" : "insertOrderedList";
+    document.execCommand(command);
+  }
+
+  toggleTodoItem() {
+    const selection = window.getSelection();
+    if (!selection.rangeCount) return;
+
+    const range = selection.getRangeAt(0);
+    const element = range.startContainer.nodeType === Node.TEXT_NODE 
+      ? range.startContainer.parentElement 
+      : range.startContainer;
+
+    // Check if we're in a list item
+    const listItem = element.closest("li");
+    if (listItem) {
+      const textContent = listItem.textContent.trim();
+      
+      // If multiple list items are selected
+      const selectedListItems = this.getSelectedListItems();
+      if (selectedListItems.length > 1) {
+        const todoItems = selectedListItems.map((item) => {
+          const textContent = item.textContent.trim();
+          return this.createTodoElement(textContent);
+        });
+
+        // Replace all selected list items with todo items
+        selectedListItems.forEach((item, index) => {
+          item.parentNode.replaceChild(todoItems[index], item);
+        });
+
+        // Place cursor in the first converted todo item
+        const firstTodoContent =
+          todoItems[0].querySelector(".task-item-content");
+        if (firstTodoContent) {
+          this.placeCursorInElement(firstTodoContent, false);
+        }
+      } else {
+        const todoItem = this.createTodoElement(textContent);
+
+        // Replace the list item with the todo item
+        listItem.parentNode.replaceChild(todoItem, listItem);
+
+        // Place cursor in the new todo item
+        const todoContent = todoItem.querySelector(".task-item-content");
+        if (todoContent) {
+          this.placeCursorInElement(todoContent, false);
+        }
+      }
+
+      // Save undo state
+      this.saveUndoState();
+      this.saveData();
+    } else {
+      // Create a new todo item
+      const todoItem = this.createTodoElement();
+      range.insertNode(todoItem);
+      this.placeCursorInElement(todoItem.querySelector(".task-item-content"), true);
+      this.saveUndoState();
+      this.saveData();
+    }
+  }
+
+  createTodoElement(content = "&#8203;") {
+    const wrapper = document.createElement("div");
+    wrapper.className = "task-item";
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.className = "task-item-checkbox";
+
+    const contentDiv = document.createElement("div");
+    contentDiv.className = "task-item-content";
+    contentDiv.contentEditable = "true";
+    contentDiv.innerHTML = content;
+
+    // Ensure proper structure
+    wrapper.appendChild(checkbox);
+    wrapper.appendChild(contentDiv);
+
+    // Add event listeners
+    checkbox.addEventListener("change", (e) => {
+      const isChecked = e.target.checked;
+      wrapper.classList.toggle("completed", isChecked);
+
+      if (isChecked) {
+        const activeMainTab = this.state.mainTabs.find(
+          (t) => t.id === this.state.activeMainTabId
+        );
+        const activeSubTab = activeMainTab?.subTabs.find(
+          (st) => st.id === this.state.activeSubTabId
+        );
+
+        if (!activeMainTab || !activeSubTab) return;
+
+        const taskText = contentDiv.textContent;
+        if (taskText.trim()) {
+          this.state.completedTasks.push({
+            id: Date.now(),
+            text: taskText,
+            completedAt: Date.now(),
+            tabName: `${activeMainTab.name} / ${activeSubTab.name}`,
+          });
+        }
+      }
+      this.saveData();
+    });
+
+    return wrapper;
+  }
+
+  getSelectedListItems() {
+    const selection = window.getSelection();
+    if (!selection.rangeCount) return [];
+
+    const range = selection.getRangeAt(0);
+    const container = range.commonAncestorContainer;
+    
+    // Find all list items in the selection
+    const listItems = [];
+    const walker = document.createTreeWalker(
+      container,
+      NodeFilter.SHOW_ELEMENT,
+      (node) => {
+        return node.tagName === "LI" ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+      }
+    );
+
+    let node;
+    while (node = walker.nextNode()) {
+      listItems.push(node);
+    }
+
+    return listItems;
+  }
+
+  placeCursorInElement(element, atEnd = false) {
+    const range = document.createRange();
+    const selection = window.getSelection();
+    
+    if (atEnd) {
+      range.selectNodeContents(element);
+      range.collapse(false);
+    } else {
+      range.setStart(element, 0);
+      range.collapse(true);
+    }
+    
+    selection.removeAllRanges();
+    selection.addRange(range);
   }
 
   handlePaste(e) {
@@ -889,6 +1202,209 @@ class ChromeNotesWebApp {
     const allContent = this.formatTabsForCopy(this.state.mainTabs);
     navigator.clipboard.writeText(allContent);
     this.showNotification("All tabs copied to clipboard");
+  }
+
+  emailAllTabs() {
+    const subject = `Chrome Notes – ${new Date().toLocaleDateString()}`;
+    const html = this.buildEmailHtml(this.state.mainTabs);
+    const to = "tomas.roosguerra@gmail.com";
+    const url = `https://mail.google.com/mail/u/0/?view=cm&fs=1&to=${encodeURIComponent(
+      to
+    )}&su=${encodeURIComponent(subject)}&tf=1&body=${encodeURIComponent(html)}`;
+
+    // Open Gmail in new tab
+    window.open(url, '_blank');
+    this.showNotification("Opening Gmail with your notes");
+  }
+
+  buildEmailHtml(mainTabs) {
+    if (!mainTabs || mainTabs.length === 0) {
+      return "No notes found.";
+    }
+
+    const styles = `
+        body { 
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+          line-height: 1.6; 
+          color: #1a1a1a; 
+          background-color: #fdfdfd;
+          margin: 0;
+          padding: 0;
+        }
+        .email-container {
+          max-width: 680px; 
+          margin: 0 auto;
+          padding: 20px;
+        }
+        .main-tab {
+          margin-bottom: 30px;
+          border-bottom: 2px solid #e0e0e0;
+          padding-bottom: 20px;
+        }
+        .main-tab:last-child {
+          border-bottom: none;
+        }
+        .main-tab-title {
+          font-size: 24px;
+          font-weight: 600;
+          color: #1a1a1a;
+          margin-bottom: 15px;
+          border-bottom: 1px solid #e0e0e0;
+          padding-bottom: 8px;
+        }
+        .sub-tab {
+          margin-bottom: 20px;
+        }
+        .sub-tab-title {
+          font-size: 18px;
+          font-weight: 500;
+          color: #3b82f6;
+          margin-bottom: 10px;
+        }
+        .sub-tab-content {
+          background-color: #f8f9fa;
+          padding: 15px;
+          border-radius: 8px;
+          border-left: 4px solid #3b82f6;
+        }
+        .task-item {
+          margin: 8px 0;
+          padding: 4px 0;
+        }
+        .task-item.completed {
+          text-decoration: line-through;
+          color: #888;
+        }
+        .task-item-checkbox {
+          margin-right: 8px;
+        }
+        ul, ol {
+          margin: 10px 0;
+          padding-left: 20px;
+        }
+        li {
+          margin: 4px 0;
+        }
+        blockquote {
+          border-left: 4px solid #e5e7eb;
+          padding-left: 16px;
+          margin: 10px 0;
+          font-style: italic;
+          color: #6b7280;
+        }
+        h1, h2, h3 {
+          margin: 15px 0 10px 0;
+          color: #1a1a1a;
+        }
+        h1 { font-size: 24px; }
+        h2 { font-size: 20px; }
+        h3 { font-size: 18px; }
+        strong { font-weight: 600; }
+        em { font-style: italic; }
+      `;
+
+    const content = mainTabs.map(mainTab => {
+      const subTabsHtml = mainTab.subTabs.map(subTab => {
+        const formattedContent = this.formatContentForEmail(subTab.content);
+        return `
+          <div class="sub-tab">
+            <div class="sub-tab-title">${subTab.name}</div>
+            <div class="sub-tab-content">${formattedContent}</div>
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <div class="main-tab">
+          <div class="main-tab-title">${mainTab.name}</div>
+          ${subTabsHtml}
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <html>
+        <head>
+          <style>${styles}</style>
+        </head>
+        <body>
+          <div class="email-container">
+            ${content}
+          </div>
+        </body>
+      </html>
+    `;
+  }
+
+  formatContentForEmail(htmlContent) {
+    if (!htmlContent) return "";
+
+    // Create a temporary div to parse the HTML
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = htmlContent;
+
+    let formattedText = "";
+
+    function processNode(node, depth = 0) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        formattedText += node.textContent;
+        return;
+      }
+
+      const tagName = node.tagName.toLowerCase();
+      const indent = "  ".repeat(depth);
+
+      switch (tagName) {
+        case "div":
+          if (node.textContent.trim()) {
+            formattedText += `${indent}${node.textContent.trim()}\n`;
+          }
+          break;
+        case "ul":
+          formattedText += "\n";
+          Array.from(node.children).forEach(li => {
+            formattedText += `${indent}• ${li.textContent.trim()}\n`;
+          });
+          formattedText += "\n";
+          break;
+        case "ol":
+          formattedText += "\n";
+          Array.from(node.children).forEach((li, index) => {
+            formattedText += `${indent}${index + 1}. ${li.textContent.trim()}\n`;
+          });
+          formattedText += "\n";
+          break;
+        case "blockquote":
+          formattedText += `${indent}> ${node.textContent.trim()}\n\n`;
+          break;
+        case "h1":
+          formattedText += `\n${indent}# ${node.textContent.trim()}\n\n`;
+          break;
+        case "h2":
+          formattedText += `\n${indent}## ${node.textContent.trim()}\n\n`;
+          break;
+        case "h3":
+          formattedText += `\n${indent}### ${node.textContent.trim()}\n\n`;
+          break;
+        case "strong":
+          formattedText += `**${node.textContent}**`;
+          break;
+        case "em":
+          formattedText += `*${node.textContent}*`;
+          break;
+        default:
+          // For other elements, process children
+          Array.from(node.childNodes).forEach(child => {
+            processNode(child, depth);
+          });
+      }
+    }
+
+    Array.from(tempDiv.childNodes).forEach(node => {
+      processNode(node);
+    });
+
+    return formattedText.trim();
   }
 
   formatTabsForCopy(mainTabs) {
