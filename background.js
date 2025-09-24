@@ -64,6 +64,11 @@ chrome.runtime.onInstalled.addListener(() => {
   chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
 });
 
+// Handle extension icon click - open web app instead of side panel
+chrome.action.onClicked.addListener((tab) => {
+  chrome.tabs.create({ url: "https://chrome-notes-webapp.netlify.app" });
+});
+
 chrome.runtime.onStartup.addListener(() => {
   console.log("Chrome started, rescheduling daily email");
   scheduleDailyEmail();

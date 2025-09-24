@@ -12,8 +12,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Initialize Firebase sync
   try {
+    console.log("Creating FirebaseSync instance...");
     firebaseSync = new window.FirebaseSync();
+    console.log("FirebaseSync instance created:", !!firebaseSync);
+
+    console.log("Initializing Firebase sync...");
     const initialized = await firebaseSync.initialize();
+    console.log("Firebase initialization result:", initialized);
 
     if (initialized) {
       console.log("Firebase sync initialized successfully");
@@ -24,6 +29,20 @@ document.addEventListener("DOMContentLoaded", async () => {
         const cloudData = event.detail;
         if (cloudData) {
           mergeCloudData(cloudData);
+        }
+      });
+
+      // Listen for authentication changes
+      document.addEventListener("firebaseAuthChanged", (event) => {
+        const { user, isSignedIn } = event.detail;
+        if (isSignedIn) {
+          console.log("User signed in via web app:", user.email);
+          updateSyncStatus();
+          // Sync current data to cloud
+          syncToCloud();
+        } else {
+          console.log("User signed out");
+          updateSyncStatus();
         }
       });
     }
@@ -126,20 +145,32 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // --- Firebase Sync Functions ---
   const setupSyncControls = () => {
+    console.log("Setting up sync controls...");
     const signinBtn = document.getElementById("sync-signin-btn");
     const statusBtn = document.getElementById("sync-status-btn");
 
+    console.log("Sign in button found:", !!signinBtn);
+    console.log("Status button found:", !!statusBtn);
+    console.log("Firebase sync available:", !!firebaseSync);
+
     if (signinBtn) {
       signinBtn.addEventListener("click", async () => {
+        console.log("Sync button clicked!");
         if (firebaseSync) {
+          console.log("Attempting to sign in...");
           const success = await firebaseSync.signIn();
+          console.log("Sign in result:", success);
           if (success) {
             updateSyncStatus();
             // Sync current data to cloud
             await syncToCloud();
           }
+        } else {
+          console.error("Firebase sync not available!");
         }
       });
+    } else {
+      console.error("Sign in button not found!");
     }
 
     if (statusBtn) {
@@ -154,6 +185,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     updateSyncStatus();
+
+    // Check for authentication status every 5 seconds
+    // This helps detect when user signs in via web app
+    setInterval(() => {
+      if (firebaseSync && firebaseSync.isInitialized) {
+        const status = firebaseSync.getSyncStatus();
+        const currentStatus =
+          document.getElementById("sync-signin-btn").style.display === "none";
+        if (status.isSignedIn !== currentStatus) {
+          updateSyncStatus();
+        }
+      }
+    }, 5000);
   };
 
   const updateSyncStatus = () => {
@@ -835,9 +879,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     document
       .getElementById("add-sub-tab-btn")
       .addEventListener("click", addSubTab);
-    copyAllBtn.addEventListener("click", () => {
-      const allContent = formatTabsForCopy(state.mainTabs);
-      navigator.clipboard.writeText(allContent);
+    copyAllBtn.addEventListener("click", async () => {
+      try {
+        const allContent = formatTabsForCopy(state.mainTabs);
+        await navigator.clipboard.writeText(allContent);
+        showNotification("All tabs copied to clipboard");
+      } catch (err) {
+        console.error("Failed to copy to clipboard:", err);
+        showNotification("Failed to copy to clipboard. Please try again.");
+      }
     });
     emailAllBtn.addEventListener("click", copyAndEmailAllTabs);
     document
@@ -1870,6 +1920,98 @@ document.addEventListener("DOMContentLoaded", async () => {
     text = text.replace(/\*(.*?)\*/g, "<em>$1</em>");
 
     return text;
+  }
+
+  function formatTabsForCopy(mainTabs) {
+    if (!mainTabs || mainTabs.length === 0) {
+      return "No tabs found.";
+    }
+
+    return mainTabs
+      .map((mainTab, mainIndex) => {
+        const subTabsContent = mainTab.subTabs
+          .map((subTab, subIndex) => {
+            const formattedContent = formatContentForCopy(subTab.content);
+            const subTabHeader = `## ${subIndex + 1}. ${subTab.name}`;
+            return `${subTabHeader}\n\n${formattedContent}`;
+          })
+          .join("\n\n");
+
+        const mainTabHeader = `# ${mainIndex + 1}. ${mainTab.name}`;
+        return `${mainTabHeader}\n\n${subTabsContent}`;
+      })
+      .join("\n\n" + "=".repeat(50) + "\n\n");
+  }
+
+  function formatContentForCopy(htmlContent) {
+    if (!htmlContent) return "";
+
+    // Create a temporary div to parse the HTML
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = htmlContent;
+
+    let formattedText = "";
+
+    function processNode(node, depth = 0) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        formattedText += node.textContent;
+        return;
+      }
+
+      const tagName = node.tagName.toLowerCase();
+      const indent = "  ".repeat(depth);
+
+      switch (tagName) {
+        case "div":
+          if (node.textContent.trim()) {
+            formattedText += `${indent}${node.textContent.trim()}\n`;
+          }
+          break;
+        case "ul":
+          formattedText += "\n";
+          Array.from(node.children).forEach((li) => {
+            formattedText += `${indent}• ${li.textContent.trim()}\n`;
+          });
+          formattedText += "\n";
+          break;
+        case "ol":
+          formattedText += "\n";
+          Array.from(node.children).forEach((li, index) => {
+            formattedText += `${indent}${index + 1}. ${li.textContent.trim()}\n`;
+          });
+          formattedText += "\n";
+          break;
+        case "blockquote":
+          formattedText += `${indent}> ${node.textContent.trim()}\n\n`;
+          break;
+        case "h1":
+          formattedText += `\n${indent}# ${node.textContent.trim()}\n\n`;
+          break;
+        case "h2":
+          formattedText += `\n${indent}## ${node.textContent.trim()}\n\n`;
+          break;
+        case "h3":
+          formattedText += `\n${indent}### ${node.textContent.trim()}\n\n`;
+          break;
+        case "strong":
+          formattedText += `**${node.textContent}**`;
+          break;
+        case "em":
+          formattedText += `*${node.textContent}*`;
+          break;
+        default:
+          // For other elements, process children
+          Array.from(node.childNodes).forEach((child) => {
+            processNode(child, depth);
+          });
+      }
+    }
+
+    Array.from(tempDiv.childNodes).forEach((node) => {
+      processNode(node);
+    });
+
+    return formattedText.trim();
   }
 
   function showNotification(message) {

@@ -9,7 +9,8 @@
     "activeTab",
     "alarms",
     "clipboardRead",
-    "clipboardWrite"
+    "clipboardWrite",
+    "tabs"
   ],
   "host_permissions": ["https://mail.google.com/*"],
   "background": {
