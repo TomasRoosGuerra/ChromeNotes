@@ -879,15 +879,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     document
       .getElementById("add-sub-tab-btn")
       .addEventListener("click", addSubTab);
-    copyAllBtn.addEventListener("click", async () => {
-      try {
-        const allContent = formatTabsForCopy(state.mainTabs);
-        await navigator.clipboard.writeText(allContent);
-        showNotification("All tabs copied to clipboard");
-      } catch (err) {
-        console.error("Failed to copy to clipboard:", err);
-        showNotification("Failed to copy to clipboard. Please try again.");
-      }
+    copyAllBtn.addEventListener("click", () => {
+      const allContent = formatTabsForCopy(state.mainTabs);
+      navigator.clipboard.writeText(allContent);
     });
     emailAllBtn.addEventListener("click", copyAndEmailAllTabs);
     document
@@ -1922,6 +1916,30 @@ document.addEventListener("DOMContentLoaded", async () => {
     return text;
   }
 
+  function showNotification(message) {
+    // Create a simple notification
+    const notification = document.createElement("div");
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: var(--accent-color);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    `;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+      notification.remove();
+    }, 3000);
+  }
+
+  // --- Copy Functionality ---
   function formatTabsForCopy(mainTabs) {
     if (!mainTabs || mainTabs.length === 0) {
       return "No tabs found.";
@@ -1940,7 +1958,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const mainTabHeader = `# ${mainIndex + 1}. ${mainTab.name}`;
         return `${mainTabHeader}\n\n${subTabsContent}`;
       })
-      .join("\n\n" + "=".repeat(50) + "\n\n");
+      .join("\n\n=====================================\n\n");
   }
 
   function formatContentForCopy(htmlContent) {
@@ -1977,7 +1995,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         case "ol":
           formattedText += "\n";
           Array.from(node.children).forEach((li, index) => {
-            formattedText += `${indent}${index + 1}. ${li.textContent.trim()}\n`;
+            formattedText += `${indent}${
+              index + 1
+            }. ${li.textContent.trim()}\n`;
           });
           formattedText += "\n";
           break;
@@ -2012,29 +2032,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     return formattedText.trim();
-  }
-
-  function showNotification(message) {
-    // Create a simple notification
-    const notification = document.createElement("div");
-    notification.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: var(--accent-color);
-      color: white;
-      padding: 12px 20px;
-      border-radius: 6px;
-      font-size: 14px;
-      z-index: 1000;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    `;
-    notification.textContent = message;
-    document.body.appendChild(notification);
-
-    setTimeout(() => {
-      notification.remove();
-    }, 3000);
   }
 
   // --- Initialization ---
