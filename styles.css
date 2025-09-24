@@ -487,8 +487,7 @@ input[type="color"]::-webkit-color-swatch {
   hyphens: auto;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}#notebook:empty:before {
-  content: "Start typing... Try '# ', '- ', or '-. '";
+}  content: "Start typing... Try '# ', '- ', or '-. '";
   color: var(--placeholder-color);
   cursor: text;
 }
@@ -781,6 +780,7 @@ input[type="color"]::-webkit-color-swatch {
     font-size: 14px;
     min-width: 44px;
     min-height: 44px;
+    touch-action: manipulation;
   }
 
 #notebook {
@@ -799,6 +799,47 @@ input[type="color"]::-webkit-color-swatch {
   -moz-osx-font-smoothing: grayscale;
 }
   .main-tab,
+  .sub-tab {
+    font-size: 14px;
+    padding: 8px 12px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    touch-action: manipulation;
+  }
+
+  .task-item {
+    margin: 8px 0;
+  }
+
+  .task-item-checkbox {
+    width: 20px;
+    height: 20px;
+    margin-top: 2px;
+  }
+}
+  .toolbar-btn {
+    padding: 8px;
+    font-size: 14px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+#notebook {
+  padding: 20px 24px;
+  outline: none;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text-color);
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  hyphens: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}  .main-tab,
   .sub-tab {
     font-size: 14px;
     padding: 8px 12px;
@@ -842,8 +883,7 @@ input[type="color"]::-webkit-color-swatch {
   hyphens: auto;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}  .main-tab,
-  .sub-tab {
+}  .sub-tab {
     font-size: 13px;
     padding: 6px 10px;
   }
@@ -876,8 +916,7 @@ input[type="color"]::-webkit-color-swatch {
   hyphens: auto;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}  .main-tab,
-  .sub-tab {
+}  .sub-tab {
     font-size: 12px;
     padding: 4px 8px;
   }
