@@ -804,8 +804,18 @@ class ChromeNotesWebApp {
     document
       .getElementById("copy-all-btn")
       ?.addEventListener("click", () => this.copyAllTabs());
+    document
+      .getElementById("clean-all-btn")
+      ?.addEventListener("click", () => this.cleanAllTabs());    document
+      .getElementById("clean-all-btn")
+      ?.addEventListener("click", () => this.cleanAllTabs());
+    document
+      .getElementById("clean-all-btn")
+      ?.addEventListener("click", () => this.cleanAllTabs());
     document.getElementById("import-btn")?.addEventListener("click", () => {
-      console.log("Import button clicked!"); // Debug log
+    document
+      .getElementById("clean-all-btn")
+      ?.addEventListener("click", () => this.cleanAllTabs());      console.log("Import button clicked!"); // Debug log
       this.importFromClipboard();
     });
     document
