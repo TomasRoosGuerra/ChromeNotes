@@ -530,17 +530,24 @@ class ChromeNotesWebApp {
   }
 
   renderNotebook() {
+    const activeTab = this.getActiveTab();
     const notebook = document.getElementById("notebook");
     if (!notebook) return;
 
-    const activeTab = this.getActiveTab();
-    if (activeTab) {
+    if (activeTab && activeTab.content) {
       notebook.innerHTML = activeTab.content;
     } else {
       notebook.innerHTML = "";
     }
+
     notebook.contentEditable = "true";
     notebook.classList.remove("notebook-readonly");
+    
+    // Enhanced auto-focus with smooth behavior
+    setTimeout(() => {
+      notebook.focus();
+      this.scrollToCursor();
+    }, 100);
   }
 
   createMainTabElement(tab) {
@@ -907,6 +914,29 @@ class ChromeNotesWebApp {
     if (e.key === "Backspace") {
       if (this.handleBackspaceKey(e)) return;
     }
+
+    // Enhanced cursor management - smooth scroll to cursor
+    setTimeout(() => this.scrollToCursor(), 10);
+    // Handle markdown shortcuts on space - works on ANY row
+    if (e.key === " ") {
+      if (this.handleMarkdownShortcuts(e)) return;
+    }
+
+    // Improved Enter key handling
+    if (e.key === "Enter") {
+      if (this.handleEnterKey(e)) return;
+    }
+
+    // Better Tab handling
+    if (e.key === "Tab") {
+      e.preventDefault();
+      document.execCommand(e.shiftKey ? "outdent" : "indent");
+    }
+
+    // Backspace handling - removes empty bullets/checkboxes
+    if (e.key === "Backspace") {
+      if (this.handleBackspaceKey(e)) return;
+    }
   }
 
   handleMarkdownShortcuts(e) {
@@ -1228,24 +1258,31 @@ class ChromeNotesWebApp {
   }
 
   cleanAllTabs() {
-    if (confirm("Are you sure you want to delete all tabs? This action cannot be undone.")) {
-      this.state.mainTabs = [];
-      this.state.activeMainTabId = null;
-      this.state.activeSubTabId = null;
-      this.state.completedTasks = [];
-      this.state.hideCompleted = false;
-      this.state.lastSelectedSubTabs = {};
-      
-      this.render();
-      this.saveData();
-      this.showNotification("All tabs have been deleted");
+
+  }  // Enhanced cursor and scroll management
+  scrollToCursor() {
+    const selection = window.getSelection();
+    if (!selection.rangeCount) return;
+
+    const range = selection.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+    const notebook = document.getElementById("notebook");
+    const notebookRect = notebook.getBoundingClientRect();
+
+    // Check if cursor is outside visible area
+    if (rect.bottom > notebookRect.bottom || rect.top < notebookRect.top) {
+      // Scroll to cursor position with smooth behavior
+      range.startContainer.parentElement?.scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+      });
     }
   }
 
   emailAllTabs() {
     const subject = `Chrome Notes – ${new Date().toLocaleDateString()}`;
-    const html = this.buildEmailHtml(this.state.mainTabs);    const to = "tomas.roosguerra@gmail.com";
-    const url = `https://mail.google.com/mail/u/0/?view=cm&fs=1&to=${encodeURIComponent(
+    const html = this.buildEmailHtml(this.state.mainTabs);
+    const to = "tomas.roosguerra@gmail.com";    const url = `https://mail.google.com/mail/u/0/?view=cm&fs=1&to=${encodeURIComponent(
       to
     )}&su=${encodeURIComponent(subject)}&tf=1&body=${encodeURIComponent(html)}`;
 
