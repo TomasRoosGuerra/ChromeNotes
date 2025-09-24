@@ -808,9 +808,6 @@ class ChromeNotesWebApp {
       console.log("Import button clicked!"); // Debug log
       this.importFromClipboard();
     });
-    
-    // Add migration button for direct data transfer
-    this.addMigrationButton();
     document
       .getElementById("email-all-btn")
       ?.addEventListener("click", () => this.emailAllTabs());
@@ -1455,7 +1452,30 @@ class ChromeNotesWebApp {
       }
 
       console.log("Parsing imported content..."); // Debug log
-      const importedTabs = this.parseImportedContent(clipboardText);
+      
+      // Check if clipboard contains JSON data
+      let importedTabs;
+      try {
+        const jsonData = JSON.parse(clipboardText);
+        if (jsonData.mainTabs && Array.isArray(jsonData.mainTabs)) {
+          console.log("Detected JSON format, importing directly...");
+          importedTabs = jsonData.mainTabs;
+          
+          // Update state with JSON data
+          if (jsonData.activeMainTabId) this.state.activeMainTabId = jsonData.activeMainTabId;
+          if (jsonData.activeSubTabId) this.state.activeSubTabId = jsonData.activeSubTabId;
+          if (jsonData.completedTasks) this.state.completedTasks = jsonData.completedTasks;
+          if (jsonData.hideCompleted !== undefined) this.state.hideCompleted = jsonData.hideCompleted;
+          if (jsonData.lastSelectedSubTabs) this.state.lastSelectedSubTabs = jsonData.lastSelectedSubTabs;
+        } else {
+          throw new Error("Invalid JSON format");
+        }
+      } catch (jsonError) {
+        console.log("Not JSON format, parsing as text...");
+        // Try parsing as text format
+        importedTabs = this.parseImportedContent(clipboardText);
+      }
+      
       console.log("Parsed tabs:", importedTabs); // Debug log
 
       if (importedTabs.length > 0) {
@@ -2241,149 +2261,6 @@ class ChromeNotesWebApp {
     });
 
     return formattedText.trim();
-  }
-
-  // Add migration button for direct data transfer
-  addMigrationButton() {
-    const toolbar = document.querySelector('.toolbar .view-controls');
-    if (toolbar) {
-      const migrationBtn = document.createElement('button');
-      migrationBtn.id = 'migration-btn';
-      migrationBtn.className = 'toolbar-btn';
-      migrationBtn.title = 'Migrate from Extension (Direct Data Transfer)';
-      migrationBtn.innerHTML = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-          <polyline points="7,10 12,15 17,10"></polyline>
-          <line x1="12" y1="15" x2="12" y2="3"></line>
-        </svg>
-      `;
-      
-      migrationBtn.addEventListener('click', () => {
-        this.startMigration();
-      });
-      
-      toolbar.insertBefore(migrationBtn, toolbar.firstChild);
-    }
-  }
-
-  // Direct migration method - bypasses text parsing
-  async startMigration() {
-    console.log("Starting direct migration...");
-    
-    // Show migration instructions
-    const instructions = `
-      <div style="padding: 20px; background: #f0f8ff; border: 2px solid #3b82f6; border-radius: 8px; margin: 20px;">
-        <h3 style="color: #3b82f6; margin-top: 0;">🚀 Direct Migration from Extension</h3>
-        <p><strong>Step 1:</strong> Open your Chrome extension</p>
-        <p><strong>Step 2:</strong> Press F12 to open Developer Tools</p>
-        <p><strong>Step 3:</strong> Go to Console tab</p>
-        <p><strong>Step 4:</strong> Copy and paste this command:</p>
-        <div style="background: #000; color: #0f0; padding: 10px; border-radius: 4px; font-family: monospace; margin: 10px 0;">
-          chrome.storage.local.get(['sidekickNotesData_v2_4'], (result) => {<br>
-          &nbsp;&nbsp;const data = JSON.stringify(result.sidekickNotesData_v2_4 || {});<br>
-          &nbsp;&nbsp;navigator.clipboard.writeText(data);<br>
-          &nbsp;&nbsp;console.log('Extension data copied to clipboard!');<br>
-          });
-        </div>
-        <p><strong>Step 5:</strong> Press Enter to execute</p>
-        <p><strong>Step 6:</strong> Come back here and click "Import Migration Data" below</p>
-        <button id="import-migration-data" style="background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin-top: 10px;">
-          Import Migration Data
-        </button>
-      </div>
-    `;
-    
-    // Create modal
-    const modal = document.createElement('div');
-    modal.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.5);
-      z-index: 10000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    `;
-    
-    const content = document.createElement('div');
-    content.style.cssText = `
-      background: white;
-      padding: 0;
-      border-radius: 8px;
-      max-width: 600px;
-      max-height: 80vh;
-      overflow-y: auto;
-      position: relative;
-    `;
-    
-    content.innerHTML = instructions;
-    
-    // Add close button
-    const closeBtn = document.createElement('button');
-    closeBtn.innerHTML = '×';
-    closeBtn.style.cssText = `
-      position: absolute;
-      top: 10px;
-      right: 15px;
-      background: none;
-      border: none;
-      font-size: 24px;
-      cursor: pointer;
-      color: #666;
-    `;
-    closeBtn.onclick = () => modal.remove();
-    content.appendChild(closeBtn);
-    
-    modal.appendChild(content);
-    document.body.appendChild(modal);
-    
-    // Add import button handler
-    setTimeout(() => {
-      const importBtn = document.getElementById('import-migration-data');
-      if (importBtn) {
-        importBtn.addEventListener('click', () => {
-          this.importMigrationData();
-          modal.remove();
-        });
-      }
-    }, 100);
-  }
-
-  // Import the raw extension data
-  async importMigrationData() {
-    try {
-      console.log("Importing migration data...");
-      
-      const clipboardText = await navigator.clipboard.readText();
-      console.log("Migration data received:", clipboardText.substring(0, 200) + "...");
-      
-      const extensionData = JSON.parse(clipboardText);
-      console.log("Parsed extension data:", extensionData);
-      
-      if (extensionData.mainTabs && extensionData.mainTabs.length > 0) {
-        // Replace current data with extension data
-        this.state.mainTabs = extensionData.mainTabs;
-        this.state.activeMainTabId = extensionData.activeMainTabId || extensionData.mainTabs[0]?.id;
-        this.state.activeSubTabId = extensionData.activeSubTabId || extensionData.mainTabs[0]?.subTabs[0]?.id;
-        this.state.completedTasks = extensionData.completedTasks || [];
-        this.state.hideCompleted = extensionData.hideCompleted || false;
-        this.state.lastSelectedSubTabs = extensionData.lastSelectedSubTabs || {};
-        
-        this.render();
-        this.saveData();
-        
-        this.showNotification(`Migration successful! Imported ${extensionData.mainTabs.length} main tabs.`);
-      } else {
-        this.showNotification("No valid extension data found in clipboard.");
-      }
-    } catch (err) {
-      console.error("Migration failed:", err);
-      this.showNotification(`Migration failed: ${err.message}`);
-    }
   }
 
   // Helper function to format inline text (bold, italic, etc.)
