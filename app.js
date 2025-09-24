@@ -1429,7 +1429,7 @@ class ChromeNotesWebApp {
     try {
       const clipboardText = await navigator.clipboard.readText();
       console.log("Clipboard text:", clipboardText); // Debug log
-      
+
       const importedTabs = this.parseImportedContent(clipboardText);
       console.log("Parsed tabs:", importedTabs); // Debug log
 
@@ -1461,7 +1461,7 @@ class ChromeNotesWebApp {
 
   parseImportedContent(text) {
     console.log("Starting to parse:", text.substring(0, 200) + "..."); // Debug log
-    
+
     const tabs = [];
     const lines = text.split("\n");
     let currentTab = null;
@@ -1478,7 +1478,7 @@ class ChromeNotesWebApp {
       // Main tab header (e.g., "# 1. Tab Name")
       if (trimmedLine.match(/^#\s*\d+\.\s*.+/)) {
         console.log("Found main tab:", trimmedLine); // Debug log
-        
+
         // Save previous tab if exists
         if (currentTab) {
           if (currentSubTab) {
@@ -1507,7 +1507,7 @@ class ChromeNotesWebApp {
       // Sub tab header (e.g., "## 1. Sub Tab Name")
       else if (trimmedLine.match(/^##\s*\d+\.\s*.+/)) {
         console.log("Found sub tab:", trimmedLine); // Debug log
-        
+
         // Save previous sub tab if exists
         if (currentSubTab) {
           const formattedContent = this.formatImportedContent(
@@ -1722,7 +1722,7 @@ class ChromeNotesWebApp {
 
   parseImportedContent(text) {
     console.log("Starting to parse:", text.substring(0, 200) + "..."); // Debug log
-    
+
     const tabs = [];
     const lines = text.split("\n");
     let currentTab = null;
@@ -1739,7 +1739,7 @@ class ChromeNotesWebApp {
       // Main tab header (e.g., "# 1. Tab Name")
       if (trimmedLine.match(/^#\s*\d+\.\s*.+/)) {
         console.log("Found main tab:", trimmedLine); // Debug log
-        
+
         // Save previous tab if exists
         if (currentTab) {
           if (currentSubTab) {
@@ -1768,7 +1768,7 @@ class ChromeNotesWebApp {
       // Sub tab header (e.g., "## 1. Sub Tab Name")
       else if (trimmedLine.match(/^##\s*\d+\.\s*.+/)) {
         console.log("Found sub tab:", trimmedLine); // Debug log
-        
+
         // Save previous sub tab if exists
         if (currentSubTab) {
           const formattedContent = this.formatImportedContent(
