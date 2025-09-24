@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "Chrome Notes",
+  "version": "1.0",
+  "description": "A beautiful note-taking extension for Chrome",
+  "permissions": [
+    "sidePanel",
+    "storage",
+    "activeTab",
+    "alarms",
+    "clipboardRead",
+    "clipboardWrite"
+  ],
+  "host_permissions": ["https://mail.google.com/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["firebase-sync.js"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://mail.google.com/*"],
+      "js": ["gmail_inject.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

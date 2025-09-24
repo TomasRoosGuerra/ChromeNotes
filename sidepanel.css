@@ -1,0 +1,509 @@
+/* Basic Reset and Font */
+:root {
+  --bg-color: #ffffff;
+  --text-color: #1a1a1a;
+  --border-color: #e0e0e0;
+  --accent-color: #3b82f6;
+  --placeholder-color: #a0a0a0;
+  --hover-bg-color: #f0f0f0;
+  --completed-text-color: #888888;
+  --tab-inactive-bg: #fafafa;
+  --quote-border-color: #e5e7eb;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-color: #1f1f1f;
+    --text-color: #f0f0f0;
+    --border-color: #3a3a3a;
+    --accent-color: #60a5fa;
+    --placeholder-color: #5c5c5c;
+    --hover-bg-color: #2f2f2f;
+    --completed-text-color: #707070;
+    --tab-inactive-bg: #2a2a2a;
+    --quote-border-color: #4b5563;
+  }
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+#app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Hierarchical Tabs Styling */
+#tabs-container {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+/* Main Tabs */
+#main-tabs-container {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px 0 12px;
+  background-color: var(--bg-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+#main-tabs-list {
+  display: flex;
+  flex-grow: 1;
+  overflow-x: auto;
+  gap: 2px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+}
+
+#main-tabs-list::-webkit-scrollbar {
+  height: 4px;
+}
+
+#main-tabs-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#main-tabs-list::-webkit-scrollbar-thumb {
+  background-color: var(--border-color);
+  border-radius: 2px;
+}
+
+.main-tab {
+  padding: 8px 12px;
+  cursor: grab;
+  border-radius: 4px;
+  background-color: transparent;
+  font-size: 14px;
+  font-weight: 400;
+  white-space: nowrap;
+  position: relative;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  user-select: none;
+  border: 1px solid transparent;
+  color: var(--text-color);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.main-tab:active {
+  cursor: grabbing;
+}
+
+.main-tab.dragging {
+  opacity: 0.5;
+  transform: rotate(5deg);
+}
+
+.main-tab.drag-over {
+  border-color: var(--accent-color);
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.main-tab:hover {
+  background-color: var(--hover-bg-color);
+}
+
+.main-tab.active {
+  background-color: var(--accent-color);
+  color: white;
+}
+
+.main-tab-delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--placeholder-color);
+  padding: 4px;
+  border-radius: 50%;
+  display: none;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.main-tab:hover .main-tab-delete-btn {
+  display: inline-block;
+}
+
+.main-tab-delete-btn:hover {
+  color: var(--text-color);
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Sub Tabs */
+#sub-tabs-container {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px 8px 12px;
+  background-color: var(--bg-color);
+  border-top: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+}
+
+#sub-tabs-container.hidden {
+  display: none;
+}
+
+#sub-tabs-list {
+  display: flex;
+  flex-grow: 1;
+  overflow-x: auto;
+  gap: 2px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+}
+
+#sub-tabs-list::-webkit-scrollbar {
+  height: 4px;
+}
+
+#sub-tabs-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#sub-tabs-list::-webkit-scrollbar-thumb {
+  background-color: var(--border-color);
+  border-radius: 2px;
+}
+
+.sub-tab {
+  padding: 6px 12px;
+  cursor: grab;
+  border-radius: 6px;
+  background-color: transparent;
+  font-size: 13px;
+  white-space: nowrap;
+  position: relative;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+  user-select: none;
+  border: 1px solid transparent;
+  color: var(--text-color);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sub-tab:active {
+  cursor: grabbing;
+}
+
+.sub-tab.dragging {
+  opacity: 0.5;
+  transform: rotate(5deg);
+}
+
+.sub-tab.drag-over {
+  border-color: var(--accent-color);
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.sub-tab:hover {
+  background-color: var(--hover-bg-color);
+}
+
+.sub-tab.active {
+  background-color: var(--accent-color);
+  color: white;
+}
+
+.sub-tab-delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--placeholder-color);
+  padding: 2px;
+  border-radius: 50%;
+  display: none;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.sub-tab:hover .sub-tab-delete-btn {
+  display: inline-block;
+}
+
+.sub-tab-delete-btn:hover {
+  color: var(--text-color);
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Add Tab Buttons */
+#add-main-tab-btn,
+#add-sub-tab-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  padding: 8px 12px;
+  cursor: pointer;
+  color: var(--placeholder-color);
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+#add-main-tab-btn:hover,
+#add-sub-tab-btn:hover {
+  color: var(--text-color);
+  background-color: var(--hover-bg-color);
+}
+
+/* Toolbar Styling */
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.format-controls,
+.view-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+}
+
+/* Responsive toolbar behavior - always single row */
+.toolbar {
+  flex-direction: row;
+  gap: 8px;
+}
+
+.format-controls {
+  flex: 1;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+}
+
+.view-controls {
+  flex-shrink: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+}
+
+.format-controls::-webkit-scrollbar,
+.view-controls::-webkit-scrollbar {
+  height: 4px;
+}
+
+.format-controls::-webkit-scrollbar-track,
+.view-controls::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.format-controls::-webkit-scrollbar-thumb,
+.view-controls::-webkit-scrollbar-thumb {
+  background-color: var(--border-color);
+  border-radius: 2px;
+}
+
+/* Hide scrollbars on very small screens */
+@media (max-width: 300px) {
+  .format-controls,
+  .view-controls {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .format-controls::-webkit-scrollbar,
+  .view-controls::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.toolbar-btn {
+  background: none;
+  border: none;
+  padding: 6px;
+  cursor: pointer;
+  border-radius: 6px;
+  color: var(--placeholder-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.toolbar-btn:hover {
+  background-color: var(--hover-bg-color);
+  color: var(--text-color);
+}
+.toolbar-divider {
+  width: 1px;
+  height: 20px;
+  background-color: var(--border-color);
+  margin: 0 4px;
+}
+#color-picker {
+  width: 28px;
+  height: 28px;
+  padding: 2px;
+  border: none;
+  background: none;
+}
+input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: 4px;
+}
+
+/* Notebook Area */
+#notebook-container {
+  flex-grow: 1;
+  overflow-y: auto;
+  position: relative;
+}
+#notebook {
+  padding: 16px 20px;
+  outline: none;
+  height: 100%;
+}
+#notebook:empty:before {
+  content: "Start typing... Try '# ', '- ', or '-. '";
+  color: var(--placeholder-color);
+  cursor: text;
+}
+.notebook-readonly {
+  user-select: none;
+}
+.notebook-readonly:empty:before {
+  content: "No tasks completed yet.";
+}
+
+/* Content Styling */
+#notebook h1,
+#notebook h2,
+#notebook h3 {
+  margin: 1.2em 0 0.6em;
+}
+#notebook h1 {
+  font-size: 1.8em;
+  font-weight: 600;
+}
+#notebook h2 {
+  font-size: 1.4em;
+  font-weight: 600;
+}
+#notebook h3 {
+  font-size: 1.2em;
+  font-weight: 600;
+}
+
+#notebook ul {
+  padding-left: 24px;
+  margin: 8px 0;
+}
+
+#notebook blockquote {
+  margin: 16px 0;
+  padding: 4px 16px;
+  border-left: 3px solid var(--quote-border-color);
+  color: var(--completed-text-color);
+}
+
+#notebook hr {
+  border: none;
+  border-top: 1px solid var(--border-color);
+  margin: 2em 0;
+}
+
+/* Task Item Styling */
+.task-item {
+  display: flex;
+  align-items: flex-start;
+  margin: 4px 0;
+}
+.task-item-checkbox {
+  margin-right: 8px;
+  margin-top: 5px;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent-color);
+}
+.task-item-content {
+  flex-grow: 1;
+}
+.task-item.completed > .task-item-content {
+  text-decoration: line-through;
+  color: var(--completed-text-color);
+}
+#app-container.hide-completed .task-item.completed {
+  display: none;
+}
+
+/* Done Log View */
+.done-log-tab-group {
+  margin-bottom: 24px;
+}
+.done-log-tab-name {
+  font-size: 1.2em;
+  font-weight: bold;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+  border-bottom: 2px solid var(--accent-color);
+}
+.done-log-date-group {
+  margin-bottom: 16px;
+  padding-left: 10px;
+}
+.done-log-date {
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: var(--text-color);
+}
+.done-log-item {
+  display: flex;
+  align-items: center;
+  padding-left: 15px;
+  color: var(--completed-text-color);
+  position: relative;
+}
+.done-log-item::before {
+  content: "✓";
+  color: var(--accent-color);
+  margin-right: 10px;
+  font-weight: bold;
+}
+.done-log-text {
+  flex-grow: 1;
+}
+.done-log-delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--placeholder-color);
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: none;
+  font-size: 16px;
+  line-height: 1;
+  margin-left: 8px;
+  transition: all 0.2s ease;
+}
+.done-log-item:hover .done-log-delete-btn {
+  display: inline-block;
+}
+.done-log-delete-btn:hover {
+  color: var(--text-color);
+  background-color: var(--hover-bg-color);
+}
