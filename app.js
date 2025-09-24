@@ -25,6 +25,9 @@ class ChromeNotesWebApp {
     // Wait for Firebase to load
     await this.waitForFirebase();
 
+    // Set up API endpoints for Chrome extension
+    this.setupAPIEndpoints();
+
     // Set up auth state listener
     window.firebaseOnAuthStateChanged(window.firebaseAuth, (user) => {
       this.user = user;
@@ -35,6 +38,38 @@ class ChromeNotesWebApp {
         this.showSignInScreen();
       }
     });
+  }
+
+  setupAPIEndpoints() {
+    // Store auth data for Chrome extension to access
+    if (this.user) {
+      localStorage.setItem('firebase_auth_data', JSON.stringify({
+        user: this.user,
+        expiresAt: Date.now() + (24 * 60 * 60 * 1000) // 24 hours
+      }));
+    }
+
+    // Check for Chrome extension data every 5 seconds
+    setInterval(() => {
+      this.checkForExtensionData();
+    }, 5000);
+  }
+
+  checkForExtensionData() {
+    // Check if Chrome extension has data to sync
+    const extensionData = localStorage.getItem('chrome_extension_data');
+    if (extensionData && this.user) {
+      try {
+        const parsed = JSON.parse(extensionData);
+        if (parsed.user === this.user.email) {
+          console.log("Syncing data from Chrome extension");
+          this.syncDataToCloud(parsed.data);
+          localStorage.removeItem('chrome_extension_data');
+        }
+      } catch (e) {
+        console.log("Invalid extension data");
+      }
+    }
   }
 
   async waitForFirebase() {
@@ -868,7 +903,7 @@ class ChromeNotesWebApp {
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
       animation: slideIn 0.3s ease;
     `;
-    
+
     document.body.appendChild(notification);
 
     setTimeout(() => {
