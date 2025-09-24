@@ -1217,6 +1217,19 @@ class ChromeNotesWebApp {
     this.showNotification("All tabs copied to clipboard");
   }
 
+  cleanAllTabs() {
+    if (confirm("Are you sure you want to delete all tabs? This action cannot be undone.")) {
+      this.state.mainTabs = [];
+      this.state.activeMainTabId = null;
+      this.state.activeSubTabId = null;
+      this.state.completedTasks = [];
+      this.state.hideCompleted = false;
+      this.state.lastSelectedSubTabs = {};
+      this.render();
+      this.saveData();
+      this.showNotification("All tabs have been deleted");
+    }
+  }
   emailAllTabs() {
     const subject = `Chrome Notes – ${new Date().toLocaleDateString()}`;
     const html = this.buildEmailHtml(this.state.mainTabs);
