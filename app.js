@@ -1427,6 +1427,19 @@ class ChromeNotesWebApp {
 
   async importFromClipboard() {
     try {
+      // Check if clipboard API is available
+      if (!navigator.clipboard) {
+        this.showNotification("Clipboard API not available. Please paste manually.");
+        return;
+      }
+
+      // Request clipboard permission
+      const permission = await navigator.permissions.query({ name: 'clipboard-read' });
+      if (permission.state === 'denied') {
+        this.showNotification("Clipboard access denied. Please enable clipboard permissions.");
+        return;
+      }
+
       const clipboardText = await navigator.clipboard.readText();
       const importedTabs = this.parseImportedContent(clipboardText);
 
@@ -1452,8 +1465,106 @@ class ChromeNotesWebApp {
       }
     } catch (err) {
       console.error("Failed to read clipboard:", err);
-      this.showNotification("Failed to read from clipboard. Please try again.");
+      
+      // Provide more specific error messages
+      if (err.name === 'NotAllowedError') {
+        this.showNotification("Clipboard access denied. Please allow clipboard permissions and try again.");
+      } else if (err.name === 'NotFoundError') {
+        this.showNotification("No content in clipboard. Please copy some text first.");
+      } else {
+        this.showNotification("Failed to read from clipboard. Please try again or paste manually.");
+        // Show manual paste option
+        this.showManualPasteOption();
+      }
     }
+  }
+
+  showManualPasteOption() {
+    // Create a modal for manual pasting
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    `;
+
+    const content = document.createElement('div');
+    content.style.cssText = `
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 80%;
+      overflow-y: auto;
+    `;
+
+    content.innerHTML = `
+      <h3 style="margin-top: 0;">Manual Import</h3>
+      <p>Paste your copied content below:</p>
+      <textarea id="manual-import-textarea" 
+                style="width: 100%; height: 200px; margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-family: monospace;"
+                placeholder="Paste your copied content here..."></textarea>
+      <div style="text-align: right;">
+        <button id="cancel-import" style="margin-right: 10px; padding: 8px 16px; border: 1px solid #ccc; background: white; border-radius: 4px;">Cancel</button>
+        <button id="confirm-import" style="padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 4px;">Import</button>
+      </div>
+    `;
+
+    modal.appendChild(content);
+    document.body.appendChild(modal);
+
+    // Focus the textarea
+    const textarea = content.querySelector('#manual-import-textarea');
+    textarea.focus();
+
+    // Add event listeners
+    content.querySelector('#cancel-import').addEventListener('click', () => {
+      document.body.removeChild(modal);
+    });
+
+    content.querySelector('#confirm-import').addEventListener('click', () => {
+      const text = textarea.value.trim();
+      if (text) {
+        const importedTabs = this.parseImportedContent(text);
+        if (importedTabs.length > 0) {
+          // Add imported tabs to existing tabs
+          this.state.mainTabs.push(...importedTabs);
+
+          // Switch to the first imported tab
+          if (importedTabs.length > 0) {
+            this.state.activeMainTabId = importedTabs[0].id;
+            this.state.activeSubTabId = importedTabs[0].subTabs[0].id;
+          }
+
+          this.render();
+          this.saveData();
+
+          this.showNotification(
+            `Imported ${importedTabs.length} tab(s) successfully!`
+          );
+        } else {
+          this.showNotification("No valid tabs found in the pasted content.");
+        }
+      }
+      document.body.removeChild(modal);
+    });
+
+    // Close on escape key
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        document.body.removeChild(modal);
+        document.removeEventListener('keydown', handleEscape);
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
   }
 
   parseImportedContent(text) {
