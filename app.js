@@ -806,7 +806,10 @@ class ChromeNotesWebApp {
       ?.addEventListener("click", () => this.copyAllTabs());
     document
       .getElementById("import-btn")
-      ?.addEventListener("click", () => this.importFromClipboard());
+      ?.addEventListener("click", () => {
+        console.log("Import button clicked!"); // Debug log
+        this.importFromClipboard();
+      });
     document
       .getElementById("email-all-btn")
       ?.addEventListener("click", () => this.emailAllTabs());
@@ -1426,10 +1429,26 @@ class ChromeNotesWebApp {
   }
 
   async importFromClipboard() {
+    console.log("importFromClipboard function called!"); // Debug log
+    
     try {
+      console.log("Checking clipboard permissions..."); // Debug log
+      
+      // Check if clipboard API is available
+      if (!navigator.clipboard) {
+        throw new Error("Clipboard API not available");
+      }
+      
+      console.log("Reading clipboard text..."); // Debug log
       const clipboardText = await navigator.clipboard.readText();
-      console.log("Clipboard text:", clipboardText); // Debug log
-
+      console.log("Clipboard text received:", clipboardText.substring(0, 100) + "..."); // Debug log
+      
+      if (!clipboardText || clipboardText.trim() === "") {
+        this.showNotification("Clipboard is empty. Please copy some content first.");
+        return;
+      }
+      
+      console.log("Parsing imported content..."); // Debug log
       const importedTabs = this.parseImportedContent(clipboardText);
       console.log("Parsed tabs:", importedTabs); // Debug log
 
@@ -1454,8 +1473,16 @@ class ChromeNotesWebApp {
         this.showNotification("No valid tabs found in clipboard content.");
       }
     } catch (err) {
-      console.error("Failed to read clipboard:", err);
-      this.showNotification("Failed to read from clipboard. Please try again.");
+      console.error("Import failed with error:", err);
+      console.error("Error details:", err.message);
+      
+      if (err.name === 'NotAllowedError') {
+        this.showNotification("Clipboard access denied. Please allow clipboard permissions and try again.");
+      } else if (err.name === 'NotFoundError') {
+        this.showNotification("Clipboard is empty. Please copy some content first.");
+      } else {
+        this.showNotification(`Import failed: ${err.message}`);
+      }
     }
   }
 
