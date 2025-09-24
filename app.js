@@ -805,6 +805,9 @@ class ChromeNotesWebApp {
       .getElementById("copy-all-btn")
       ?.addEventListener("click", () => this.copyAllTabs());
     document
+      .getElementById("import-btn")
+      ?.addEventListener("click", () => this.importFromClipboard());
+    document
       .getElementById("email-all-btn")
       ?.addEventListener("click", () => this.emailAllTabs());
     document
@@ -1420,6 +1423,211 @@ class ChromeNotesWebApp {
     });
 
     return formattedText.trim();
+  }
+
+  async importFromClipboard() {
+    try {
+      const clipboardText = await navigator.clipboard.readText();
+      const importedTabs = this.parseImportedContent(clipboardText);
+
+      if (importedTabs.length > 0) {
+        // Add imported tabs to existing tabs
+        this.state.mainTabs.push(...importedTabs);
+
+        // Switch to the first imported tab
+        if (importedTabs.length > 0) {
+          this.state.activeMainTabId = importedTabs[0].id;
+          this.state.activeSubTabId = importedTabs[0].subTabs[0].id;
+        }
+
+        this.render();
+        this.saveData();
+
+        // Show success message
+        this.showNotification(
+          `Imported ${importedTabs.length} tab(s) successfully!`
+        );
+      } else {
+        this.showNotification("No valid tabs found in clipboard content.");
+      }
+    } catch (err) {
+      console.error("Failed to read clipboard:", err);
+      this.showNotification("Failed to read from clipboard. Please try again.");
+    }
+  }
+
+  parseImportedContent(text) {
+    const tabs = [];
+    const lines = text.split("\n");
+    let currentTab = null;
+    let currentSubTab = null;
+    let currentContent = [];
+    let inContent = false;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+
+      // Main tab header (e.g., "# 1. Tab Name")
+      if (line.match(/^#\s*\d+\.\s*.+/)) {
+        // Save previous tab if exists
+        if (currentTab) {
+          if (currentSubTab) {
+            const formattedContent = this.formatImportedContent(
+              currentContent.join("\n")
+            );
+            currentSubTab.content = formattedContent;
+            currentTab.subTabs.push(currentSubTab);
+          }
+          tabs.push(currentTab);
+        }
+
+        // Start new main tab
+        const tabName = line.replace(/^#\s*\d+\.\s*/, "");
+        currentTab = {
+          id: Date.now() + Math.random(),
+          name: tabName,
+          subTabs: [],
+        };
+        currentSubTab = null;
+        currentContent = [];
+        inContent = false;
+      }
+      // Sub tab header (e.g., "## 1. Sub Tab Name")
+      else if (line.match(/^##\s*\d+\.\s*.+/)) {
+        // Save previous sub tab if exists
+        if (currentSubTab) {
+          const formattedContent = this.formatImportedContent(
+            currentContent.join("\n")
+          );
+          currentSubTab.content = formattedContent;
+          currentTab.subTabs.push(currentSubTab);
+        }
+
+        // Start new sub tab
+        const subTabName = line.replace(/^##\s*\d+\.\s*/, "");
+        currentSubTab = {
+          id: Date.now() + Math.random(),
+          name: subTabName,
+          content: "",
+        };
+        currentContent = [];
+        inContent = true;
+      }
+      // Separator line
+      else if (line.match(/^=+$/)) {
+        // This is a separator, continue
+        continue;
+      }
+      // Content line
+      else if (inContent && line) {
+        currentContent.push(line);
+      }
+      // Empty line in content
+      else if (inContent) {
+        currentContent.push("");
+      }
+    }
+
+    // Save the last tab and sub tab
+    if (currentTab) {
+      if (currentSubTab) {
+        const formattedContent = this.formatImportedContent(
+          currentContent.join("\n")
+        );
+        currentSubTab.content = formattedContent;
+        currentTab.subTabs.push(currentSubTab);
+      }
+      tabs.push(currentTab);
+    }
+
+    return tabs;
+  }
+
+  // Function to convert imported plain text back to HTML format
+  formatImportedContent(text) {
+    if (!text || text.trim() === "") return "";
+
+    const lines = text.split("\n");
+    let htmlContent = "";
+    let inList = false;
+    let listType = "";
+    let listItems = [];
+
+    function closeList() {
+      if (inList && listItems.length > 0) {
+        const listItemsHtml = listItems
+          .map((item) => {
+            const formattedItem = this.formatInlineText(item);
+            return `<li>${formattedItem}</li>`;
+          })
+          .join("");
+        htmlContent += `<${listType}>${listItemsHtml}</${listType}>`;
+        inList = false;
+        listItems = [];
+      }
+    }
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const trimmedLine = line.trim();
+
+      // Bullet lists
+      if (trimmedLine.match(/^[-*]\s/)) {
+        if (!inList || listType !== "ul") {
+          closeList();
+          inList = true;
+          listType = "ul";
+          listItems = [];
+        }
+        const itemText = trimmedLine.replace(/^[-*]\s/, "");
+        listItems.push(itemText);
+      }
+      // Numbered lists
+      else if (trimmedLine.match(/^\d+\.\s/)) {
+        if (!inList || listType !== "ol") {
+          closeList();
+          inList = true;
+          listType = "ol";
+          listItems = [];
+        }
+        const itemText = trimmedLine.replace(/^\d+\.\s/, "");
+        listItems.push(itemText);
+      }
+      // Blockquotes
+      else if (trimmedLine.match(/^>\s/)) {
+        closeList();
+        const quoteText = trimmedLine.replace(/^>\s/, "");
+        htmlContent += `<blockquote>${quoteText}</blockquote>`;
+      }
+      // Regular text
+      else if (trimmedLine) {
+        closeList();
+        // Handle bold and italic formatting
+        const formattedText = this.formatInlineText(trimmedLine);
+        htmlContent += `<div>${formattedText}</div>`;
+      }
+      // Empty line
+      else {
+        closeList();
+        htmlContent += "<div><br></div>";
+      }
+    }
+
+    // Close any remaining list
+    closeList();
+
+    return htmlContent;
+  }
+
+  // Helper function to format inline text (bold, italic, etc.)
+  formatInlineText(text) {
+    // Handle bold text (**text**)
+    text = text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+
+    // Handle italic text (*text*)
+    text = text.replace(/\*(.*?)\*/g, "<em>$1</em>");
+
+    return text;
   }
 
   formatTabsForCopy(mainTabs) {
