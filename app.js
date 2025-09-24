@@ -14,6 +14,11 @@ class ChromeNotesWebApp {
     this.undoStack = [];
     this.redoStack = [];
     this.MAX_UNDO_HISTORY = 20;
+    
+    // Drag and drop variables
+    this.draggedElement = null;
+    this.draggedIndex = -1;
+    this.isDragging = false;
 
     this.init();
   }
@@ -43,10 +48,13 @@ class ChromeNotesWebApp {
   setupAPIEndpoints() {
     // Store auth data for Chrome extension to access
     if (this.user) {
-      localStorage.setItem('firebase_auth_data', JSON.stringify({
-        user: this.user,
-        expiresAt: Date.now() + (24 * 60 * 60 * 1000) // 24 hours
-      }));
+      localStorage.setItem(
+        "firebase_auth_data",
+        JSON.stringify({
+          user: this.user,
+          expiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
+        })
+      );
     }
 
     // Check for Chrome extension data every 5 seconds
@@ -57,14 +65,14 @@ class ChromeNotesWebApp {
 
   checkForExtensionData() {
     // Check if Chrome extension has data to sync
-    const extensionData = localStorage.getItem('chrome_extension_data');
+    const extensionData = localStorage.getItem("chrome_extension_data");
     if (extensionData && this.user) {
       try {
         const parsed = JSON.parse(extensionData);
         if (parsed.user === this.user.email) {
           console.log("Syncing data from Chrome extension");
           this.syncDataToCloud(parsed.data);
-          localStorage.removeItem('chrome_extension_data');
+          localStorage.removeItem("chrome_extension_data");
         }
       } catch (e) {
         console.log("Invalid extension data");
@@ -246,6 +254,196 @@ class ChromeNotesWebApp {
     }
   }
 
+  // --- Drag and Drop Functionality ---
+  addDragAndDropListeners(element, tabType) {
+    element.addEventListener("dragstart", (e) => {
+      this.isDragging = true;
+      this.draggedElement = element;
+      this.draggedIndex = this.getTabIndex(element, tabType);
+      element.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/html", element.outerHTML);
+
+      // Add visual feedback immediately
+      element.style.opacity = "0.5";
+      element.style.transform = "rotate(5deg)";
+    });
+
+    element.addEventListener("dragend", (e) => {
+      element.classList.remove("dragging");
+      element.style.opacity = "";
+      element.style.transform = "";
+
+      // Remove all drag-over classes
+      const allTabs = document.querySelectorAll(
+        tabType === "main" ? ".main-tab" : ".sub-tab"
+      );
+      allTabs.forEach((tab) => tab.classList.remove("drag-over"));
+      this.draggedElement = null;
+      this.draggedIndex = -1;
+
+      // Reset dragging flag after a short delay to prevent click events
+      setTimeout(() => {
+        this.isDragging = false;
+      }, 100);
+    });
+
+    element.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+    });
+
+    element.addEventListener("dragenter", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (this.draggedElement && this.draggedElement !== element) {
+        element.classList.add("drag-over");
+        element.style.borderColor = "var(--accent-color)";
+        element.style.backgroundColor = "rgba(59, 130, 246, 0.1)";
+      }
+    });
+
+    element.addEventListener("dragleave", (e) => {
+      // Only remove drag-over if we're actually leaving the tab element
+      if (!element.contains(e.relatedTarget)) {
+        element.classList.remove("drag-over");
+        element.style.borderColor = "";
+        element.style.backgroundColor = "";
+      }
+    });
+
+    element.addEventListener("drop", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      element.classList.remove("drag-over");
+      element.style.borderColor = "";
+      element.style.backgroundColor = "";
+
+      if (this.draggedElement && this.draggedElement !== element) {
+        const dropIndex = this.getTabIndex(element, tabType);
+        this.moveTab(this.draggedIndex, dropIndex, tabType);
+      }
+    });
+
+    // Prevent click events during drag
+    element.addEventListener("click", (e) => {
+      if (this.isDragging) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+    });
+
+    // Add drag events to child elements to ensure the entire tab area is draggable
+    const tabName = element.querySelector(".tab-name");
+    const deleteBtn = element.querySelector(
+      ".main-tab-delete-btn, .sub-tab-delete-btn"
+    );
+
+    if (tabName) {
+      tabName.addEventListener("dragenter", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (this.draggedElement && this.draggedElement !== element) {
+          element.classList.add("drag-over");
+          element.style.borderColor = "var(--accent-color)";
+          element.style.backgroundColor = "rgba(59, 130, 246, 0.1)";
+        }
+      });
+
+      tabName.addEventListener("dragleave", (e) => {
+        if (!element.contains(e.relatedTarget)) {
+          element.classList.remove("drag-over");
+          element.style.borderColor = "";
+          element.style.backgroundColor = "";
+        }
+      });
+
+      tabName.addEventListener("drop", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        element.classList.remove("drag-over");
+        element.style.borderColor = "";
+        element.style.backgroundColor = "";
+
+        if (this.draggedElement && this.draggedElement !== element) {
+          const dropIndex = this.getTabIndex(element, tabType);
+          this.moveTab(this.draggedIndex, dropIndex, tabType);
+        }
+      });
+    }
+
+    if (deleteBtn) {
+      deleteBtn.addEventListener("dragenter", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (this.draggedElement && this.draggedElement !== element) {
+          element.classList.add("drag-over");
+          element.style.borderColor = "var(--accent-color)";
+          element.style.backgroundColor = "rgba(59, 130, 246, 0.1)";
+        }
+      });
+
+      deleteBtn.addEventListener("dragleave", (e) => {
+        if (!element.contains(e.relatedTarget)) {
+          element.classList.remove("drag-over");
+          element.style.borderColor = "";
+          element.style.backgroundColor = "";
+        }
+      });
+
+      deleteBtn.addEventListener("drop", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        element.classList.remove("drag-over");
+        element.style.borderColor = "";
+        element.style.backgroundColor = "";
+
+        if (this.draggedElement && this.draggedElement !== element) {
+          const dropIndex = this.getTabIndex(element, tabType);
+          this.moveTab(this.draggedIndex, dropIndex, tabType);
+        }
+      });
+    }
+  }
+
+  getTabIndex(element, tabType) {
+    const container = tabType === "main" ? "#main-tabs-list" : "#sub-tabs-list";
+    const tabs = Array.from(document.querySelectorAll(container + " > *"));
+    return tabs.indexOf(element);
+  }
+
+  moveTab(fromIndex, toIndex, tabType) {
+    if (fromIndex === toIndex) {
+      return;
+    }
+
+    if (tabType === "main") {
+      // Move main tab
+      const tab = this.state.mainTabs[fromIndex];
+      if (!tab) {
+        return;
+      }
+      this.state.mainTabs.splice(fromIndex, 1);
+      this.state.mainTabs.splice(toIndex, 0, tab);
+    } else {
+      // Move sub tab
+      const activeMainTab = this.state.mainTabs.find(
+        (tab) => tab.id === this.state.activeMainTabId
+      );
+      if (activeMainTab) {
+        const subTab = activeMainTab.subTabs[fromIndex];
+        if (!subTab) {
+          return;
+        }
+        activeMainTab.subTabs.splice(fromIndex, 1);
+        activeMainTab.subTabs.splice(toIndex, 0, subTab);
+      }
+    }
+
+    this.saveData();
+  }
+
   saveData() {
     const activeTab = this.getActiveTab();
     const notebook = document.getElementById("notebook");
@@ -349,7 +547,11 @@ class ChromeNotesWebApp {
     const el = document.createElement("div");
     el.className = "main-tab";
     el.dataset.mainTabId = tab.id;
+    el.draggable = true;
     el.innerHTML = `<span class="tab-name">${tab.name}</span><button class="main-tab-delete-btn">×</button>`;
+
+    // Add drag and drop listeners
+    this.addDragAndDropListeners(el, "main");
 
     el.addEventListener("click", (e) => {
       if (e.target.classList.contains("main-tab-delete-btn")) {
@@ -370,9 +572,15 @@ class ChromeNotesWebApp {
     const el = document.createElement("div");
     el.className = `sub-tab ${isSpecial ? "special-tab" : ""}`;
     el.dataset.subTabId = subTab.id;
+    el.draggable = !isSpecial; // Only allow dragging for non-special tabs
     el.innerHTML = `<span class="tab-name">${subTab.name}</span>${
       !isSpecial ? '<button class="sub-tab-delete-btn">×</button>' : ""
     }`;
+
+    // Add drag and drop listeners for non-special tabs
+    if (!isSpecial) {
+      this.addDragAndDropListeners(el, "sub");
+    }
 
     el.addEventListener("click", (e) => {
       if (e.target.classList.contains("sub-tab-delete-btn")) {
