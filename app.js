@@ -958,7 +958,10 @@ class ChromeNotesWebApp {
         // Create new todo item after current one
         const newTodo = this.createTodoElement();
         taskItem.insertAdjacentElement("afterend", newTodo);
-        this.placeCursorInElement(newTodo.querySelector(".task-item-content"), true);
+        this.placeCursorInElement(
+          newTodo.querySelector(".task-item-content"),
+          true
+        );
       } else {
         // Create a new div element instead of another todo
         const newDiv = document.createElement("div");
@@ -1040,15 +1043,16 @@ class ChromeNotesWebApp {
     if (!selection.rangeCount) return;
 
     const range = selection.getRangeAt(0);
-    const element = range.startContainer.nodeType === Node.TEXT_NODE 
-      ? range.startContainer.parentElement 
-      : range.startContainer;
+    const element =
+      range.startContainer.nodeType === Node.TEXT_NODE
+        ? range.startContainer.parentElement
+        : range.startContainer;
 
     // Check if we're in a list item
     const listItem = element.closest("li");
     if (listItem) {
       const textContent = listItem.textContent.trim();
-      
+
       // If multiple list items are selected
       const selectedListItems = this.getSelectedListItems();
       if (selectedListItems.length > 1) {
@@ -1088,7 +1092,10 @@ class ChromeNotesWebApp {
       // Create a new todo item
       const todoItem = this.createTodoElement();
       range.insertNode(todoItem);
-      this.placeCursorInElement(todoItem.querySelector(".task-item-content"), true);
+      this.placeCursorInElement(
+        todoItem.querySelector(".task-item-content"),
+        true
+      );
       this.saveUndoState();
       this.saveData();
     }
@@ -1148,19 +1155,21 @@ class ChromeNotesWebApp {
 
     const range = selection.getRangeAt(0);
     const container = range.commonAncestorContainer;
-    
+
     // Find all list items in the selection
     const listItems = [];
     const walker = document.createTreeWalker(
       container,
       NodeFilter.SHOW_ELEMENT,
       (node) => {
-        return node.tagName === "LI" ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+        return node.tagName === "LI"
+          ? NodeFilter.FILTER_ACCEPT
+          : NodeFilter.FILTER_SKIP;
       }
     );
 
     let node;
-    while (node = walker.nextNode()) {
+    while ((node = walker.nextNode())) {
       listItems.push(node);
     }
 
@@ -1170,7 +1179,7 @@ class ChromeNotesWebApp {
   placeCursorInElement(element, atEnd = false) {
     const range = document.createRange();
     const selection = window.getSelection();
-    
+
     if (atEnd) {
       range.selectNodeContents(element);
       range.collapse(false);
@@ -1178,7 +1187,7 @@ class ChromeNotesWebApp {
       range.setStart(element, 0);
       range.collapse(true);
     }
-    
+
     selection.removeAllRanges();
     selection.addRange(range);
   }
@@ -1213,7 +1222,7 @@ class ChromeNotesWebApp {
     )}&su=${encodeURIComponent(subject)}&tf=1&body=${encodeURIComponent(html)}`;
 
     // Open Gmail in new tab
-    window.open(url, '_blank');
+    window.open(url, "_blank");
     this.showNotification("Opening Gmail with your notes");
   }
 
@@ -1303,24 +1312,28 @@ class ChromeNotesWebApp {
         em { font-style: italic; }
       `;
 
-    const content = mainTabs.map(mainTab => {
-      const subTabsHtml = mainTab.subTabs.map(subTab => {
-        const formattedContent = this.formatContentForEmail(subTab.content);
-        return `
+    const content = mainTabs
+      .map((mainTab) => {
+        const subTabsHtml = mainTab.subTabs
+          .map((subTab) => {
+            const formattedContent = this.formatContentForEmail(subTab.content);
+            return `
           <div class="sub-tab">
             <div class="sub-tab-title">${subTab.name}</div>
             <div class="sub-tab-content">${formattedContent}</div>
           </div>
         `;
-      }).join('');
+          })
+          .join("");
 
-      return `
+        return `
         <div class="main-tab">
           <div class="main-tab-title">${mainTab.name}</div>
           ${subTabsHtml}
         </div>
       `;
-    }).join('');
+      })
+      .join("");
 
     return `
       <html>
@@ -1362,7 +1375,7 @@ class ChromeNotesWebApp {
           break;
         case "ul":
           formattedText += "\n";
-          Array.from(node.children).forEach(li => {
+          Array.from(node.children).forEach((li) => {
             formattedText += `${indent}• ${li.textContent.trim()}\n`;
           });
           formattedText += "\n";
@@ -1370,7 +1383,9 @@ class ChromeNotesWebApp {
         case "ol":
           formattedText += "\n";
           Array.from(node.children).forEach((li, index) => {
-            formattedText += `${indent}${index + 1}. ${li.textContent.trim()}\n`;
+            formattedText += `${indent}${
+              index + 1
+            }. ${li.textContent.trim()}\n`;
           });
           formattedText += "\n";
           break;
@@ -1394,13 +1409,13 @@ class ChromeNotesWebApp {
           break;
         default:
           // For other elements, process children
-          Array.from(node.childNodes).forEach(child => {
+          Array.from(node.childNodes).forEach((child) => {
             processNode(child, depth);
           });
       }
     }
 
-    Array.from(tempDiv.childNodes).forEach(node => {
+    Array.from(tempDiv.childNodes).forEach((node) => {
       processNode(node);
     });
 
