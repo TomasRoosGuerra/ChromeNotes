@@ -1822,12 +1822,13 @@ class ChromeNotesWebApp {
     let listType = "";
     let listItems = [];
 
+    const self = this;
     const closeList = (type, items) => {
       if (items.length === 0) return "";
 
       const listItems = items
         .map((item) => {
-          const formattedItem = this.formatInlineText(item);
+          const formattedItem = self.formatInlineText(item);
           return `<li>${formattedItem}</li>`;
         })
         .join("");
@@ -1935,7 +1936,7 @@ class ChromeNotesWebApp {
           listItems = [];
         }
         // Handle bold and italic formatting
-        const formattedText = this.formatInlineText(trimmedLine);
+        const formattedText = self.formatInlineText(trimmedLine);
         htmlContent += `<div>${formattedText}</div>`;
       }
       // Empty line
@@ -2086,11 +2087,12 @@ class ChromeNotesWebApp {
     let listType = "";
     let listItems = [];
 
+    const self = this;
     function closeList() {
       if (inList && listItems.length > 0) {
         const listItemsHtml = listItems
           .map((item) => {
-            const formattedItem = this.formatInlineText(item);
+            const formattedItem = self.formatInlineText(item);
             return `<li>${formattedItem}</li>`;
           })
           .join("");
@@ -2136,7 +2138,7 @@ class ChromeNotesWebApp {
       else if (trimmedLine) {
         closeList();
         // Handle bold and italic formatting
-        const formattedText = this.formatInlineText(trimmedLine);
+        const formattedText = self.formatInlineText(trimmedLine);
         htmlContent += `<div>${formattedText}</div>`;
       }
       // Empty line
