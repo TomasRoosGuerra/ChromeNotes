@@ -928,33 +928,7 @@ class ChromeNotesWebApp {
     }
   }
 
-  // Formatting functions
-  toggleFormat(command, value = null) {
-    if (
-      document.queryCommandSupported &&
-      document.queryCommandSupported(command)
-    ) {
-      document.execCommand(command, false, value);
-    }
-  }
-
-  toggleBlockFormat(tagName) {
-    document.execCommand("formatBlock", false, tagName);
-  }
-
-  toggleList(listType) {
-    const command =
-      listType === "ul" ? "insertUnorderedList" : "insertOrderedList";
-    document.execCommand(command);
-  }
-
-  toggleTodoItem() {
-    document.execCommand(
-      "insertHTML",
-      false,
-      '<div class="task-item"><input type="checkbox" class="task-item-checkbox"><div class="task-item-content" contenteditable="true">&#8203;</div></div>'
-    );
-  }
+  // Formatting functions - moved to avoid duplication
 
   handleKeydown(e) {
     // Handle undo/redo shortcuts
