@@ -144,11 +144,57 @@ class ChromeNotesWebApp {
     }
   }
 
-  showSyncStatus() {
-    if (this.user) {
-      this.showNotification(`Signed in as: ${this.user.email}`, "info");
+  // Popup menu functions
+  togglePopupMenu(e) {
+    e.stopPropagation();
+    const menu = document.getElementById("more-options-menu");
+    if (menu.style.display === "none" || !menu.style.display) {
+      this.showPopupMenu();
     } else {
-      this.showNotification("Not signed in. Click the sign-in button to sync your notes.", "warning");
+      this.hidePopupMenu();
+    }
+  }
+
+  showPopupMenu() {
+    const menu = document.getElementById("more-options-menu");
+    const button = document.getElementById("more-options-btn");
+    
+    if (menu && button) {
+      // Position the menu below the button
+      const buttonRect = button.getBoundingClientRect();
+      menu.style.display = "block";
+      menu.style.top = `${buttonRect.bottom + window.scrollY}px`;
+      menu.style.left = `${buttonRect.right - menu.offsetWidth}px`;
+    }
+  }
+
+  hidePopupMenu() {
+    const menu = document.getElementById("more-options-menu");
+    if (menu) {
+      menu.style.display = "none";
+    }
+  }
+
+  handlePopupMenuAction(action) {
+    switch (action) {
+      case "import":
+        console.log("Import button clicked!"); // Debug log
+        this.importFromClipboard();
+        break;
+      case "copy-all":
+        this.copyAllTabs();
+        break;
+      case "clean-all":
+        this.cleanAllTabs();
+        break;
+      case "email-all":
+        this.emailAllTabs();
+        break;
+      case "toggle-completed":
+        this.state.hideCompleted = !this.state.hideCompleted;
+        this.updateUiState();
+        this.saveData();
+        break;
     }
   }
 
@@ -847,7 +893,7 @@ class ChromeNotesWebApp {
     // Update sync button visibility
     const signinBtn = document.getElementById("sync-signin-btn");
     const signoutBtn = document.getElementById("sign-out-btn");
-    
+
     if (signinBtn && signoutBtn) {
       if (this.user) {
         signinBtn.style.display = "none";
@@ -858,14 +904,28 @@ class ChromeNotesWebApp {
       }
     }
 
-    const eyeOpenIcon = document.getElementById("eye-open-icon");
-    const eyeClosedIcon = document.getElementById("eye-closed-icon");
-
-    if (eyeOpenIcon) {
-      eyeOpenIcon.style.display = this.state.hideCompleted ? "none" : "block";
-    }
-    if (eyeClosedIcon) {
-      eyeClosedIcon.style.display = this.state.hideCompleted ? "block" : "none";
+    // Update popup menu eye icon
+    const eyeOpenIconMenu = document.getElementById("eye-open-icon-menu");
+    if (eyeOpenIconMenu) {
+      // Update the eye icon in the popup menu
+      const eyeIcon = eyeOpenIconMenu.querySelector("path");
+      if (eyeIcon) {
+        if (this.state.hideCompleted) {
+          // Show closed eye icon
+          eyeIcon.setAttribute("d", "M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68");
+          eyeOpenIconMenu.innerHTML = `
+            <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"></path>
+            <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"></path>
+            <line x1="2" y1="2" x2="22" y2="22"></line>
+          `;
+        } else {
+          // Show open eye icon
+          eyeOpenIconMenu.innerHTML = `
+            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          `;
+        }
+      }
     }
   }
 
@@ -914,35 +974,30 @@ class ChromeNotesWebApp {
       ?.addEventListener("input", (e) =>
         this.toggleFormat("foreColor", e.target.value)
       );
-    document
-      .getElementById("copy-all-btn")
-      ?.addEventListener("click", () => this.copyAllTabs());
-    document
-      .getElementById("clean-all-btn")
-      ?.addEventListener("click", () => this.cleanAllTabs());
-    document.getElementById("import-btn")?.addEventListener("click", () => {
-      console.log("Import button clicked!"); // Debug log
-      this.importFromClipboard();
-    });
-    document
-      .getElementById("email-all-btn")
-      ?.addEventListener("click", () => this.emailAllTabs());
-    document
-      .getElementById("toggle-completed-btn")
-      ?.addEventListener("click", () => {
-        this.state.hideCompleted = !this.state.hideCompleted;
-        this.updateUiState();
-        this.saveData();
-      });
+    // Old button handlers removed - now in popup menu
     document
       .getElementById("sync-signin-btn")
       ?.addEventListener("click", () => this.signIn());
-    document
-      .getElementById("sync-status-btn")
-      ?.addEventListener("click", () => this.showSyncStatus());
+    // sync-status-btn removed
     document
       .getElementById("sign-out-btn")
       ?.addEventListener("click", () => this.signOut());
+
+    // Popup menu functionality
+    document
+      .getElementById("more-options-btn")
+      ?.addEventListener("click", (e) => this.togglePopupMenu(e));
+    
+    // Popup menu item handlers
+    document.addEventListener("click", (e) => {
+      if (e.target.closest(".popup-menu-item")) {
+        const action = e.target.closest(".popup-menu-item").dataset.action;
+        this.handlePopupMenuAction(action);
+        this.hidePopupMenu();
+      } else if (!e.target.closest("#more-options-menu") && !e.target.closest("#more-options-btn")) {
+        this.hidePopupMenu();
+      }
+    });
 
     // Notebook events
     const notebook = document.getElementById("notebook");
@@ -1380,13 +1435,25 @@ class ChromeNotesWebApp {
     const subject = `Chrome Notes – ${new Date().toLocaleDateString()}`;
     const html = this.buildEmailHtml(this.state.mainTabs);
     const to = "tomas.roosguerra@gmail.com";
-    const url = `https://mail.google.com/mail/u/0/?view=cm&fs=1&to=${encodeURIComponent(
-      to
-    )}&su=${encodeURIComponent(subject)}&tf=1&body=${encodeURIComponent(html)}`;
-
-    // Open Gmail in new tab
-    window.open(url, "_blank");
-    this.showNotification("Opening Gmail with your notes");
+    
+    // Detect if mobile device
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+      // Use mailto: for mobile devices
+      const mailtoUrl = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(html)}`;
+      window.location.href = mailtoUrl;
+      this.showNotification("Opening email app with your notes");
+    } else {
+      // Use Gmail web interface for desktop
+      const url = `https://mail.google.com/mail/u/0/?view=cm&fs=1&to=${encodeURIComponent(
+        to
+      )}&su=${encodeURIComponent(subject)}&tf=1&body=${encodeURIComponent(html)}`;
+      
+      // Open Gmail in new tab
+      window.open(url, "_blank");
+      this.showNotification("Opening Gmail with your notes");
+    }
   }
 
   buildEmailHtml(mainTabs) {
