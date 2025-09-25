@@ -9,6 +9,7 @@ class ChromeNotesWebApp {
       completedTasks: [],
       hideCompleted: false,
       lastSelectedSubTabs: {},
+      scrollPositions: {}, // Store scroll positions for each tab
     };
     this.debounceTimer = null;
     this.undoStack = [];
@@ -449,13 +450,44 @@ class ChromeNotesWebApp {
     const notebook = document.getElementById("notebook");
 
     if (activeTab && notebook && notebook.isContentEditable) {
-      activeTab.content = notebook.innerHTML;
+      // Only update content if it's actually different to prevent unnecessary changes
+      const currentContent = notebook.innerHTML;
+      if (activeTab.content !== currentContent) {
+        activeTab.content = currentContent;
+        console.log("Content saved for tab:", activeTab.name);
+      }
     }
+
+    // Save scroll position
+    this.saveScrollPosition();
 
     clearTimeout(this.debounceTimer);
     this.debounceTimer = setTimeout(async () => {
       await this.saveDataToCloud();
-    }, 300);
+    }, 1000); // Increased timeout to prevent interference with typing
+  }
+
+  saveScrollPosition() {
+    const notebook = document.getElementById("notebook");
+    if (notebook && this.state.activeMainTabId && this.state.activeSubTabId) {
+      const tabKey = `${this.state.activeMainTabId}-${this.state.activeSubTabId}`;
+      this.state.scrollPositions[tabKey] = {
+        scrollTop: notebook.scrollTop,
+        scrollLeft: notebook.scrollLeft,
+      };
+    }
+  }
+
+  restoreScrollPosition() {
+    const notebook = document.getElementById("notebook");
+    if (notebook && this.state.activeMainTabId && this.state.activeSubTabId) {
+      const tabKey = `${this.state.activeMainTabId}-${this.state.activeSubTabId}`;
+      const scrollPos = this.state.scrollPositions[tabKey];
+      if (scrollPos) {
+        notebook.scrollTop = scrollPos.scrollTop;
+        notebook.scrollLeft = scrollPos.scrollLeft;
+      }
+    }
   }
 
   getActiveTab() {
@@ -534,20 +566,71 @@ class ChromeNotesWebApp {
     const notebook = document.getElementById("notebook");
     if (!notebook) return;
 
-    if (activeTab && activeTab.content) {
-      notebook.innerHTML = activeTab.content;
-    } else {
-      notebook.innerHTML = "";
+    // Store current scroll position
+    const currentScrollTop = notebook.scrollTop;
+    const currentScrollLeft = notebook.scrollLeft;
+
+    // Only update content if it's actually different to prevent unnecessary clearing
+    const currentContent = notebook.innerHTML;
+    const newContent = activeTab && activeTab.content ? activeTab.content : "";
+
+    if (currentContent !== newContent) {
+      // Save cursor position if possible
+      const selection = window.getSelection();
+      let cursorPosition = null;
+      if (selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        cursorPosition = {
+          startOffset: range.startOffset,
+          endOffset: range.endOffset,
+          startContainer: range.startContainer,
+          endContainer: range.endContainer,
+        };
+      }
+
+      notebook.innerHTML = newContent;
+
+      // Restore scroll position
+      notebook.scrollTop = currentScrollTop;
+      notebook.scrollLeft = currentScrollLeft;
+
+      // Restore cursor position if possible
+      if (
+        cursorPosition &&
+        cursorPosition.startContainer &&
+        cursorPosition.startContainer.parentNode
+      ) {
+        try {
+          const newRange = document.createRange();
+          newRange.setStart(
+            cursorPosition.startContainer,
+            cursorPosition.startOffset
+          );
+          newRange.setEnd(
+            cursorPosition.endContainer,
+            cursorPosition.endOffset
+          );
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+        } catch (e) {
+          // If cursor restoration fails, just focus the notebook
+          notebook.focus();
+        }
+      }
     }
 
     notebook.contentEditable = "true";
     notebook.classList.remove("notebook-readonly");
-    
+
     // Enhanced auto-focus with smooth behavior
     setTimeout(() => {
-      notebook.focus();
-      this.scrollToCursor();
-    }, 100);
+      if (!document.activeElement || document.activeElement === document.body) {
+        notebook.focus();
+        this.scrollToCursor();
+      }
+      // Restore scroll position after content is loaded
+      this.restoreScrollPosition();
+    }, 50); // Reduced timeout to prevent cursor interference
   }
 
   createMainTabElement(tab) {
@@ -813,16 +896,9 @@ class ChromeNotesWebApp {
       ?.addEventListener("click", () => this.copyAllTabs());
     document
       .getElementById("clean-all-btn")
-      ?.addEventListener("click", () => this.cleanAllTabs());    document
-      .getElementById("clean-all-btn")
-      ?.addEventListener("click", () => this.cleanAllTabs());
-    document
-      .getElementById("clean-all-btn")
       ?.addEventListener("click", () => this.cleanAllTabs());
     document.getElementById("import-btn")?.addEventListener("click", () => {
-    document
-      .getElementById("clean-all-btn")
-      ?.addEventListener("click", () => this.cleanAllTabs());      console.log("Import button clicked!"); // Debug log
+      console.log("Import button clicked!"); // Debug log
       this.importFromClipboard();
     });
     document
@@ -1258,8 +1334,30 @@ class ChromeNotesWebApp {
   }
 
   cleanAllTabs() {
+    if (this.state.mainTabs.length <= 1) {
+      this.showNotification("Cannot delete the last tab");
+      return;
+    }
 
-  }  // Enhanced cursor and scroll management
+    const confirmed = confirm(
+      `Are you sure you want to delete all ${this.state.mainTabs.length} tabs? This action cannot be undone.`
+    );
+
+    if (confirmed) {
+      // Keep only the first tab and reset it
+      const firstTab = this.state.mainTabs[0];
+      this.state.mainTabs = [firstTab];
+      this.state.activeMainTabId = firstTab.id;
+      this.state.activeSubTabId = firstTab.subTabs[0].id;
+
+      // Clear completed tasks
+      this.state.completedTasks = [];
+
+      this.render();
+      this.saveData();
+      this.showNotification("All tabs deleted successfully");
+    }
+  }
   scrollToCursor() {
     const selection = window.getSelection();
     if (!selection.rangeCount) return;
@@ -1274,7 +1372,7 @@ class ChromeNotesWebApp {
       // Scroll to cursor position with smooth behavior
       range.startContainer.parentElement?.scrollIntoView({
         behavior: "smooth",
-        block: "center"
+        block: "center",
       });
     }
   }
@@ -1282,7 +1380,8 @@ class ChromeNotesWebApp {
   emailAllTabs() {
     const subject = `Chrome Notes – ${new Date().toLocaleDateString()}`;
     const html = this.buildEmailHtml(this.state.mainTabs);
-    const to = "tomas.roosguerra@gmail.com";    const url = `https://mail.google.com/mail/u/0/?view=cm&fs=1&to=${encodeURIComponent(
+    const to = "tomas.roosguerra@gmail.com";
+    const url = `https://mail.google.com/mail/u/0/?view=cm&fs=1&to=${encodeURIComponent(
       to
     )}&su=${encodeURIComponent(subject)}&tf=1&body=${encodeURIComponent(html)}`;
 
@@ -1562,7 +1661,17 @@ class ChromeNotesWebApp {
           `Imported ${importedTabs.length} tab(s) successfully!`
         );
       } else {
-        this.showNotification("No valid tabs found in clipboard content.");
+        // If no structured tabs found, try to import as plain text into current tab
+        const activeTab = this.getActiveTab();
+        if (activeTab && clipboardText.trim()) {
+          const formattedContent = this.formatImportedContent(clipboardText);
+          activeTab.content = formattedContent;
+          this.render();
+          this.saveData();
+          this.showNotification("Imported content into current tab!");
+        } else {
+          this.showNotification("No valid tabs found in clipboard content.");
+        }
       }
     } catch (err) {
       console.error("Import failed with error:", err);
@@ -1598,7 +1707,7 @@ class ChromeNotesWebApp {
 
       console.log(`Line ${i}: "${line}" (trimmed: "${trimmedLine}")`); // Debug log
 
-      // Main tab header (e.g., "# 1. Tab Name")
+      // Main tab header (e.g., "## 1. Tab Name")
       if (trimmedLine.match(/^##\s*\d+\.\s*.+/)) {
         console.log("Found main tab:", trimmedLine); // Debug log
 
@@ -1627,7 +1736,7 @@ class ChromeNotesWebApp {
         currentContent = [];
         inContentMode = false;
       }
-      // Sub tab header (e.g., "## 1. Sub Tab Name")
+      // Sub tab header (e.g., "# 1. Sub Tab Name")
       else if (trimmedLine.match(/^#\s*\d+\.\s*.+/)) {
         console.log("Found sub tab:", trimmedLine); // Debug log
 
@@ -1859,7 +1968,7 @@ class ChromeNotesWebApp {
 
       console.log(`Line ${i}: "${line}" (trimmed: "${trimmedLine}")`); // Debug log
 
-      // Main tab header (e.g., "# 1. Tab Name")
+      // Main tab header (e.g., "## 1. Tab Name")
       if (trimmedLine.match(/^##\s*\d+\.\s*.+/)) {
         console.log("Found main tab:", trimmedLine); // Debug log
 
@@ -1888,7 +1997,7 @@ class ChromeNotesWebApp {
         currentContent = [];
         inContentMode = false;
       }
-      // Sub tab header (e.g., "## 1. Sub Tab Name")
+      // Sub tab header (e.g., "# 1. Sub Tab Name")
       else if (trimmedLine.match(/^#\s*\d+\.\s*.+/)) {
         console.log("Found sub tab:", trimmedLine); // Debug log
 
