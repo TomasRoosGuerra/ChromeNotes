@@ -1643,23 +1643,37 @@ class ChromeNotesWebApp {
 
       console.log("Parsed tabs:", importedTabs); // Debug log
 
-      if (importedTabs.length > 0) {
-        // Add imported tabs to existing tabs
-        this.state.mainTabs.push(...importedTabs);
-
-        // Switch to the first imported tab
-        if (importedTabs.length > 0) {
-          this.state.activeMainTabId = importedTabs[0].id;
-          this.state.activeSubTabId = importedTabs[0].subTabs[0].id;
-        }
-
-        this.render();
-        this.saveData();
-
-        // Show success message
-        this.showNotification(
-          `Imported ${importedTabs.length} tab(s) successfully!`
+      if (importedTabs && importedTabs.length > 0) {
+        // Validate imported tabs before adding
+        const validTabs = importedTabs.filter(
+          (tab) =>
+            tab &&
+            tab.id &&
+            tab.name &&
+            tab.subTabs &&
+            Array.isArray(tab.subTabs)
         );
+
+        if (validTabs.length > 0) {
+          // Add imported tabs to existing tabs
+          this.state.mainTabs.push(...validTabs);
+
+          // Switch to the first imported tab
+          if (validTabs[0].subTabs.length > 0) {
+            this.state.activeMainTabId = validTabs[0].id;
+            this.state.activeSubTabId = validTabs[0].subTabs[0].id;
+          }
+
+          this.render();
+          this.saveData();
+
+          // Show success message
+          this.showNotification(
+            `Imported ${validTabs.length} tab(s) successfully!`
+          );
+        } else {
+          throw new Error("No valid tabs found in parsed data");
+        }
       } else {
         // If no structured tabs found, try to import as plain text into current tab
         const activeTab = this.getActiveTab();
@@ -1707,8 +1721,11 @@ class ChromeNotesWebApp {
 
       console.log(`Line ${i}: "${line}" (trimmed: "${trimmedLine}")`); // Debug log
 
-      // Main tab header (e.g., "## 1. Tab Name")
-      if (trimmedLine.match(/^##\s*\d+\.\s*.+/)) {
+      // Main tab header (e.g., "# 1. Tab Name")
+      if (
+        trimmedLine.match(/^#\s*\d+\.\s*.+/) &&
+        !trimmedLine.match(/^##\s*\d+\.\s*.+/)
+      ) {
         console.log("Found main tab:", trimmedLine); // Debug log
 
         // Save previous tab if exists
@@ -1726,7 +1743,7 @@ class ChromeNotesWebApp {
         }
 
         // Start new main tab
-        const tabName = trimmedLine.replace(/^##\s*\d+\.\s*/, "");
+        const tabName = trimmedLine.replace(/^#\s*\d+\.\s*/, "");
         currentTab = {
           id: Date.now() + Math.random(),
           name: tabName,
@@ -1736,8 +1753,8 @@ class ChromeNotesWebApp {
         currentContent = [];
         inContentMode = false;
       }
-      // Sub tab header (e.g., "# 1. Sub Tab Name")
-      else if (trimmedLine.match(/^#\s*\d+\.\s*.+/)) {
+      // Sub tab header (e.g., "## 1. Sub Tab Name")
+      else if (trimmedLine.match(/^##\s*\d+\.\s*.+/)) {
         console.log("Found sub tab:", trimmedLine); // Debug log
 
         // Save previous sub tab if exists
@@ -1751,7 +1768,7 @@ class ChromeNotesWebApp {
         }
 
         // Start new sub tab
-        const subTabName = trimmedLine.replace(/^#\s*\d+\.\s*/, "");
+        const subTabName = trimmedLine.replace(/^##\s*\d+\.\s*/, "");
         currentSubTab = {
           id: Date.now() + Math.random(),
           name: subTabName,
@@ -1968,8 +1985,11 @@ class ChromeNotesWebApp {
 
       console.log(`Line ${i}: "${line}" (trimmed: "${trimmedLine}")`); // Debug log
 
-      // Main tab header (e.g., "## 1. Tab Name")
-      if (trimmedLine.match(/^##\s*\d+\.\s*.+/)) {
+      // Main tab header (e.g., "# 1. Tab Name")
+      if (
+        trimmedLine.match(/^#\s*\d+\.\s*.+/) &&
+        !trimmedLine.match(/^##\s*\d+\.\s*.+/)
+      ) {
         console.log("Found main tab:", trimmedLine); // Debug log
 
         // Save previous tab if exists
@@ -1987,7 +2007,7 @@ class ChromeNotesWebApp {
         }
 
         // Start new main tab
-        const tabName = trimmedLine.replace(/^##\s*\d+\.\s*/, "");
+        const tabName = trimmedLine.replace(/^#\s*\d+\.\s*/, "");
         currentTab = {
           id: Date.now() + Math.random(),
           name: tabName,
@@ -1997,8 +2017,8 @@ class ChromeNotesWebApp {
         currentContent = [];
         inContentMode = false;
       }
-      // Sub tab header (e.g., "# 1. Sub Tab Name")
-      else if (trimmedLine.match(/^#\s*\d+\.\s*.+/)) {
+      // Sub tab header (e.g., "## 1. Sub Tab Name")
+      else if (trimmedLine.match(/^##\s*\d+\.\s*.+/)) {
         console.log("Found sub tab:", trimmedLine); // Debug log
 
         // Save previous sub tab if exists
@@ -2012,7 +2032,7 @@ class ChromeNotesWebApp {
         }
 
         // Start new sub tab
-        const subTabName = trimmedLine.replace(/^#\s*\d+\.\s*/, "");
+        const subTabName = trimmedLine.replace(/^##\s*\d+\.\s*/, "");
         currentSubTab = {
           id: Date.now() + Math.random(),
           name: subTabName,
