@@ -224,7 +224,7 @@ class ChromeNotesWebApp {
     if (cloudData.mainTabs) {
       this.state = { ...this.state, ...cloudData };
       this.render();
-      this.showNotification("Notes updated from cloud");
+      // Removed notification to prevent spam during editing
     }
   }
 
