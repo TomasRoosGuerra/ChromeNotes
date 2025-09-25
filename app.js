@@ -43,6 +43,7 @@ class ChromeNotesWebApp {
       } else {
         this.showSignInScreen();
       }
+      this.updateUiState();
     });
   }
 
@@ -140,6 +141,14 @@ class ChromeNotesWebApp {
       console.log("Signed out successfully");
     } catch (error) {
       console.error("Sign out failed:", error);
+    }
+  }
+
+  showSyncStatus() {
+    if (this.user) {
+      this.showNotification(`Signed in as: ${this.user.email}`, "info");
+    } else {
+      this.showNotification("Not signed in. Click the sign-in button to sync your notes.", "warning");
     }
   }
 
@@ -835,6 +844,20 @@ class ChromeNotesWebApp {
       appContainer.classList.toggle("hide-completed", this.state.hideCompleted);
     }
 
+    // Update sync button visibility
+    const signinBtn = document.getElementById("sync-signin-btn");
+    const signoutBtn = document.getElementById("sign-out-btn");
+    
+    if (signinBtn && signoutBtn) {
+      if (this.user) {
+        signinBtn.style.display = "none";
+        signoutBtn.style.display = "block";
+      } else {
+        signinBtn.style.display = "block";
+        signoutBtn.style.display = "none";
+      }
+    }
+
     const eyeOpenIcon = document.getElementById("eye-open-icon");
     const eyeClosedIcon = document.getElementById("eye-closed-icon");
 
@@ -912,7 +935,13 @@ class ChromeNotesWebApp {
         this.saveData();
       });
     document
+      .getElementById("sync-signin-btn")
+      ?.addEventListener("click", () => this.signIn());
+    document
       .getElementById("sync-status-btn")
+      ?.addEventListener("click", () => this.showSyncStatus());
+    document
+      .getElementById("sign-out-btn")
       ?.addEventListener("click", () => this.signOut());
 
     // Notebook events
@@ -1301,11 +1330,7 @@ class ChromeNotesWebApp {
     }
   }
 
-  copyAllTabs() {
-    const allContent = this.formatTabsForCopy(this.state.mainTabs);
-    navigator.clipboard.writeText(allContent);
-    this.showNotification("All tabs copied to clipboard");
-  }
+  // copyAllTabs moved to avoid duplication
 
   cleanAllTabs() {
     if (this.state.mainTabs.length <= 1) {
