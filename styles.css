@@ -33,6 +33,10 @@ body {
   color: var(--text-color);
   font-size: 16px;
   line-height: 1.6;
+  /* Prevent mobile scroll bounce */
+  overscroll-behavior: none;
+  /* Prevent viewport shifts */
+  position: relative;
 }
 
 #app-container {
@@ -47,6 +51,9 @@ body {
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+  /* Prevent mobile scroll issues */
+  overscroll-behavior: contain;
+  position: relative;
 }
 
 /* Loading Screen */
@@ -724,7 +731,7 @@ input[type="color"]::-webkit-color-swatch {
   background-color: var(--hover-bg-color);
 }
 
-/* Responsive Design */
+/* Mobile-specific fixes for contenteditable scrolling */
 @media (max-width: 768px) {
   .toolbar {
     flex-wrap: wrap;
@@ -746,6 +753,23 @@ input[type="color"]::-webkit-color-swatch {
     line-height: 1.5;
     -webkit-text-size-adjust: 100%;
     -webkit-tap-highlight-color: transparent;
+    /* Fix mobile scrolling issues */
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    /* Prevent viewport zoom on focus */
+    touch-action: manipulation;
+    /* Prevent unwanted scrolling */
+    position: relative;
+  }
+
+  #notebook-container {
+    /* Prevent mobile scroll bounce */
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    /* Ensure proper containment */
+    position: relative;
+    /* Prevent viewport shifts */
+    transform: translateZ(0);
   }
 
   .main-tab,
@@ -766,119 +790,6 @@ input[type="color"]::-webkit-color-swatch {
     width: 20px;
     height: 20px;
     margin-top: 2px;
-  }
-}
-  .toolbar-btn {
-    padding: 8px;
-    font-size: 14px;
-    min-width: 44px;
-    min-height: 44px;
-    touch-action: manipulation;
-  }
-
-#notebook {
-  padding: 20px 24px;
-  outline: none;
-  height: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  font-size: 16px;
-  line-height: 1.6;
-  color: var(--text-color);
-  scroll-behavior: smooth;
-  overflow-wrap: break-word;
-  word-wrap: break-word;
-  hyphens: auto;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-  .main-tab,
-  .sub-tab {
-    font-size: 14px;
-    padding: 8px 12px;
-    min-height: 44px;
-    display: flex;
-    align-items: center;
-    touch-action: manipulation;
-  }
-
-  .task-item {
-    margin: 8px 0;
-  }
-
-  .task-item-checkbox {
-    width: 20px;
-    height: 20px;
-    margin-top: 2px;
-  }
-}
-  .toolbar-btn {
-    padding: 8px;
-    font-size: 14px;
-    min-width: 44px;
-    min-height: 44px;
-  }
-
-#notebook {
-  padding: 20px 24px;
-  outline: none;
-  height: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  font-size: 16px;
-  line-height: 1.6;
-  color: var(--text-color);
-  scroll-behavior: smooth;
-  overflow-wrap: break-word;
-  word-wrap: break-word;
-  hyphens: auto;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}  .main-tab,
-  .sub-tab {
-    font-size: 14px;
-    padding: 8px 12px;
-    min-height: 44px;
-    display: flex;
-    align-items: center;
-  }
-
-  .task-item {
-    margin: 8px 0;
-  }
-
-  .task-item-checkbox {
-    width: 20px;
-    height: 20px;
-    margin-top: 2px;
-  }
-}
-  .format-controls,
-  .sync-controls,
-  .view-controls {
-    gap: 2px;
-  }
-
-  .toolbar-btn {
-    padding: 4px;
-    font-size: 12px;
-  }
-
-#notebook {
-  padding: 20px 24px;
-  outline: none;
-  height: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  font-size: 16px;
-  line-height: 1.6;
-  color: var(--text-color);
-  scroll-behavior: smooth;
-  overflow-wrap: break-word;
-  word-wrap: break-word;
-  hyphens: auto;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}  .sub-tab {
-    font-size: 13px;
-    padding: 6px 10px;
   }
 }
 

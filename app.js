@@ -158,7 +158,7 @@ class ChromeNotesWebApp {
   showPopupMenu() {
     const menu = document.getElementById("more-options-menu");
     const button = document.getElementById("more-options-btn");
-    
+
     if (menu && button) {
       // Position the menu below the button
       const buttonRect = button.getBoundingClientRect();
@@ -912,7 +912,10 @@ class ChromeNotesWebApp {
       if (eyeIcon) {
         if (this.state.hideCompleted) {
           // Show closed eye icon
-          eyeIcon.setAttribute("d", "M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68");
+          eyeIcon.setAttribute(
+            "d",
+            "M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"
+          );
           eyeOpenIconMenu.innerHTML = `
             <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"></path>
             <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"></path>
@@ -987,21 +990,51 @@ class ChromeNotesWebApp {
     document
       .getElementById("more-options-btn")
       ?.addEventListener("click", (e) => this.togglePopupMenu(e));
-    
+
     // Popup menu item handlers
     document.addEventListener("click", (e) => {
       if (e.target.closest(".popup-menu-item")) {
         const action = e.target.closest(".popup-menu-item").dataset.action;
         this.handlePopupMenuAction(action);
         this.hidePopupMenu();
-      } else if (!e.target.closest("#more-options-menu") && !e.target.closest("#more-options-btn")) {
+      } else if (
+        !e.target.closest("#more-options-menu") &&
+        !e.target.closest("#more-options-btn")
+      ) {
         this.hidePopupMenu();
       }
     });
 
     // Notebook events
     const notebook = document.getElementById("notebook");
+    // Mobile-specific fixes for contenteditable scrolling
     if (notebook) {
+      notebook.addEventListener("focus", (e) => {
+        // Prevent mobile viewport zoom and scroll issues
+        if (window.innerWidth <= 768) {
+          // Prevent zoom on focus
+          const viewport = document.querySelector('meta[name="viewport"]');
+          if (viewport) {
+            viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+          }
+          
+          // Prevent unwanted scrolling
+          setTimeout(() => {
+            window.scrollTo(0, 0);
+          }, 100);
+        }
+      });
+
+      notebook.addEventListener("blur", (e) => {
+        // Restore normal viewport behavior when not focused
+        if (window.innerWidth <= 768) {
+          const viewport = document.querySelector('meta[name="viewport"]');
+          if (viewport) {
+            viewport.setAttribute('content', 'width=device-width, initial-scale=1.0');
+          }
+        }
+      });
+
       notebook.addEventListener("input", () => {
         this.saveUndoState();
         this.saveData();
@@ -1435,21 +1468,28 @@ class ChromeNotesWebApp {
     const subject = `Chrome Notes – ${new Date().toLocaleDateString()}`;
     const html = this.buildEmailHtml(this.state.mainTabs);
     const to = "tomas.roosguerra@gmail.com";
-    
+
     // Detect if mobile device
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    
+    const isMobile =
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+      );
+
     if (isMobile) {
       // Use mailto: for mobile devices
-      const mailtoUrl = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(html)}`;
+      const mailtoUrl = `mailto:${to}?subject=${encodeURIComponent(
+        subject
+      )}&body=${encodeURIComponent(html)}`;
       window.location.href = mailtoUrl;
       this.showNotification("Opening email app with your notes");
     } else {
       // Use Gmail web interface for desktop
       const url = `https://mail.google.com/mail/u/0/?view=cm&fs=1&to=${encodeURIComponent(
         to
-      )}&su=${encodeURIComponent(subject)}&tf=1&body=${encodeURIComponent(html)}`;
-      
+      )}&su=${encodeURIComponent(subject)}&tf=1&body=${encodeURIComponent(
+        html
+      )}`;
+
       // Open Gmail in new tab
       window.open(url, "_blank");
       this.showNotification("Opening Gmail with your notes");
