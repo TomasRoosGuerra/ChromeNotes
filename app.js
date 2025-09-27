@@ -1923,7 +1923,6 @@ class ChromeNotesWebApp {
     console.log("Final parsed tabs:", tabs); // Debug log
     return tabs;
   }
-  }
 
   formatTabsForCopy(mainTabs) {
     if (!mainTabs || mainTabs.length === 0) {
