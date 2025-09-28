@@ -642,26 +642,48 @@ input[type="color"]::-webkit-color-swatch {
 } /* Task Item Styling */
 .task-item {
   display: flex;
-  align-items: flex-start;
-  margin: 4px 0;
+  align-items: center;
+  margin: 6px 0;
+  padding: 2px 0;
+  min-height: 24px;
+  position: relative;
 }
 
 .task-item-checkbox {
-  margin-right: 8px;
-  margin-top: 5px;
+  margin-right: 10px;
+  margin-top: 0;
   flex-shrink: 0;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   accent-color: var(--accent-color);
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
 }
 
 .task-item-content {
   flex-grow: 1;
+  min-height: 20px;
+  line-height: 1.5;
+  padding: 2px 0;
+  outline: none;
+  border: none;
+  background: transparent;
 }
 
 .task-item.completed > .task-item-content {
   text-decoration: line-through;
   color: var(--completed-text-color);
+}
+
+.task-item.focused {
+  background-color: rgba(59, 130, 246, 0.05);
+  border-radius: 4px;
+  outline: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.task-item.focused .task-item-content {
+  background-color: transparent;
 }
 
 #app-container.hide-completed .task-item.completed {
@@ -787,12 +809,18 @@ input[type="color"]::-webkit-color-swatch {
 
   .task-item {
     margin: 8px 0;
+    min-height: 28px;
   }
 
   .task-item-checkbox {
     width: 20px;
     height: 20px;
-    margin-top: 2px;
+    margin-right: 12px;
+  }
+
+  .task-item-content {
+    min-height: 24px;
+    padding: 4px 0;
   }
 }
 

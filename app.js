@@ -1150,32 +1150,11 @@ class ChromeNotesWebApp {
         ? selection.anchorNode.parentElement
         : selection.anchorNode;
 
-    // Handle Enter in todo items
+    // Handle Enter in todo items - let the todo handler take care of it
     const taskItem = element.closest(".task-item");
     if (taskItem) {
-      e.preventDefault();
-
-      // Check if we're at the end of the current task content
-      const taskContent = taskItem.querySelector(".task-item-content");
-      const range = selection.getRangeAt(0);
-      const isAtEnd = range.endOffset === taskContent.textContent.length;
-
-      if (isAtEnd && taskContent.textContent.trim() !== "") {
-        // Create new todo item after current one
-        const newTodo = this.createTodoElement();
-        taskItem.insertAdjacentElement("afterend", newTodo);
-        this.placeCursorInElement(
-          newTodo.querySelector(".task-item-content"),
-          true
-        );
-      } else {
-        // Create a new div element instead of another todo
-        const newDiv = document.createElement("div");
-        newDiv.innerHTML = "&#8203;"; // Zero-width space
-        taskItem.insertAdjacentElement("afterend", newDiv);
-        this.placeCursorInElement(newDiv, true);
-      }
-      return true;
+      // The todo keydown handler will take care of this
+      return false;
     }
 
     return false;
@@ -1192,18 +1171,11 @@ class ChromeNotesWebApp {
     const parentElement =
       element.nodeType === Node.TEXT_NODE ? element.parentElement : element;
 
-    // Handle backspace in empty todo items
+    // Handle backspace in todo items - let the todo handler take care of it
     const taskItem = parentElement.closest(".task-item");
-    if (
-      taskItem &&
-      taskItem.querySelector(".task-item-content").textContent.trim() === ""
-    ) {
-      e.preventDefault();
-      const div = document.createElement("div");
-      div.innerHTML = "&#8203;"; // Zero-width space
-      taskItem.parentElement.replaceChild(div, taskItem);
-      this.placeCursorInElement(div, true);
-      return true;
+    if (taskItem) {
+      // The todo keydown handler will take care of this
+      return false;
     }
 
     return false;
@@ -1355,7 +1327,14 @@ class ChromeNotesWebApp {
     wrapper.appendChild(checkbox);
     wrapper.appendChild(contentDiv);
 
-    // Add event listeners
+    // Add comprehensive event listeners
+    this.setupTodoEventListeners(wrapper, checkbox, contentDiv);
+
+    return wrapper;
+  }
+
+  setupTodoEventListeners(wrapper, checkbox, contentDiv) {
+    // Checkbox change handler
     checkbox.addEventListener("change", (e) => {
       const isChecked = e.target.checked;
       wrapper.classList.toggle("completed", isChecked);
@@ -1383,7 +1362,124 @@ class ChromeNotesWebApp {
       this.saveData();
     });
 
-    return wrapper;
+    // Enhanced content div event handling
+    contentDiv.addEventListener("keydown", (e) => {
+      this.handleTodoKeydown(e, wrapper, contentDiv);
+    });
+
+    contentDiv.addEventListener("input", () => {
+      this.saveUndoState();
+      this.saveData();
+    });
+
+    contentDiv.addEventListener("focus", () => {
+      wrapper.classList.add("focused");
+    });
+
+    contentDiv.addEventListener("blur", () => {
+      wrapper.classList.remove("focused");
+    });
+
+    // Prevent checkbox from stealing focus and handle clicks properly
+    checkbox.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      checkbox.checked = !checkbox.checked;
+      checkbox.dispatchEvent(new Event("change"));
+    });
+
+    // Handle clicks on the wrapper to focus the content
+    wrapper.addEventListener("click", (e) => {
+      if (e.target === wrapper || e.target === checkbox) {
+        e.preventDefault();
+        contentDiv.focus();
+        this.placeCursorInElement(contentDiv, true);
+      }
+    });
+  }
+
+  handleTodoKeydown(e, wrapper, contentDiv) {
+    const selection = window.getSelection();
+    if (!selection.rangeCount) return;
+
+    const range = selection.getRangeAt(0);
+
+    // Handle Enter key - always create new checkbox
+    if (e.key === "Enter") {
+      e.preventDefault();
+
+      // Create new todo item after current one
+      const newTodo = this.createTodoElement();
+      wrapper.insertAdjacentElement("afterend", newTodo);
+
+      // Place cursor in the new todo item
+      const newContentDiv = newTodo.querySelector(".task-item-content");
+      this.placeCursorInElement(newContentDiv, true);
+
+      this.saveUndoState();
+      this.saveData();
+      return;
+    }
+
+    // Handle Backspace key - delete empty checkbox or merge with previous
+    if (e.key === "Backspace") {
+      const isAtStart = range.startOffset === 0;
+      const isEmpty = contentDiv.textContent.trim() === "";
+
+      if (isEmpty || isAtStart) {
+        e.preventDefault();
+
+        if (isEmpty) {
+          // Delete empty checkbox
+          const prevElement = wrapper.previousElementSibling;
+          if (prevElement) {
+            if (prevElement.classList.contains("task-item")) {
+              // Merge with previous checkbox
+              const prevContent =
+                prevElement.querySelector(".task-item-content");
+              const currentContent = contentDiv.textContent;
+              prevContent.textContent += currentContent;
+              wrapper.remove();
+              this.placeCursorInElement(prevContent, true);
+            } else {
+              // Replace with regular div
+              const div = document.createElement("div");
+              div.innerHTML = "&#8203;";
+              wrapper.parentNode.replaceChild(div, wrapper);
+              this.placeCursorInElement(div, true);
+            }
+          } else {
+            // Replace with regular div if no previous element
+            const div = document.createElement("div");
+            div.innerHTML = "&#8203;";
+            wrapper.parentNode.replaceChild(div, wrapper);
+            this.placeCursorInElement(div, true);
+          }
+        } else if (isAtStart) {
+          // Move cursor to end of previous element
+          const prevElement = wrapper.previousElementSibling;
+          if (prevElement) {
+            if (prevElement.classList.contains("task-item")) {
+              const prevContent =
+                prevElement.querySelector(".task-item-content");
+              this.placeCursorInElement(prevContent, true);
+            } else {
+              this.placeCursorInElement(prevElement, true);
+            }
+          }
+        }
+
+        this.saveUndoState();
+        this.saveData();
+        return;
+      }
+    }
+
+    // Handle Tab key for indentation
+    if (e.key === "Tab") {
+      e.preventDefault();
+      // Add indentation logic here if needed
+      return;
+    }
   }
 
   getSelectedListItems() {
