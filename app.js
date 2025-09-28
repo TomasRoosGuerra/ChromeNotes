@@ -1077,10 +1077,14 @@ class ChromeNotesWebApp {
       if (this.handleEnterKey(e)) return;
     }
 
-    // Better Tab handling
+    // Handle arrow key navigation
+    if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+      if (this.handleArrowNavigation(e)) return;
+    }
+
+    // Better Tab handling for indentation
     if (e.key === "Tab") {
-      e.preventDefault();
-      document.execCommand(e.shiftKey ? "outdent" : "indent");
+      if (this.handleTabIndentation(e)) return;
     }
 
     // Backspace handling - removes empty bullets/checkboxes
@@ -1090,6 +1094,104 @@ class ChromeNotesWebApp {
 
     // Enhanced cursor management - smooth scroll to cursor (only when needed)
     setTimeout(() => this.scrollToCursorIfNeeded(), 10);
+  }
+
+  handleArrowNavigation(e) {
+    const selection = window.getSelection();
+    if (!selection.rangeCount) return false;
+
+    const element =
+      selection.anchorNode.nodeType === Node.TEXT_NODE
+        ? selection.anchorNode.parentElement
+        : selection.anchorNode;
+
+    // Check if we're in a checkbox
+    const taskItem = element.closest(".task-item");
+    if (taskItem) {
+      const allTaskItems = Array.from(document.querySelectorAll(".task-item"));
+      const currentIndex = allTaskItems.indexOf(taskItem);
+
+      if (e.key === "ArrowUp" && currentIndex > 0) {
+        e.preventDefault();
+        const prevTaskItem = allTaskItems[currentIndex - 1];
+        const prevContentDiv = prevTaskItem.querySelector(".task-item-content");
+        this.placeCursorInElement(prevContentDiv, true);
+        return true;
+      } else if (
+        e.key === "ArrowDown" &&
+        currentIndex < allTaskItems.length - 1
+      ) {
+        e.preventDefault();
+        const nextTaskItem = allTaskItems[currentIndex + 1];
+        const nextContentDiv = nextTaskItem.querySelector(".task-item-content");
+        this.placeCursorInElement(nextContentDiv, true);
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  handleTabIndentation(e) {
+    const selection = window.getSelection();
+    if (!selection.rangeCount) return false;
+
+    const element =
+      selection.anchorNode.nodeType === Node.TEXT_NODE
+        ? selection.anchorNode.parentElement
+        : selection.anchorNode;
+
+    // Check if we're in a checkbox
+    const taskItem = element.closest(".task-item");
+    if (taskItem) {
+      e.preventDefault();
+
+      if (e.shiftKey) {
+        // Outdent (move left)
+        this.outdentTaskItem(taskItem);
+      } else {
+        // Indent (move right)
+        this.indentTaskItem(taskItem);
+      }
+
+      this.saveUndoState();
+      this.saveData();
+      return true;
+    }
+
+    return false;
+  }
+
+  indentTaskItem(taskItem) {
+    const currentLevel = parseInt(taskItem.dataset.level || "0");
+    const maxLevel = 5; // Maximum indentation level
+
+    if (currentLevel < maxLevel) {
+      taskItem.dataset.level = currentLevel + 1;
+      this.updateTaskItemIndentation(taskItem);
+    }
+  }
+
+  outdentTaskItem(taskItem) {
+    const currentLevel = parseInt(taskItem.dataset.level || "0");
+
+    if (currentLevel > 0) {
+      taskItem.dataset.level = currentLevel - 1;
+      this.updateTaskItemIndentation(taskItem);
+    }
+  }
+
+  updateTaskItemIndentation(taskItem) {
+    const level = parseInt(taskItem.dataset.level || "0");
+    const indentPixels = level * 24; // 24px per level
+
+    taskItem.style.paddingLeft = `${indentPixels}px`;
+
+    // Update checkbox position
+    const checkbox = taskItem.querySelector(".task-item-checkbox");
+    if (checkbox) {
+      checkbox.style.marginLeft = `${indentPixels}px`;
+    }
   }
 
   handleMarkdownShortcuts(e) {
@@ -1310,9 +1412,10 @@ class ChromeNotesWebApp {
     }
   }
 
-  createTodoElement(content = "&#8203;") {
+  createTodoElement(content = "&#8203;", level = 0) {
     const wrapper = document.createElement("div");
     wrapper.className = "task-item";
+    wrapper.dataset.level = level;
 
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
@@ -1326,6 +1429,9 @@ class ChromeNotesWebApp {
     // Ensure proper structure
     wrapper.appendChild(checkbox);
     wrapper.appendChild(contentDiv);
+
+    // Set initial indentation
+    this.updateTaskItemIndentation(wrapper);
 
     // Add comprehensive event listeners
     this.setupTodoEventListeners(wrapper, checkbox, contentDiv);
@@ -1395,6 +1501,9 @@ class ChromeNotesWebApp {
         this.placeCursorInElement(contentDiv, true);
       }
     });
+
+    // Add drag and drop functionality
+    this.setupTaskItemDragAndDrop(wrapper);
   }
 
   handleTodoKeydown(e, wrapper, contentDiv) {
@@ -1407,8 +1516,11 @@ class ChromeNotesWebApp {
     if (e.key === "Enter") {
       e.preventDefault();
 
-      // Create new todo item after current one
-      const newTodo = this.createTodoElement();
+      // Get current indentation level
+      const currentLevel = parseInt(wrapper.dataset.level || "0");
+
+      // Create new todo item after current one with same indentation
+      const newTodo = this.createTodoElement("&#8203;", currentLevel);
       wrapper.insertAdjacentElement("afterend", newTodo);
 
       // Place cursor in the new todo item
@@ -1477,9 +1589,92 @@ class ChromeNotesWebApp {
     // Handle Tab key for indentation
     if (e.key === "Tab") {
       e.preventDefault();
-      // Add indentation logic here if needed
+
+      if (e.shiftKey) {
+        // Outdent (move left)
+        this.outdentTaskItem(wrapper);
+      } else {
+        // Indent (move right)
+        this.indentTaskItem(wrapper);
+      }
+
+      this.saveUndoState();
+      this.saveData();
       return;
     }
+  }
+
+  setupTaskItemDragAndDrop(taskItem) {
+    taskItem.draggable = true;
+    taskItem.style.cursor = "grab";
+
+    taskItem.addEventListener("dragstart", (e) => {
+      taskItem.style.opacity = "0.5";
+      taskItem.style.cursor = "grabbing";
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/html", taskItem.outerHTML);
+    });
+
+    taskItem.addEventListener("dragend", (e) => {
+      taskItem.style.opacity = "";
+      taskItem.style.cursor = "grab";
+
+      // Remove all drag-over classes
+      const allTaskItems = document.querySelectorAll(".task-item");
+      allTaskItems.forEach((item) => item.classList.remove("drag-over"));
+    });
+
+    taskItem.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+    });
+
+    taskItem.addEventListener("dragenter", (e) => {
+      e.preventDefault();
+      taskItem.classList.add("drag-over");
+    });
+
+    taskItem.addEventListener("dragleave", (e) => {
+      if (!taskItem.contains(e.relatedTarget)) {
+        taskItem.classList.remove("drag-over");
+      }
+    });
+
+    taskItem.addEventListener("drop", (e) => {
+      e.preventDefault();
+      taskItem.classList.remove("drag-over");
+
+      const draggedElement = document.querySelector(
+        ".task-item[draggable='true']"
+      );
+      if (draggedElement && draggedElement !== taskItem) {
+        const draggedIndex = Array.from(
+          document.querySelectorAll(".task-item")
+        ).indexOf(draggedElement);
+        const dropIndex = Array.from(
+          document.querySelectorAll(".task-item")
+        ).indexOf(taskItem);
+
+        if (draggedIndex !== dropIndex) {
+          this.moveTaskItem(draggedElement, taskItem, draggedIndex < dropIndex);
+        }
+      }
+    });
+  }
+
+  moveTaskItem(draggedElement, targetElement, isMovingDown) {
+    const parent = draggedElement.parentNode;
+
+    if (isMovingDown) {
+      // Moving down - insert after target
+      parent.insertBefore(draggedElement, targetElement.nextSibling);
+    } else {
+      // Moving up - insert before target
+      parent.insertBefore(draggedElement, targetElement);
+    }
+
+    this.saveUndoState();
+    this.saveData();
   }
 
   getSelectedListItems() {
