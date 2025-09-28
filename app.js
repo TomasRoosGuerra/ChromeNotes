@@ -1088,28 +1088,8 @@ class ChromeNotesWebApp {
       if (this.handleBackspaceKey(e)) return;
     }
 
-    // Enhanced cursor management - smooth scroll to cursor
-    setTimeout(() => this.scrollToCursor(), 10);
-    // Handle markdown shortcuts on space - works on ANY row
-    if (e.key === " ") {
-      if (this.handleMarkdownShortcuts(e)) return;
-    }
-
-    // Improved Enter key handling
-    if (e.key === "Enter") {
-      if (this.handleEnterKey(e)) return;
-    }
-
-    // Better Tab handling
-    if (e.key === "Tab") {
-      e.preventDefault();
-      document.execCommand(e.shiftKey ? "outdent" : "indent");
-    }
-
-    // Backspace handling - removes empty bullets/checkboxes
-    if (e.key === "Backspace") {
-      if (this.handleBackspaceKey(e)) return;
-    }
+    // Enhanced cursor management - smooth scroll to cursor (only when needed)
+    setTimeout(() => this.scrollToCursorIfNeeded(), 10);
   }
 
   handleMarkdownShortcuts(e) {
@@ -1136,16 +1116,25 @@ class ChromeNotesWebApp {
     };
 
     const handler = shortcuts[textContent.trim()];
-    if (
-      handler &&
-      parentElement !== this.notebook &&
-      parentElement.tagName === "DIV"
-    ) {
+    if (handler && parentElement.tagName === "DIV") {
       e.preventDefault();
+
       // Clear the shortcut text
       node.textContent = node.textContent.substring(range.startOffset);
+
       // Apply the format
       handler();
+
+      // Ensure cursor is properly positioned after formatting
+      setTimeout(() => {
+        const newRange = document.createRange();
+        const newSelection = window.getSelection();
+        newRange.setStart(node, 0);
+        newRange.collapse(true);
+        newSelection.removeAllRanges();
+        newSelection.addRange(newRange);
+      }, 10);
+
       return true;
     }
 
@@ -1306,13 +1295,44 @@ class ChromeNotesWebApp {
       this.saveUndoState();
       this.saveData();
     } else {
-      // Create a new todo item
-      const todoItem = this.createTodoElement();
-      range.insertNode(todoItem);
-      this.placeCursorInElement(
-        todoItem.querySelector(".task-item-content"),
-        true
-      );
+      // Check if we have a text selection spanning multiple elements
+      const selectedElements = this.getSelectedElements();
+
+      if (selectedElements.length > 1) {
+        // Convert multiple selected elements to todo items
+        const todoItems = selectedElements.map((el) => {
+          const textContent = el.textContent.trim();
+          return this.createTodoElement(textContent);
+        });
+
+        // Replace all selected elements with todo items
+        selectedElements.forEach((el, index) => {
+          el.parentNode.replaceChild(todoItems[index], el);
+        });
+
+        // Place cursor in the first converted todo item
+        const firstTodoContent =
+          todoItems[0].querySelector(".task-item-content");
+        if (firstTodoContent) {
+          this.placeCursorInElement(firstTodoContent, false);
+        }
+      } else {
+        // Create a new todo item at the current position
+        const todoItem = this.createTodoElement();
+
+        // Insert the todo item after the current element
+        if (element.tagName === "DIV") {
+          element.insertAdjacentElement("afterend", todoItem);
+        } else {
+          range.insertNode(todoItem);
+        }
+
+        this.placeCursorInElement(
+          todoItem.querySelector(".task-item-content"),
+          true
+        );
+      }
+
       this.saveUndoState();
       this.saveData();
     }
@@ -1393,6 +1413,33 @@ class ChromeNotesWebApp {
     return listItems;
   }
 
+  getSelectedElements() {
+    const selection = window.getSelection();
+    if (!selection.rangeCount) return [];
+
+    const range = selection.getRangeAt(0);
+    const container = range.commonAncestorContainer;
+
+    // Find all div elements in the selection
+    const elements = [];
+    const walker = document.createTreeWalker(
+      container,
+      NodeFilter.SHOW_ELEMENT,
+      (node) => {
+        return node.tagName === "DIV" && node.textContent.trim() !== ""
+          ? NodeFilter.FILTER_ACCEPT
+          : NodeFilter.FILTER_SKIP;
+      }
+    );
+
+    let node;
+    while ((node = walker.nextNode())) {
+      elements.push(node);
+    }
+
+    return elements;
+  }
+
   placeCursorInElement(element, atEnd = false) {
     const range = document.createRange();
     const selection = window.getSelection();
@@ -1451,7 +1498,7 @@ class ChromeNotesWebApp {
       this.showNotification("All tabs deleted successfully");
     }
   }
-  scrollToCursor() {
+  scrollToCursorIfNeeded() {
     const selection = window.getSelection();
     if (!selection.rangeCount) return;
 
@@ -1460,13 +1507,33 @@ class ChromeNotesWebApp {
     const notebook = document.getElementById("notebook");
     const notebookRect = notebook.getBoundingClientRect();
 
-    // Check if cursor is outside visible area
-    if (rect.bottom > notebookRect.bottom || rect.top < notebookRect.top) {
-      // Scroll to cursor position with smooth behavior
-      range.startContainer.parentElement?.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
+    // Only scroll if cursor is significantly outside visible area
+    const margin = 50; // Add margin to prevent unnecessary scrolling
+    if (
+      rect.bottom > notebookRect.bottom + margin ||
+      rect.top < notebookRect.top - margin
+    ) {
+      // Use a more controlled scroll approach
+      const scrollContainer = notebook.parentElement;
+      const elementRect =
+        range.startContainer.parentElement?.getBoundingClientRect();
+
+      if (elementRect && scrollContainer) {
+        const scrollTop = scrollContainer.scrollTop;
+        const elementTop = elementRect.top - notebookRect.top + scrollTop;
+        const containerHeight = scrollContainer.clientHeight;
+
+        // Only scroll if element is not visible
+        if (
+          elementTop < scrollTop ||
+          elementTop > scrollTop + containerHeight
+        ) {
+          scrollContainer.scrollTo({
+            top: elementTop - containerHeight / 2,
+            behavior: "smooth",
+          });
+        }
+      }
     }
   }
 
