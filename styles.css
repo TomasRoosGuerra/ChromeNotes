@@ -674,6 +674,10 @@ input[type="color"]::-webkit-color-swatch {
 }
 
 /* Indentation levels */
+.task-item[data-level="0"] {
+  padding-left: 0px;
+}
+
 .task-item[data-level="1"] {
   padding-left: 24px;
 }

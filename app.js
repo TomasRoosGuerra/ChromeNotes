@@ -747,6 +747,16 @@ class ChromeNotesWebApp {
   makeTabEditable(nameEl, tabType) {
     nameEl.contentEditable = "true";
     nameEl.focus();
+
+    // Select all text for quick overwrite
+    setTimeout(() => {
+      const range = document.createRange();
+      range.selectNodeContents(nameEl);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }, 10);
+
     const onBlur = () => {
       nameEl.contentEditable = "false";
       const newName = nameEl.textContent.trim() || "Untitled";
@@ -1159,7 +1169,37 @@ class ChromeNotesWebApp {
       return true;
     }
 
+    // Handle blockquote reversion with Shift+Tab
+    const blockquote = element.closest("blockquote");
+    if (blockquote && e.shiftKey) {
+      e.preventDefault();
+      this.revertBlockquote(blockquote);
+      this.saveUndoState();
+      this.saveData();
+      return true;
+    }
+
+    // Handle regular blockquote indentation with Tab
+    if (blockquote && !e.shiftKey) {
+      e.preventDefault();
+      // Allow normal blockquote behavior or add custom indentation
+      return true;
+    }
+
     return false;
+  }
+
+  revertBlockquote(blockquote) {
+    // Convert blockquote back to regular div
+    const content = blockquote.innerHTML;
+    const div = document.createElement("div");
+    div.innerHTML = content;
+
+    // Replace blockquote with div
+    blockquote.parentNode.replaceChild(div, blockquote);
+
+    // Place cursor in the new div
+    this.placeCursorInElement(div, true);
   }
 
   indentTaskItem(taskItem) {
@@ -1185,12 +1225,13 @@ class ChromeNotesWebApp {
     const level = parseInt(taskItem.dataset.level || "0");
     const indentPixels = level * 24; // 24px per level
 
+    // Only set padding on the task item, not on the checkbox
     taskItem.style.paddingLeft = `${indentPixels}px`;
 
-    // Update checkbox position
+    // Reset checkbox margin to prevent double indentation
     const checkbox = taskItem.querySelector(".task-item-checkbox");
     if (checkbox) {
-      checkbox.style.marginLeft = `${indentPixels}px`;
+      checkbox.style.marginLeft = "0px";
     }
   }
 
