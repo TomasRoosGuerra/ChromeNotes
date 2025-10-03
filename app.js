@@ -625,9 +625,16 @@ class ChromeNotesWebApp {
   }
 
   renderNotebook() {
-    const activeTab = this.getActiveTab();
     const notebook = document.getElementById("notebook");
     if (!notebook) return;
+
+    // Check if we're viewing the Done log
+    if (this.state.activeSubTabId === "done-log") {
+      this.renderDoneLog();
+      return;
+    }
+
+    const activeTab = this.getActiveTab();
 
     // Store current scroll position
     const currentScrollTop = notebook.scrollTop;
@@ -694,6 +701,141 @@ class ChromeNotesWebApp {
       // Restore scroll position after content is loaded
       this.restoreScrollPosition();
     }, 50); // Reduced timeout to prevent cursor interference
+  }
+
+  renderDoneLog() {
+    const notebook = document.getElementById("notebook");
+    if (!notebook) return;
+
+    notebook.contentEditable = "false";
+    notebook.classList.add("notebook-readonly");
+
+    if (this.state.completedTasks.length === 0) {
+      notebook.innerHTML = '<div style="color: var(--placeholder-color); text-align: center; padding: 40px;">No completed tasks yet.</div>';
+      return;
+    }
+
+    // Group tasks by date
+    const groupedTasks = {};
+    this.state.completedTasks.forEach((task) => {
+      const date = new Date(task.completedAt).toLocaleDateString();
+      if (!groupedTasks[date]) {
+        groupedTasks[date] = [];
+      }
+      groupedTasks[date].push(task);
+    });
+
+    //Build Done log HTML with bulk actions
+    let html = `
+      <div class="done-log-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 2px solid var(--accent-color);">
+        <h2 style="margin: 0; font-size: 1.4em;">Completed Tasks</h2>
+        <div class="done-log-actions">
+          <button id="select-all-done" class="toolbar-btn" title="Select all" style="margin-right: 8px;">Select All</button>
+          <button id="uncheck-selected" class="toolbar-btn" title="Uncheck selected" style="display: none;">Uncheck Selected</button>
+        </div>
+      </div>
+    `;
+
+    Object.keys(groupedTasks).sort((a, b) => new Date(b) - new Date(a)).forEach((date) => {
+      html += `<div class="done-log-date-group">`;
+      html += `<div class="done-log-date">${date}</div>`;
+      
+      groupedTasks[date].forEach((task) => {
+        html += `
+          <div class="done-log-item" data-task-id="${task.id}">
+            <input type="checkbox" class="done-log-checkbox" style="margin-right: 10px; accent-color: var(--accent-color);">
+            <div class="done-log-text">
+              <div>${task.text}</div>
+              <div style="font-size: 0.85em; color: var(--placeholder-color); margin-top: 4px;">
+                ${task.tabName} • ${new Date(task.completedAt).toLocaleTimeString()}
+              </div>
+            </div>
+            <button class="done-log-delete-btn" data-task-id="${task.id}" title="Delete">×</button>
+          </div>
+        `;
+      });
+      
+      html += `</div>`;
+    });
+
+    notebook.innerHTML = html;
+
+    // Add event listeners for bulk actions
+    this.setupDoneLogListeners();
+  }
+
+  setupDoneLogListeners() {
+    const notebook = document.getElementById("notebook");
+    if (!notebook) return;
+
+    const selectAllBtn = notebook.querySelector("#select-all-done");
+    const uncheckSelectedBtn = notebook.querySelector("#uncheck-selected");
+    const checkboxes = notebook.querySelectorAll(".done-log-checkbox");
+    const deleteButtons = notebook.querySelectorAll(".done-log-delete-btn");
+
+    // Track selected checkboxes
+    const updateButtonVisibility = () => {
+      const selectedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+      if (uncheckSelectedBtn) {
+        uncheckSelectedBtn.style.display = selectedCount > 0 ? "inline-block" : "none";
+        uncheckSelectedBtn.textContent = `Uncheck Selected (${selectedCount})`;
+      }
+    };
+
+    // Select all button
+    if (selectAllBtn) {
+      selectAllBtn.addEventListener("click", () => {
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        checkboxes.forEach(cb => cb.checked = !allChecked);
+        updateButtonVisibility();
+      });
+    }
+
+    // Uncheck selected button
+    if (uncheckSelectedBtn) {
+      uncheckSelectedBtn.addEventListener("click", () => {
+        const selectedIds = Array.from(checkboxes)
+          .filter(cb => cb.checked)
+          .map(cb => cb.closest(".done-log-item").dataset.taskId);
+        
+        this.bulkUncheckTasks(selectedIds);
+      });
+    }
+
+    // Individual checkboxes
+    checkboxes.forEach(cb => {
+      cb.addEventListener("change", updateButtonVisibility);
+    });
+
+    // Delete buttons
+    deleteButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        const taskId = btn.dataset.taskId;
+        this.deleteCompletedTask(taskId);
+      });
+    });
+  }
+
+  bulkUncheckTasks(taskIds) {
+    if (taskIds.length === 0) return;
+
+    // Remove tasks from completed list
+    this.state.completedTasks = this.state.completedTasks.filter(
+      (task) => !taskIds.includes(task.id)
+    );
+
+    // Re-render
+    this.renderDoneLog();
+    this.saveData();
+    this.showNotification(`${taskIds.length} task(s) unchecked`);
+  }
+
+  deleteCompletedTask(taskId) {
+    this.state.completedTasks = this.state.completedTasks.filter(
+      (task) => task.id !== taskId
+    );
+    this.renderDoneLog();
+    this.saveData();
   }
 
   createMainTabElement(tab) {
@@ -1513,6 +1655,7 @@ class ChromeNotesWebApp {
       wrapper.classList.toggle("completed", isChecked);
 
       if (isChecked) {
+        // Task was checked - add to Done log
         const activeMainTab = this.state.mainTabs.find(
           (t) => t.id === this.state.activeMainTabId
         );
@@ -1524,12 +1667,25 @@ class ChromeNotesWebApp {
 
         const taskText = contentDiv.textContent;
         if (taskText.trim()) {
+          const taskId = `task-${Date.now()}-${Math.random()}`;
+          // Store task ID on the wrapper for later removal
+          wrapper.dataset.taskId = taskId;
+          
           this.state.completedTasks.push({
-            id: Date.now(),
+            id: taskId,
             text: taskText,
             completedAt: Date.now(),
             tabName: `${activeMainTab.name} / ${activeSubTab.name}`,
           });
+        }
+      } else {
+        // Task was unchecked - remove from Done log immediately
+        const taskId = wrapper.dataset.taskId;
+        if (taskId) {
+          this.state.completedTasks = this.state.completedTasks.filter(
+            (task) => task.id !== taskId
+          );
+          delete wrapper.dataset.taskId;
         }
       }
       this.saveData();
@@ -2751,6 +2907,9 @@ class ChromeNotesWebApp {
       (subTab) => subTab.id === this.state.activeSubTabId
     );
 
+    // Safety check: if current tab not found, don't navigate
+    if (currentIndex === -1) return;
+
     if (currentIndex < activeMainTab.subTabs.length - 1) {
       const nextSubTab = activeMainTab.subTabs[currentIndex + 1];
       this.switchSubTab(nextSubTab.id);
@@ -2766,6 +2925,9 @@ class ChromeNotesWebApp {
     const currentIndex = activeMainTab.subTabs.findIndex(
       (subTab) => subTab.id === this.state.activeSubTabId
     );
+
+    // Safety check: if current tab not found, don't navigate
+    if (currentIndex === -1) return;
 
     if (currentIndex > 0) {
       const prevSubTab = activeMainTab.subTabs[currentIndex - 1];
