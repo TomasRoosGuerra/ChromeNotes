@@ -29,6 +29,13 @@ class ChromeNotesWebApp {
     this.isKeyboardOpen = false;
     this.isSwiping = false;
 
+    // Toolbar customization
+    this.toolbarPreferences = {
+      hiddenButtons: [] // Array of button IDs that are hidden
+    };
+    this.longPressTimer = null;
+    this.longPressTarget = null;
+
     this.init();
   }
 
@@ -224,6 +231,11 @@ class ChromeNotesWebApp {
           this.render();
           this.showNotification("Notes loaded from cloud");
         }
+        // Load toolbar preferences
+        if (data.toolbarPreferences) {
+          this.toolbarPreferences = data.toolbarPreferences;
+          this.applyToolbarPreferences();
+        }
       } else {
         // Create default structure if no data exists
         this.createDefaultStructure();
@@ -307,6 +319,7 @@ class ChromeNotesWebApp {
             ...this.state,
             lastUpdated: new Date().toISOString(),
           },
+          toolbarPreferences: this.toolbarPreferences,
           email: this.user.email,
         },
         { merge: true }
@@ -711,7 +724,8 @@ class ChromeNotesWebApp {
     notebook.classList.add("notebook-readonly");
 
     if (this.state.completedTasks.length === 0) {
-      notebook.innerHTML = '<div style="color: var(--placeholder-color); text-align: center; padding: 40px;">No completed tasks yet.</div>';
+      notebook.innerHTML =
+        '<div style="color: var(--placeholder-color); text-align: center; padding: 40px;">No completed tasks yet.</div>';
       return;
     }
 
@@ -736,27 +750,33 @@ class ChromeNotesWebApp {
       </div>
     `;
 
-    Object.keys(groupedTasks).sort((a, b) => new Date(b) - new Date(a)).forEach((date) => {
-      html += `<div class="done-log-date-group">`;
-      html += `<div class="done-log-date">${date}</div>`;
-      
-      groupedTasks[date].forEach((task) => {
-        html += `
+    Object.keys(groupedTasks)
+      .sort((a, b) => new Date(b) - new Date(a))
+      .forEach((date) => {
+        html += `<div class="done-log-date-group">`;
+        html += `<div class="done-log-date">${date}</div>`;
+
+        groupedTasks[date].forEach((task) => {
+          html += `
           <div class="done-log-item" data-task-id="${task.id}">
             <input type="checkbox" class="done-log-checkbox" style="margin-right: 10px; accent-color: var(--accent-color);">
             <div class="done-log-text">
               <div>${task.text}</div>
               <div style="font-size: 0.85em; color: var(--placeholder-color); margin-top: 4px;">
-                ${task.tabName} • ${new Date(task.completedAt).toLocaleTimeString()}
+                ${task.tabName} • ${new Date(
+            task.completedAt
+          ).toLocaleTimeString()}
               </div>
             </div>
-            <button class="done-log-delete-btn" data-task-id="${task.id}" title="Delete">×</button>
+            <button class="done-log-delete-btn" data-task-id="${
+              task.id
+            }" title="Delete">×</button>
           </div>
         `;
+        });
+
+        html += `</div>`;
       });
-      
-      html += `</div>`;
-    });
 
     notebook.innerHTML = html;
 
@@ -775,9 +795,12 @@ class ChromeNotesWebApp {
 
     // Track selected checkboxes
     const updateButtonVisibility = () => {
-      const selectedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+      const selectedCount = Array.from(checkboxes).filter(
+        (cb) => cb.checked
+      ).length;
       if (uncheckSelectedBtn) {
-        uncheckSelectedBtn.style.display = selectedCount > 0 ? "inline-block" : "none";
+        uncheckSelectedBtn.style.display =
+          selectedCount > 0 ? "inline-block" : "none";
         uncheckSelectedBtn.textContent = `Uncheck Selected (${selectedCount})`;
       }
     };
@@ -785,8 +808,8 @@ class ChromeNotesWebApp {
     // Select all button
     if (selectAllBtn) {
       selectAllBtn.addEventListener("click", () => {
-        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-        checkboxes.forEach(cb => cb.checked = !allChecked);
+        const allChecked = Array.from(checkboxes).every((cb) => cb.checked);
+        checkboxes.forEach((cb) => (cb.checked = !allChecked));
         updateButtonVisibility();
       });
     }
@@ -795,20 +818,20 @@ class ChromeNotesWebApp {
     if (uncheckSelectedBtn) {
       uncheckSelectedBtn.addEventListener("click", () => {
         const selectedIds = Array.from(checkboxes)
-          .filter(cb => cb.checked)
-          .map(cb => cb.closest(".done-log-item").dataset.taskId);
-        
+          .filter((cb) => cb.checked)
+          .map((cb) => cb.closest(".done-log-item").dataset.taskId);
+
         this.bulkUncheckTasks(selectedIds);
       });
     }
 
     // Individual checkboxes
-    checkboxes.forEach(cb => {
+    checkboxes.forEach((cb) => {
       cb.addEventListener("change", updateButtonVisibility);
     });
 
     // Delete buttons
-    deleteButtons.forEach(btn => {
+    deleteButtons.forEach((btn) => {
       btn.addEventListener("click", () => {
         const taskId = btn.dataset.taskId;
         this.deleteCompletedTask(taskId);
@@ -1095,6 +1118,9 @@ class ChromeNotesWebApp {
   setupEventListeners() {
     // Swipe gesture listeners
     this.setupSwipeGestures();
+
+    // Toolbar customization
+    this.setupToolbarCustomization();
 
     // Tab management
     document
@@ -1670,7 +1696,7 @@ class ChromeNotesWebApp {
           const taskId = `task-${Date.now()}-${Math.random()}`;
           // Store task ID on the wrapper for later removal
           wrapper.dataset.taskId = taskId;
-          
+
           this.state.completedTasks.push({
             id: taskId,
             text: taskText,
@@ -3051,6 +3077,245 @@ class ChromeNotesWebApp {
     });
 
     return card;
+  }
+
+  // Toolbar Customization
+  setupToolbarCustomization() {
+    const toolbarButtons = document.querySelectorAll(".toolbar-btn:not(#more-options-btn):not(#sync-signin-btn):not(#sign-out-btn)");
+    
+    toolbarButtons.forEach((button) => {
+      // Long press for desktop (mousedown)
+      button.addEventListener("mousedown", (e) => {
+        if (e.button !== 0) return; // Only left click
+        this.startLongPress(button, e);
+      });
+
+      button.addEventListener("mouseup", () => {
+        this.cancelLongPress();
+      });
+
+      button.addEventListener("mouseleave", () => {
+        this.cancelLongPress();
+      });
+
+      // Long press for mobile (touchstart)
+      button.addEventListener("touchstart", (e) => {
+        this.startLongPress(button, e);
+      }, { passive: true });
+
+      button.addEventListener("touchend", () => {
+        this.cancelLongPress();
+      });
+
+      button.addEventListener("touchcancel", () => {
+        this.cancelLongPress();
+      });
+    });
+
+    // Create and add "..." menu button if it doesn't exist
+    this.ensureToolbarMenuButton();
+  }
+
+  startLongPress(button, event) {
+    this.longPressTarget = button;
+    this.longPressTimer = setTimeout(() => {
+      this.showToolbarContextMenu(button, event);
+    }, 800); // 800ms long press
+  }
+
+  cancelLongPress() {
+    if (this.longPressTimer) {
+      clearTimeout(this.longPressTimer);
+      this.longPressTimer = null;
+      this.longPressTarget = null;
+    }
+  }
+
+  showToolbarContextMenu(button, event) {
+    event.preventDefault();
+    this.cancelLongPress();
+
+    const buttonId = button.id;
+    const buttonTitle = button.title || button.getAttribute("title") || "Button";
+
+    // Create context menu
+    const menu = document.createElement("div");
+    menu.className = "toolbar-context-menu";
+    menu.innerHTML = `
+      <div class="toolbar-context-item" data-action="hide">
+        Hide "${buttonTitle}" from toolbar
+      </div>
+    `;
+
+    // Position menu
+    const rect = button.getBoundingClientRect();
+    menu.style.position = "absolute";
+    menu.style.top = `${rect.bottom + 5}px`;
+    menu.style.left = `${rect.left}px`;
+    menu.style.zIndex = "10000";
+
+    document.body.appendChild(menu);
+
+    // Handle menu click
+    menu.querySelector('[data-action="hide"]').addEventListener("click", () => {
+      this.moveButtonToMenu(buttonId);
+      menu.remove();
+    });
+
+    // Close menu on outside click
+    setTimeout(() => {
+      const closeMenu = (e) => {
+        if (!menu.contains(e.target)) {
+          menu.remove();
+          document.removeEventListener("click", closeMenu);
+        }
+      };
+      document.addEventListener("click", closeMenu);
+    }, 100);
+  }
+
+  moveButtonToMenu(buttonId) {
+    if (!this.toolbarPreferences.hiddenButtons.includes(buttonId)) {
+      this.toolbarPreferences.hiddenButtons.push(buttonId);
+      this.applyToolbarPreferences();
+      this.saveDataToCloud();
+      this.showNotification("Button moved to menu");
+    }
+  }
+
+  moveButtonToToolbar(buttonId) {
+    this.toolbarPreferences.hiddenButtons = this.toolbarPreferences.hiddenButtons.filter(
+      (id) => id !== buttonId
+    );
+    this.applyToolbarPreferences();
+    this.saveDataToCloud();
+    this.showNotification("Button restored to toolbar");
+  }
+
+  applyToolbarPreferences() {
+    // Hide buttons that should be hidden
+    this.toolbarPreferences.hiddenButtons.forEach((buttonId) => {
+      const button = document.getElementById(buttonId);
+      if (button) {
+        button.style.display = "none";
+      }
+    });
+
+    // Show buttons that should be visible
+    const allButtons = document.querySelectorAll(".toolbar-btn:not(#more-options-btn):not(#sync-signin-btn):not(#sign-out-btn)");
+    allButtons.forEach((button) => {
+      if (!this.toolbarPreferences.hiddenButtons.includes(button.id)) {
+        button.style.display = "";
+      }
+    });
+
+    // Update menu button visibility
+    this.ensureToolbarMenuButton();
+  }
+
+  ensureToolbarMenuButton() {
+    let menuButton = document.getElementById("toolbar-menu-btn");
+    
+    if (!menuButton) {
+      // Create menu button
+      menuButton = document.createElement("button");
+      menuButton.id = "toolbar-menu-btn";
+      menuButton.className = "toolbar-btn";
+      menuButton.title = "More formatting options";
+      menuButton.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="1"></circle>
+          <circle cx="12" cy="5" r="1"></circle>
+          <circle cx="12" cy="19" r="1"></circle>
+        </svg>
+      `;
+
+      // Add to toolbar
+      const formatControls = document.querySelector(".format-controls");
+      if (formatControls) {
+        formatControls.appendChild(menuButton);
+      }
+    }
+
+    // Show/hide based on whether there are hidden buttons
+    if (this.toolbarPreferences.hiddenButtons.length > 0) {
+      menuButton.style.display = "";
+      menuButton.onclick = (e) => this.showToolbarMenu(e);
+    } else {
+      menuButton.style.display = "none";
+    }
+  }
+
+  showToolbarMenu(event) {
+    event.stopPropagation();
+
+    // Remove existing menu if any
+    const existingMenu = document.getElementById("toolbar-hidden-menu");
+    if (existingMenu) {
+      existingMenu.remove();
+      return;
+    }
+
+    // Create menu
+    const menu = document.createElement("div");
+    menu.id = "toolbar-hidden-menu";
+    menu.className = "popup-menu";
+    menu.style.display = "block";
+
+    // Add hidden buttons to menu
+    let hasButtons = false;
+    this.toolbarPreferences.hiddenButtons.forEach((buttonId) => {
+      const originalButton = document.getElementById(buttonId);
+      if (originalButton) {
+        hasButtons = true;
+        const menuItem = document.createElement("div");
+        menuItem.className = "popup-menu-item";
+        menuItem.innerHTML = `
+          <span class="popup-menu-icon">${originalButton.innerHTML}</span>
+          <span>${originalButton.title || buttonId}</span>
+          <button class="restore-btn" data-button-id="${buttonId}" style="margin-left: auto; padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: transparent; cursor: pointer;">Restore</button>
+        `;
+        
+        // Add click handler to use the button
+        menuItem.addEventListener("click", (e) => {
+          if (e.target.classList.contains("restore-btn")) {
+            e.stopPropagation();
+            this.moveButtonToToolbar(buttonId);
+            menu.remove();
+          } else {
+            // Trigger the original button's click
+            originalButton.click();
+            menu.remove();
+          }
+        });
+
+        menu.appendChild(menuItem);
+      }
+    });
+
+    if (!hasButtons) {
+      menu.innerHTML = '<div class="popup-menu-item">No hidden buttons</div>';
+    }
+
+    // Position menu
+    const menuButton = document.getElementById("toolbar-menu-btn");
+    const rect = menuButton.getBoundingClientRect();
+    menu.style.position = "absolute";
+    menu.style.top = `${rect.bottom + 5}px`;
+    menu.style.left = `${rect.right - 250}px`;
+
+    document.body.appendChild(menu);
+
+    // Close on outside click
+    setTimeout(() => {
+      const closeMenu = (e) => {
+        if (!menu.contains(e.target) && e.target !== menuButton) {
+          menu.remove();
+          document.removeEventListener("click", closeMenu);
+        }
+      };
+      document.addEventListener("click", closeMenu);
+    }, 100);
   }
 }
 

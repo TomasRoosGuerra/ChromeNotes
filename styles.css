@@ -1041,3 +1041,37 @@ input[type="color"]::-webkit-color-swatch {
     background: rgba(96, 165, 250, 0.15);
   }
 }
+
+/* Toolbar Context Menu */
+.toolbar-context-menu {
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 4px 0;
+  min-width: 200px;
+  z-index: 10000;
+}
+
+.toolbar-context-item {
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-size: 14px;
+  color: var(--text-color);
+}
+
+.toolbar-context-item:hover {
+  background-color: var(--hover-bg-color);
+}
+
+.restore-btn:hover {
+  background: var(--hover-bg-color) !important;
+  color: var(--accent-color);
+}
+
+@media (prefers-color-scheme: dark) {
+  .toolbar-context-menu {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+}
