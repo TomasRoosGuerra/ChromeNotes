@@ -3139,13 +3139,17 @@ class ChromeNotesWebApp {
       });
 
       // Prevent normal click if long-press was triggered
-      button.addEventListener("click", (e) => {
-        if (this.longPressTriggered) {
-          e.preventDefault();
-          e.stopPropagation();
-          this.longPressTriggered = false;
-        }
-      }, true);
+      button.addEventListener(
+        "click",
+        (e) => {
+          if (this.longPressTriggered) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.longPressTriggered = false;
+          }
+        },
+        true
+      );
 
       // Long press for mobile (touchstart)
       button.addEventListener(
@@ -3212,8 +3216,20 @@ class ChromeNotesWebApp {
 
     document.body.appendChild(menu);
 
-    // Handle menu click
-    menu.querySelector('[data-action="hide"]').addEventListener("click", () => {
+    // Handle menu click (use mousedown for press-and-drag UX)
+    const hideOption = menu.querySelector('[data-action="hide"]');
+    
+    hideOption.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.moveButtonToMenu(buttonId);
+      menu.remove();
+    });
+    
+    // Also support regular click
+    hideOption.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       this.moveButtonToMenu(buttonId);
       menu.remove();
     });
