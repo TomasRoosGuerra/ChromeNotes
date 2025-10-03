@@ -3131,11 +3131,17 @@ class ChromeNotesWebApp {
       });
 
       button.addEventListener("mouseup", () => {
-        this.cancelLongPress();
+        // Only cancel if context menu hasn't appeared yet
+        if (!this.longPressTriggered) {
+          this.cancelLongPress();
+        }
       });
 
       button.addEventListener("mouseleave", () => {
-        this.cancelLongPress();
+        // Don't cancel if context menu already appeared (allow drag to menu)
+        if (!this.longPressTriggered) {
+          this.cancelLongPress();
+        }
       });
 
       // Prevent normal click if long-press was triggered
@@ -3218,14 +3224,14 @@ class ChromeNotesWebApp {
 
     // Handle menu click (use mousedown for press-and-drag UX)
     const hideOption = menu.querySelector('[data-action="hide"]');
-    
+
     hideOption.addEventListener("mousedown", (e) => {
       e.preventDefault();
       e.stopPropagation();
       this.moveButtonToMenu(buttonId);
       menu.remove();
     });
-    
+
     // Also support regular click
     hideOption.addEventListener("click", (e) => {
       e.preventDefault();
@@ -3234,16 +3240,19 @@ class ChromeNotesWebApp {
       menu.remove();
     });
 
-    // Close menu on outside click
+    // Close menu on outside click (but not immediate mouseup from long-press)
     setTimeout(() => {
       const closeMenu = (e) => {
         if (!menu.contains(e.target)) {
           menu.remove();
+          this.longPressTriggered = false; // Reset flag when menu closes
           document.removeEventListener("click", closeMenu);
+          document.removeEventListener("mousedown", closeMenu);
         }
       };
       document.addEventListener("click", closeMenu);
-    }, 100);
+      document.addEventListener("mousedown", closeMenu);
+    }, 150);
   }
 
   moveButtonToMenu(buttonId) {
@@ -3255,6 +3264,8 @@ class ChromeNotesWebApp {
       this.saveDataToCloud();
       this.showNotification("Button moved to menu");
     }
+    // Reset the flag after action completes
+    this.longPressTriggered = false;
   }
 
   moveButtonToToolbar(buttonId) {
