@@ -21,6 +21,14 @@ class ChromeNotesWebApp {
     this.draggedIndex = -1;
     this.isDragging = false;
 
+    // Swipe gesture variables
+    this.swipeStartX = 0;
+    this.swipeStartY = 0;
+    this.swipeEndX = 0;
+    this.swipeEndY = 0;
+    this.isKeyboardOpen = false;
+    this.isSwiping = false;
+
     this.init();
   }
 
@@ -943,6 +951,9 @@ class ChromeNotesWebApp {
   }
 
   setupEventListeners() {
+    // Swipe gesture listeners
+    this.setupSwipeGestures();
+
     // Tab management
     document
       .getElementById("add-main-tab-btn")
@@ -1054,10 +1065,23 @@ class ChromeNotesWebApp {
       notebook.addEventListener("input", () => {
         this.saveUndoState();
         this.saveData();
+        this.detectAndConvertURLs();
       });
       notebook.addEventListener("keydown", (e) => this.handleKeydown(e));
       notebook.addEventListener("paste", (e) => this.handlePaste(e));
       notebook.addEventListener("click", (e) => this.handleNotebookClick(e));
+
+      // Detect keyboard visibility on mobile
+      notebook.addEventListener("focus", () => {
+        this.isKeyboardOpen = true;
+      });
+
+      notebook.addEventListener("blur", () => {
+        setTimeout(() => {
+          this.isKeyboardOpen = false;
+        }, 100);
+        this.detectAndConvertURLs();
+      });
     }
   }
 
@@ -1080,6 +1104,8 @@ class ChromeNotesWebApp {
     // Handle markdown shortcuts on space - works on ANY row
     if (e.key === " ") {
       if (this.handleMarkdownShortcuts(e)) return;
+      // Trigger URL detection on space
+      setTimeout(() => this.detectAndConvertURLs(), 100);
     }
 
     // Improved Enter key handling
@@ -2627,6 +2653,242 @@ class ChromeNotesWebApp {
     text = text.replace(/\*(.*?)\*/g, "<em>$1</em>");
 
     return text;
+  }
+
+  // Swipe gesture detection for tab navigation
+  setupSwipeGestures() {
+    const notebook = document.getElementById("notebook");
+    if (!notebook) return;
+
+    // Touch events for mobile
+    notebook.addEventListener(
+      "touchstart",
+      (e) => {
+        if (this.isKeyboardOpen) return;
+        this.swipeStartX = e.touches[0].clientX;
+        this.swipeStartY = e.touches[0].clientY;
+        this.isSwiping = true;
+      },
+      { passive: true }
+    );
+
+    notebook.addEventListener(
+      "touchmove",
+      (e) => {
+        if (!this.isSwiping || this.isKeyboardOpen) return;
+        this.swipeEndX = e.touches[0].clientX;
+        this.swipeEndY = e.touches[0].clientY;
+      },
+      { passive: true }
+    );
+
+    notebook.addEventListener("touchend", (e) => {
+      if (!this.isSwiping || this.isKeyboardOpen) return;
+      this.handleSwipe();
+      this.isSwiping = false;
+    });
+
+    // Mouse/trackpad events for desktop
+    let trackpadStartX = 0;
+    let trackpadStartY = 0;
+
+    notebook.addEventListener(
+      "wheel",
+      (e) => {
+        // Detect horizontal scrolling (trackpad swipe)
+        if (
+          Math.abs(e.deltaX) > Math.abs(e.deltaY) &&
+          Math.abs(e.deltaX) > 50
+        ) {
+          e.preventDefault();
+
+          if (e.deltaX > 0) {
+            // Swipe left (next tab)
+            this.switchToNextSubTab();
+          } else {
+            // Swipe right (previous tab)
+            this.switchToPreviousSubTab();
+          }
+        }
+      },
+      { passive: false }
+    );
+  }
+
+  handleSwipe() {
+    const deltaX = this.swipeEndX - this.swipeStartX;
+    const deltaY = this.swipeEndY - this.swipeStartY;
+    const absDeltaX = Math.abs(deltaX);
+    const absDeltaY = Math.abs(deltaY);
+
+    // Check if swipe is mostly horizontal (>60% horizontal)
+    const totalDistance = absDeltaX + absDeltaY;
+    const horizontalRatio = absDeltaX / totalDistance;
+
+    if (horizontalRatio > 0.6 && absDeltaX > 50) {
+      // Add visual feedback
+      this.showSwipeFeedback(deltaX > 0 ? "right" : "left");
+
+      if (deltaX > 0) {
+        // Swipe right (previous tab)
+        this.switchToPreviousSubTab();
+      } else {
+        // Swipe left (next tab)
+        this.switchToNextSubTab();
+      }
+    }
+  }
+
+  switchToNextSubTab() {
+    const activeMainTab = this.state.mainTabs.find(
+      (tab) => tab.id === this.state.activeMainTabId
+    );
+    if (!activeMainTab || !activeMainTab.subTabs) return;
+
+    const currentIndex = activeMainTab.subTabs.findIndex(
+      (subTab) => subTab.id === this.state.activeSubTabId
+    );
+
+    if (currentIndex < activeMainTab.subTabs.length - 1) {
+      const nextSubTab = activeMainTab.subTabs[currentIndex + 1];
+      this.switchSubTab(nextSubTab.id);
+    }
+  }
+
+  switchToPreviousSubTab() {
+    const activeMainTab = this.state.mainTabs.find(
+      (tab) => tab.id === this.state.activeMainTabId
+    );
+    if (!activeMainTab || !activeMainTab.subTabs) return;
+
+    const currentIndex = activeMainTab.subTabs.findIndex(
+      (subTab) => subTab.id === this.state.activeSubTabId
+    );
+
+    if (currentIndex > 0) {
+      const prevSubTab = activeMainTab.subTabs[currentIndex - 1];
+      this.switchSubTab(prevSubTab.id);
+    }
+  }
+
+  showSwipeFeedback(direction) {
+    const notebook = document.getElementById("notebook");
+    if (!notebook) return;
+
+    notebook.style.transition = "transform 0.2s ease, opacity 0.2s ease";
+    notebook.style.transform =
+      direction === "left" ? "translateX(-10px)" : "translateX(10px)";
+    notebook.style.opacity = "0.7";
+
+    setTimeout(() => {
+      notebook.style.transform = "translateX(0)";
+      notebook.style.opacity = "1";
+      setTimeout(() => {
+        notebook.style.transition = "";
+      }, 200);
+    }, 100);
+  }
+
+  // URL Detection and Link Card Creation
+  detectAndConvertURLs() {
+    const notebook = document.getElementById("notebook");
+    if (!notebook) return;
+
+    const selection = window.getSelection();
+    const cursorNode = selection.anchorNode;
+
+    // URL regex pattern
+    const urlPattern = /(https?:\/\/[^\s]+)/g;
+
+    // Walk through all text nodes
+    const walker = document.createTreeWalker(
+      notebook,
+      NodeFilter.SHOW_TEXT,
+      null,
+      false
+    );
+
+    let node;
+    const nodesToProcess = [];
+
+    while ((node = walker.nextNode())) {
+      if (node.nodeValue && urlPattern.test(node.nodeValue)) {
+        // Skip if this is the node we're currently editing
+        if (node === cursorNode) continue;
+        nodesToProcess.push(node);
+      }
+    }
+
+    nodesToProcess.forEach((node) => {
+      this.convertURLToCard(node);
+    });
+  }
+
+  convertURLToCard(textNode) {
+    const urlPattern = /(https?:\/\/[^\s]+)/g;
+    const text = textNode.nodeValue;
+    const match = text.match(urlPattern);
+
+    if (!match) return;
+
+    const url = match[0];
+    const beforeURL = text.substring(0, text.indexOf(url));
+    const afterURL = text.substring(text.indexOf(url) + url.length);
+
+    // Create link card element
+    const linkCard = this.createLinkCard(url);
+
+    // Replace text node with link card
+    const parent = textNode.parentNode;
+
+    if (beforeURL) {
+      parent.insertBefore(document.createTextNode(beforeURL), textNode);
+    }
+
+    parent.insertBefore(linkCard, textNode);
+
+    if (afterURL) {
+      parent.insertBefore(document.createTextNode(afterURL), textNode);
+    }
+
+    parent.removeChild(textNode);
+  }
+
+  createLinkCard(url) {
+    const card = document.createElement("a");
+    card.href = url;
+    card.target = "_blank";
+    card.rel = "noopener noreferrer";
+    card.className = "link-card";
+    card.contentEditable = "false";
+
+    // Extract domain for display
+    let domain = url;
+    try {
+      domain = new URL(url).hostname.replace("www.", "");
+    } catch (e) {
+      // If URL parsing fails, use original
+    }
+
+    card.innerHTML = `
+      <span class="link-card-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+        </svg>
+      </span>
+      <span class="link-card-content">
+        <span class="link-card-domain">${domain}</span>
+        <span class="link-card-url">${url}</span>
+      </span>
+    `;
+
+    // Prevent card from being edited
+    card.addEventListener("mousedown", (e) => {
+      e.stopPropagation();
+    });
+
+    return card;
   }
 }
 
