@@ -3112,8 +3112,10 @@ class ChromeNotesWebApp {
   // Toolbar Customization
   setupToolbarCustomization() {
     const toolbarButtons = document.querySelectorAll(
-      ".toolbar-btn:not(#more-options-btn):not(#sync-signin-btn):not(#sign-out-btn)"
+      ".toolbar-btn:not(#more-options-btn):not(#sync-signin-btn):not(#sign-out-btn):not(#toolbar-menu-btn)"
     );
+
+    console.log("Setting up toolbar customization for", toolbarButtons.length, "buttons");
 
     toolbarButtons.forEach((button) => {
       // Long press for desktop (mousedown)
@@ -3212,8 +3214,10 @@ class ChromeNotesWebApp {
   }
 
   moveButtonToMenu(buttonId) {
+    console.log("Moving button to menu:", buttonId);
     if (!this.toolbarPreferences.hiddenButtons.includes(buttonId)) {
       this.toolbarPreferences.hiddenButtons.push(buttonId);
+      console.log("Hidden buttons:", this.toolbarPreferences.hiddenButtons);
       this.applyToolbarPreferences();
       this.saveDataToCloud();
       this.showNotification("Button moved to menu");
@@ -3229,9 +3233,12 @@ class ChromeNotesWebApp {
   }
 
   applyToolbarPreferences() {
+    console.log("Applying toolbar preferences:", this.toolbarPreferences.hiddenButtons);
+    
     // Hide buttons that should be hidden
     this.toolbarPreferences.hiddenButtons.forEach((buttonId) => {
       const button = document.getElementById(buttonId);
+      console.log("Hiding button:", buttonId, "Found:", !!button);
       if (button) {
         button.style.display = "none";
       }
@@ -3239,7 +3246,7 @@ class ChromeNotesWebApp {
 
     // Show buttons that should be visible
     const allButtons = document.querySelectorAll(
-      ".toolbar-btn:not(#more-options-btn):not(#sync-signin-btn):not(#sign-out-btn)"
+      ".toolbar-btn:not(#more-options-btn):not(#sync-signin-btn):not(#sign-out-btn):not(#toolbar-menu-btn)"
     );
     allButtons.forEach((button) => {
       if (!this.toolbarPreferences.hiddenButtons.includes(button.id)) {
