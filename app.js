@@ -35,6 +35,7 @@ class ChromeNotesWebApp {
     };
     this.longPressTimer = null;
     this.longPressTarget = null;
+    this.longPressTriggered = false;
 
     // Gmail auto-send
     this.emailSchedules = [];
@@ -3115,12 +3116,17 @@ class ChromeNotesWebApp {
       ".toolbar-btn:not(#more-options-btn):not(#sync-signin-btn):not(#sign-out-btn):not(#toolbar-menu-btn)"
     );
 
-    console.log("Setting up toolbar customization for", toolbarButtons.length, "buttons");
+    console.log(
+      "Setting up toolbar customization for",
+      toolbarButtons.length,
+      "buttons"
+    );
 
     toolbarButtons.forEach((button) => {
       // Long press for desktop (mousedown)
       button.addEventListener("mousedown", (e) => {
         if (e.button !== 0) return; // Only left click
+        this.longPressTriggered = false;
         this.startLongPress(button, e);
       });
 
@@ -3131,6 +3137,15 @@ class ChromeNotesWebApp {
       button.addEventListener("mouseleave", () => {
         this.cancelLongPress();
       });
+
+      // Prevent normal click if long-press was triggered
+      button.addEventListener("click", (e) => {
+        if (this.longPressTriggered) {
+          e.preventDefault();
+          e.stopPropagation();
+          this.longPressTriggered = false;
+        }
+      }, true);
 
       // Long press for mobile (touchstart)
       button.addEventListener(
@@ -3157,6 +3172,7 @@ class ChromeNotesWebApp {
   startLongPress(button, event) {
     this.longPressTarget = button;
     this.longPressTimer = setTimeout(() => {
+      this.longPressTriggered = true;
       this.showToolbarContextMenu(button, event);
     }, 800); // 800ms long press
   }
@@ -3167,6 +3183,7 @@ class ChromeNotesWebApp {
       this.longPressTimer = null;
       this.longPressTarget = null;
     }
+    // Don't reset longPressTriggered here - let the click handler do it
   }
 
   showToolbarContextMenu(button, event) {
@@ -3233,8 +3250,11 @@ class ChromeNotesWebApp {
   }
 
   applyToolbarPreferences() {
-    console.log("Applying toolbar preferences:", this.toolbarPreferences.hiddenButtons);
-    
+    console.log(
+      "Applying toolbar preferences:",
+      this.toolbarPreferences.hiddenButtons
+    );
+
     // Hide buttons that should be hidden
     this.toolbarPreferences.hiddenButtons.forEach((buttonId) => {
       const button = document.getElementById(buttonId);
