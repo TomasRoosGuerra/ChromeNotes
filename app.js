@@ -2688,30 +2688,31 @@ class ChromeNotesWebApp {
       this.isSwiping = false;
     });
 
-    // Mouse/trackpad events for desktop
-    let trackpadStartX = 0;
-    let trackpadStartY = 0;
+    // Mouse/trackpad events for desktop - only for strong horizontal swipes
+    let swipeTimeout = null;
 
     notebook.addEventListener(
       "wheel",
       (e) => {
-        // Detect horizontal scrolling (trackpad swipe)
-        if (
-          Math.abs(e.deltaX) > Math.abs(e.deltaY) &&
-          Math.abs(e.deltaX) > 50
-        ) {
-          e.preventDefault();
+        // Only trigger on strong horizontal swipes (trackpad)
+        const isHorizontalSwipe = Math.abs(e.deltaX) > Math.abs(e.deltaY) * 2;
+        const isStrongSwipe = Math.abs(e.deltaX) > 100;
 
-          if (e.deltaX > 0) {
-            // Swipe left (next tab)
-            this.switchToNextSubTab();
-          } else {
-            // Swipe right (previous tab)
-            this.switchToPreviousSubTab();
-          }
+        if (isHorizontalSwipe && isStrongSwipe) {
+          // Debounce to prevent multiple triggers
+          clearTimeout(swipeTimeout);
+          swipeTimeout = setTimeout(() => {
+            if (e.deltaX > 0) {
+              // Swipe left (next tab)
+              this.switchToNextSubTab();
+            } else {
+              // Swipe right (previous tab)
+              this.switchToPreviousSubTab();
+            }
+          }, 50);
         }
       },
-      { passive: false }
+      { passive: true }
     );
   }
 
@@ -2721,12 +2722,13 @@ class ChromeNotesWebApp {
     const absDeltaX = Math.abs(deltaX);
     const absDeltaY = Math.abs(deltaY);
 
-    // Check if swipe is mostly horizontal (>60% horizontal)
+    // Check if swipe is mostly horizontal (>70% horizontal) and significant
     const totalDistance = absDeltaX + absDeltaY;
     const horizontalRatio = absDeltaX / totalDistance;
+    const minSwipeDistance = 80; // Increased threshold
 
-    if (horizontalRatio > 0.6 && absDeltaX > 50) {
-      // Add visual feedback
+    if (horizontalRatio > 0.7 && absDeltaX > minSwipeDistance) {
+      // Add subtle visual feedback
       this.showSwipeFeedback(deltaX > 0 ? "right" : "left");
 
       if (deltaX > 0) {
@@ -2775,18 +2777,16 @@ class ChromeNotesWebApp {
     const notebook = document.getElementById("notebook");
     if (!notebook) return;
 
-    notebook.style.transition = "transform 0.2s ease, opacity 0.2s ease";
-    notebook.style.transform =
-      direction === "left" ? "translateX(-10px)" : "translateX(10px)";
-    notebook.style.opacity = "0.7";
+    // Subtle visual feedback - just a brief tint
+    notebook.style.transition = "opacity 0.15s ease";
+    notebook.style.opacity = "0.92";
 
     setTimeout(() => {
-      notebook.style.transform = "translateX(0)";
       notebook.style.opacity = "1";
       setTimeout(() => {
         notebook.style.transition = "";
-      }, 200);
-    }, 100);
+      }, 150);
+    }, 50);
   }
 
   // URL Detection and Link Card Creation
