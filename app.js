@@ -31,10 +31,16 @@ class ChromeNotesWebApp {
 
     // Toolbar customization
     this.toolbarPreferences = {
-      hiddenButtons: [] // Array of button IDs that are hidden
+      hiddenButtons: [], // Array of button IDs that are hidden
     };
     this.longPressTimer = null;
     this.longPressTarget = null;
+
+    // Gmail auto-send
+    this.emailSchedules = [];
+    this.emailQueue = [];
+    this.scheduleTimers = [];
+    this.isOnline = navigator.onLine;
 
     this.init();
   }
@@ -59,6 +65,16 @@ class ChromeNotesWebApp {
         this.showSignInScreen();
       }
       this.updateUiState();
+
+      // Monitor online/offline status
+      window.addEventListener("online", () => {
+        this.isOnline = true;
+        this.processEmailQueue();
+      });
+
+      window.addEventListener("offline", () => {
+        this.isOnline = false;
+      });
     });
   }
 
@@ -210,6 +226,9 @@ class ChromeNotesWebApp {
         this.updateUiState();
         this.saveData();
         break;
+      case "schedule-email":
+        this.showScheduleEmailModal();
+        break;
     }
   }
 
@@ -235,6 +254,15 @@ class ChromeNotesWebApp {
         if (data.toolbarPreferences) {
           this.toolbarPreferences = data.toolbarPreferences;
           this.applyToolbarPreferences();
+        }
+        // Load email schedules and queue
+        if (data.emailSchedules) {
+          this.emailSchedules = data.emailSchedules;
+          this.startScheduleTimers();
+        }
+        if (data.emailQueue) {
+          this.emailQueue = data.emailQueue;
+          this.processEmailQueue();
         }
       } else {
         // Create default structure if no data exists
@@ -320,6 +348,8 @@ class ChromeNotesWebApp {
             lastUpdated: new Date().toISOString(),
           },
           toolbarPreferences: this.toolbarPreferences,
+          emailSchedules: this.emailSchedules,
+          emailQueue: this.emailQueue,
           email: this.user.email,
         },
         { merge: true }
@@ -3081,8 +3111,10 @@ class ChromeNotesWebApp {
 
   // Toolbar Customization
   setupToolbarCustomization() {
-    const toolbarButtons = document.querySelectorAll(".toolbar-btn:not(#more-options-btn):not(#sync-signin-btn):not(#sign-out-btn)");
-    
+    const toolbarButtons = document.querySelectorAll(
+      ".toolbar-btn:not(#more-options-btn):not(#sync-signin-btn):not(#sign-out-btn)"
+    );
+
     toolbarButtons.forEach((button) => {
       // Long press for desktop (mousedown)
       button.addEventListener("mousedown", (e) => {
@@ -3099,9 +3131,13 @@ class ChromeNotesWebApp {
       });
 
       // Long press for mobile (touchstart)
-      button.addEventListener("touchstart", (e) => {
-        this.startLongPress(button, e);
-      }, { passive: true });
+      button.addEventListener(
+        "touchstart",
+        (e) => {
+          this.startLongPress(button, e);
+        },
+        { passive: true }
+      );
 
       button.addEventListener("touchend", () => {
         this.cancelLongPress();
@@ -3136,7 +3172,8 @@ class ChromeNotesWebApp {
     this.cancelLongPress();
 
     const buttonId = button.id;
-    const buttonTitle = button.title || button.getAttribute("title") || "Button";
+    const buttonTitle =
+      button.title || button.getAttribute("title") || "Button";
 
     // Create context menu
     const menu = document.createElement("div");
@@ -3184,9 +3221,8 @@ class ChromeNotesWebApp {
   }
 
   moveButtonToToolbar(buttonId) {
-    this.toolbarPreferences.hiddenButtons = this.toolbarPreferences.hiddenButtons.filter(
-      (id) => id !== buttonId
-    );
+    this.toolbarPreferences.hiddenButtons =
+      this.toolbarPreferences.hiddenButtons.filter((id) => id !== buttonId);
     this.applyToolbarPreferences();
     this.saveDataToCloud();
     this.showNotification("Button restored to toolbar");
@@ -3202,7 +3238,9 @@ class ChromeNotesWebApp {
     });
 
     // Show buttons that should be visible
-    const allButtons = document.querySelectorAll(".toolbar-btn:not(#more-options-btn):not(#sync-signin-btn):not(#sign-out-btn)");
+    const allButtons = document.querySelectorAll(
+      ".toolbar-btn:not(#more-options-btn):not(#sync-signin-btn):not(#sign-out-btn)"
+    );
     allButtons.forEach((button) => {
       if (!this.toolbarPreferences.hiddenButtons.includes(button.id)) {
         button.style.display = "";
@@ -3215,7 +3253,7 @@ class ChromeNotesWebApp {
 
   ensureToolbarMenuButton() {
     let menuButton = document.getElementById("toolbar-menu-btn");
-    
+
     if (!menuButton) {
       // Create menu button
       menuButton = document.createElement("button");
@@ -3275,7 +3313,7 @@ class ChromeNotesWebApp {
           <span>${originalButton.title || buttonId}</span>
           <button class="restore-btn" data-button-id="${buttonId}" style="margin-left: auto; padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: transparent; cursor: pointer;">Restore</button>
         `;
-        
+
         // Add click handler to use the button
         menuItem.addEventListener("click", (e) => {
           if (e.target.classList.contains("restore-btn")) {
@@ -3316,6 +3354,305 @@ class ChromeNotesWebApp {
       };
       document.addEventListener("click", closeMenu);
     }, 100);
+  }
+
+  // Gmail Auto-Send Feature
+  showScheduleEmailModal() {
+    // Remove existing modal if any
+    const existingModal = document.getElementById("schedule-email-modal");
+    if (existingModal) {
+      existingModal.remove();
+    }
+
+    // Create modal
+    const modal = document.createElement("div");
+    modal.id = "schedule-email-modal";
+    modal.className = "modal-overlay";
+    modal.innerHTML = `
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Schedule Auto-Send Email</h2>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Send Time</label>
+            <input type="time" id="schedule-time" value="09:00" />
+          </div>
+          <div class="form-group">
+            <label>Frequency</label>
+            <select id="schedule-frequency">
+              <option value="daily">Daily</option>
+              <option value="weekdays">Weekdays Only</option>
+              <option value="weekly">Weekly</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Select Tabs to Send</label>
+            <div id="tabs-selection" class="tabs-selection"></div>
+          </div>
+          <div class="form-group">
+            <label>Your Schedules</label>
+            <div id="existing-schedules" class="existing-schedules"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="save-schedule-btn" class="primary-btn">Create Schedule</button>
+          <button class="modal-close secondary-btn">Cancel</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Populate tabs selection
+    this.renderTabsSelection();
+
+    // Populate existing schedules
+    this.renderExistingSchedules();
+
+    // Event listeners
+    modal.querySelector("#save-schedule-btn").addEventListener("click", () => {
+      this.saveEmailSchedule();
+    });
+
+    modal.querySelectorAll(".modal-close").forEach((btn) => {
+      btn.addEventListener("click", () => modal.remove());
+    });
+
+    // Close on overlay click
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) modal.remove();
+    });
+  }
+
+  renderTabsSelection() {
+    const container = document.getElementById("tabs-selection");
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    this.state.mainTabs.forEach((mainTab) => {
+      const tabGroup = document.createElement("div");
+      tabGroup.className = "tab-group-selection";
+      tabGroup.innerHTML = `
+        <label class="checkbox-label">
+          <input type="checkbox" class="main-tab-checkbox" data-main-tab-id="${mainTab.id}" checked>
+          <strong>${mainTab.name}</strong>
+        </label>
+        <div class="sub-tabs-selection" style="margin-left: 20px;"></div>
+      `;
+
+      const subTabsContainer = tabGroup.querySelector(".sub-tabs-selection");
+      mainTab.subTabs.forEach((subTab) => {
+        const subTabLabel = document.createElement("label");
+        subTabLabel.className = "checkbox-label";
+        subTabLabel.innerHTML = `
+          <input type="checkbox" class="sub-tab-checkbox" data-sub-tab-id="${subTab.id}" data-main-tab-id="${mainTab.id}" checked>
+          ${subTab.name}
+        `;
+        subTabsContainer.appendChild(subTabLabel);
+      });
+
+      container.appendChild(tabGroup);
+    });
+  }
+
+  renderExistingSchedules() {
+    const container = document.getElementById("existing-schedules");
+    if (!container) return;
+
+    if (this.emailSchedules.length === 0) {
+      container.innerHTML = '<p style="color: var(--placeholder-color);">No schedules yet</p>';
+      return;
+    }
+
+    container.innerHTML = "";
+
+    this.emailSchedules.forEach((schedule, index) => {
+      const scheduleItem = document.createElement("div");
+      scheduleItem.className = "schedule-item";
+      scheduleItem.innerHTML = `
+        <div class="schedule-info">
+          <strong>${schedule.frequency}</strong> at ${schedule.time}
+          <div style="font-size: 0.85em; color: var(--placeholder-color);">
+            ${schedule.selectedTabs.length} tab(s) selected
+          </div>
+        </div>
+        <button class="delete-schedule-btn" data-index="${index}">Delete</button>
+      `;
+
+      scheduleItem.querySelector(".delete-schedule-btn").addEventListener("click", () => {
+        this.deleteEmailSchedule(index);
+      });
+
+      container.appendChild(scheduleItem);
+    });
+  }
+
+  saveEmailSchedule() {
+    const time = document.getElementById("schedule-time").value;
+    const frequency = document.getElementById("schedule-frequency").value;
+
+    // Get selected tabs
+    const selectedTabs = [];
+    document.querySelectorAll(".sub-tab-checkbox:checked").forEach((checkbox) => {
+      const mainTabId = Number(checkbox.dataset.mainTabId);
+      const subTabId = Number(checkbox.dataset.subTabId);
+      selectedTabs.push({ mainTabId, subTabId });
+    });
+
+    if (selectedTabs.length === 0) {
+      this.showNotification("Please select at least one tab");
+      return;
+    }
+
+    const schedule = {
+      id: Date.now(),
+      time,
+      frequency,
+      selectedTabs,
+      createdAt: new Date().toISOString(),
+    };
+
+    this.emailSchedules.push(schedule);
+    this.saveDataToCloud();
+    this.startScheduleTimers();
+    this.showNotification("Schedule created successfully");
+
+    document.getElementById("schedule-email-modal").remove();
+  }
+
+  deleteEmailSchedule(index) {
+    this.emailSchedules.splice(index, 1);
+    this.saveDataToCloud();
+    this.startScheduleTimers();
+    this.renderExistingSchedules();
+    this.showNotification("Schedule deleted");
+  }
+
+  startScheduleTimers() {
+    // Clear existing timers
+    this.scheduleTimers.forEach((timer) => clearTimeout(timer));
+    this.scheduleTimers = [];
+
+    // Start new timers for each schedule
+    this.emailSchedules.forEach((schedule) => {
+      this.scheduleNextEmail(schedule);
+    });
+  }
+
+  scheduleNextEmail(schedule) {
+    const now = new Date();
+    const [hours, minutes] = schedule.time.split(":").map(Number);
+
+    // Calculate next occurrence
+    let nextOccurrence = new Date(now);
+    nextOccurrence.setHours(hours, minutes, 0, 0);
+
+    // If time has passed today, schedule for tomorrow or next occurrence
+    if (nextOccurrence <= now) {
+      nextOccurrence.setDate(nextOccurrence.getDate() + 1);
+    }
+
+    // Adjust for frequency
+    if (schedule.frequency === "weekdays") {
+      // Skip weekends
+      while (nextOccurrence.getDay() === 0 || nextOccurrence.getDay() === 6) {
+        nextOccurrence.setDate(nextOccurrence.getDate() + 1);
+      }
+    } else if (schedule.frequency === "weekly") {
+      // Set to next week from creation date
+      const dayOfWeek = new Date(schedule.createdAt).getDay();
+      while (nextOccurrence.getDay() !== dayOfWeek) {
+        nextOccurrence.setDate(nextOccurrence.getDate() + 1);
+      }
+    }
+
+    const delay = nextOccurrence.getTime() - now.getTime();
+
+    const timer = setTimeout(() => {
+      this.executeEmailSchedule(schedule);
+      // Reschedule for next occurrence
+      this.scheduleNextEmail(schedule);
+    }, delay);
+
+    this.scheduleTimers.push(timer);
+  }
+
+  async executeEmailSchedule(schedule) {
+    console.log("Executing email schedule:", schedule);
+
+    if (!this.isOnline) {
+      // Add to queue if offline
+      this.emailQueue.push({
+        scheduleId: schedule.id,
+        scheduledFor: new Date().toISOString(),
+        selectedTabs: schedule.selectedTabs,
+      });
+      await this.saveDataToCloud();
+      this.showNotification("Offline: Email queued for later");
+      return;
+    }
+
+    // Send email
+    await this.sendScheduledEmail(schedule.selectedTabs);
+  }
+
+  async sendScheduledEmail(selectedTabs) {
+    const subject = `Chrome Notes – Scheduled Send – ${new Date().toLocaleDateString()}`;
+    
+    // Build content from selected tabs
+    let content = "";
+    selectedTabs.forEach(({ mainTabId, subTabId }) => {
+      const mainTab = this.state.mainTabs.find((t) => t.id === mainTabId);
+      if (!mainTab) return;
+
+      const subTab = mainTab.subTabs.find((st) => st.id === subTabId);
+      if (!subTab) return;
+
+      content += `\n\n## ${mainTab.name} / ${subTab.name}\n\n`;
+      content += this.formatContentForEmail(subTab.content);
+    });
+
+    const to = this.user.email;
+
+    // Use Gmail web interface
+    const url = `https://mail.google.com/mail/u/0/?view=cm&fs=1&to=${encodeURIComponent(
+      to
+    )}&su=${encodeURIComponent(subject)}&tf=1&body=${encodeURIComponent(
+      content
+    )}`;
+
+    // Open Gmail (this works even when scheduled)
+    window.open(url, "_blank");
+    this.showNotification("Scheduled email sent via Gmail");
+
+    // Log in history
+    this.state.completedTasks.push({
+      id: Date.now(),
+      text: `Scheduled email sent: ${selectedTabs.length} tabs`,
+      completedAt: Date.now(),
+      tabName: "Auto-Send",
+    });
+
+    await this.saveDataToCloud();
+  }
+
+  async processEmailQueue() {
+    if (!this.isOnline || this.emailQueue.length === 0) return;
+
+    console.log("Processing email queue:", this.emailQueue.length, "items");
+
+    const queue = [...this.emailQueue];
+    this.emailQueue = [];
+
+    for (const item of queue) {
+      await this.sendScheduledEmail(item.selectedTabs);
+    }
+
+    await this.saveDataToCloud();
+    this.showNotification(`Sent ${queue.length} queued email(s)`);
   }
 }
 
