@@ -3463,7 +3463,8 @@ class ChromeNotesWebApp {
     if (!container) return;
 
     if (this.emailSchedules.length === 0) {
-      container.innerHTML = '<p style="color: var(--placeholder-color);">No schedules yet</p>';
+      container.innerHTML =
+        '<p style="color: var(--placeholder-color);">No schedules yet</p>';
       return;
     }
 
@@ -3482,9 +3483,11 @@ class ChromeNotesWebApp {
         <button class="delete-schedule-btn" data-index="${index}">Delete</button>
       `;
 
-      scheduleItem.querySelector(".delete-schedule-btn").addEventListener("click", () => {
-        this.deleteEmailSchedule(index);
-      });
+      scheduleItem
+        .querySelector(".delete-schedule-btn")
+        .addEventListener("click", () => {
+          this.deleteEmailSchedule(index);
+        });
 
       container.appendChild(scheduleItem);
     });
@@ -3496,11 +3499,13 @@ class ChromeNotesWebApp {
 
     // Get selected tabs
     const selectedTabs = [];
-    document.querySelectorAll(".sub-tab-checkbox:checked").forEach((checkbox) => {
-      const mainTabId = Number(checkbox.dataset.mainTabId);
-      const subTabId = Number(checkbox.dataset.subTabId);
-      selectedTabs.push({ mainTabId, subTabId });
-    });
+    document
+      .querySelectorAll(".sub-tab-checkbox:checked")
+      .forEach((checkbox) => {
+        const mainTabId = Number(checkbox.dataset.mainTabId);
+        const subTabId = Number(checkbox.dataset.subTabId);
+        selectedTabs.push({ mainTabId, subTabId });
+      });
 
     if (selectedTabs.length === 0) {
       this.showNotification("Please select at least one tab");
@@ -3601,7 +3606,7 @@ class ChromeNotesWebApp {
 
   async sendScheduledEmail(selectedTabs) {
     const subject = `Chrome Notes – Scheduled Send – ${new Date().toLocaleDateString()}`;
-    
+
     // Build content from selected tabs
     let content = "";
     selectedTabs.forEach(({ mainTabId, subTabId }) => {
