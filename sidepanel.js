@@ -1000,14 +1000,47 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Better Tab handling
     if (e.key === "Tab") {
-      e.preventDefault();
-      document.execCommand(e.shiftKey ? "outdent" : "indent");
+      if (handleTabIndentation(e)) return;
     }
 
     // Backspace handling - removes empty bullets/checkboxes
     if (e.key === "Backspace") {
       if (handleBackspaceKey(e)) return;
     }
+  }
+
+  function handleTabIndentation(e) {
+    const selection = window.getSelection();
+    if (!selection.rangeCount) return false;
+
+    const element =
+      selection.anchorNode.nodeType === Node.TEXT_NODE
+        ? selection.anchorNode.parentElement
+        : selection.anchorNode;
+
+    // Check if we're in a list item (bullet or numbered)
+    const listItem = element.closest("li");
+    if (listItem) {
+      e.preventDefault();
+      e.stopPropagation();
+      document.execCommand(e.shiftKey ? "outdent" : "indent");
+      return true;
+    }
+
+    // Check if we're in a todo item
+    const taskItem = element.closest(".task-item");
+    if (taskItem) {
+      e.preventDefault();
+      e.stopPropagation();
+      // Task items don't use standard indent/outdent
+      // They would need custom indentation logic if desired
+      return true;
+    }
+
+    // For other elements, allow default indent/outdent
+    e.preventDefault();
+    document.execCommand(e.shiftKey ? "outdent" : "indent");
+    return true;
   }
 
   function handleEnterKey(e) {
