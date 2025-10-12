@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { saveToLocalStorage } from "../lib/localStorage";
-import { CompletedTask, NotesState } from "../types/notes";
+import type { CompletedTask, NotesState } from "../types/notes";
 
 interface NotesActions {
   // Main Tab actions

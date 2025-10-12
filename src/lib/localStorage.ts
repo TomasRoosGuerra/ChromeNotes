@@ -1,4 +1,4 @@
-import { NotesState } from "../types/notes";
+import type { NotesState } from "../types/notes";
 
 const STORAGE_KEY = "chrome-notes-data-v1";
 

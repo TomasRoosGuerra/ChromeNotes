@@ -1,4 +1,4 @@
-import { NotesState } from "../types/notes";
+import type { NotesState } from "../types/notes";
 
 /**
  * Format notes content to markdown-style text for copying

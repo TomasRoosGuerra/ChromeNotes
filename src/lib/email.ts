@@ -1,4 +1,4 @@
-import { NotesState } from "../types/notes";
+import type { NotesState } from "../types/notes";
 
 /**
  * Generate HTML email template from notes

@@ -1,5 +1,5 @@
 import { doc, getDoc, onSnapshot, setDoc } from "firebase/firestore";
-import { NotesState } from "../types/notes";
+import type { NotesState } from "../types/notes";
 import { db } from "./firebase";
 
 const COLLECTION = "userNotes";
