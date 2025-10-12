@@ -30,7 +30,16 @@ function App() {
   // Sync with cloud
   useCloudSync();
 
-  console.log("App render:", { user: !!user, loading, activeSubTabId });
+  const mainTabs = useNotesStore((state) => state.mainTabs);
+  const activeMainTabId = useNotesStore((state) => state.activeMainTabId);
+
+  console.log("App render:", {
+    user: !!user,
+    loading,
+    activeSubTabId,
+    activeMainTabId,
+    mainTabsCount: mainTabs.length,
+  });
 
   if (loading) {
     console.log("Showing loading screen");
@@ -42,7 +51,7 @@ function App() {
     return <SignInScreen />;
   }
 
-  console.log("Showing main app");
+  console.log("Showing main app with tabs:", mainTabs);
 
   const showDoneLog = activeSubTabId === "done-log";
 

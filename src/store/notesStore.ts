@@ -36,22 +36,26 @@ interface NotesActions {
   getState: () => NotesState;
 }
 
+// Generate IDs once for initial state
+const initialMainTabId = "main-tab-initial";
+const initialSubTabId = "sub-tab-initial";
+
 const initialState: NotesState = {
   mainTabs: [
     {
-      id: Date.now().toString(),
+      id: initialMainTabId,
       name: "Notes",
       subTabs: [
         {
-          id: (Date.now() + 1).toString(),
+          id: initialSubTabId,
           name: "Main",
           content: "",
         },
       ],
     },
   ],
-  activeMainTabId: Date.now().toString(),
-  activeSubTabId: (Date.now() + 1).toString(),
+  activeMainTabId: initialMainTabId,
+  activeSubTabId: initialSubTabId,
   completedTasks: [],
   hideCompleted: false,
   lastSelectedSubTabs: {},
