@@ -5,6 +5,8 @@ export const SignInScreen = () => {
   const signIn = useAuthStore((state) => state.signIn);
   const error = useAuthStore((state) => state.error);
 
+  console.log("SignInScreen rendered", { error });
+
   return (
     <div className="flex items-center justify-center h-screen bg-gradient-to-br from-blue-500 to-blue-700">
       <div className="text-center bg-white dark:bg-gray-800 p-12 rounded-2xl shadow-xl max-w-md w-full mx-4">
