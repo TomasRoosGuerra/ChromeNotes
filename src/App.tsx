@@ -10,7 +10,7 @@ import { ToastContainer } from "./components/ui/Toast";
 import { useCloudSync } from "./hooks/useCloudSync";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { useAuthStore } from "./store/authStore";
-import { useNotesStore } from "./store/notesStore";
+import { setUserId, useNotesStore } from "./store/notesStore";
 
 function App() {
   const user = useAuthStore((state) => state.user);
@@ -21,6 +21,10 @@ function App() {
   useEffect(() => {
     initAuth();
   }, [initAuth]);
+
+  useEffect(() => {
+    setUserId(user?.uid ?? null);
+  }, [user]);
 
   useLocalStorage();
   useCloudSync();

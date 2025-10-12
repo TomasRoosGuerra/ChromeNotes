@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
+import { saveNotesToCloud } from "../lib/firestore";
 import { saveToLocalStorage } from "../lib/localStorage";
 import type { CompletedTask, NotesState } from "../types/notes";
 
@@ -42,6 +43,37 @@ const initialState: NotesState = {
   scrollPositions: {},
 };
 
+// Debounced cloud save to avoid excessive writes
+let cloudSaveTimeout: NodeJS.Timeout | null = null;
+let currentUserId: string | null = null;
+let isLoadingFromCloud = false;
+
+const saveToCloudDebounced = (state: NotesState, userId: string | null) => {
+  if (!userId || isLoadingFromCloud) return;
+
+  if (cloudSaveTimeout) {
+    clearTimeout(cloudSaveTimeout);
+  }
+
+  cloudSaveTimeout = setTimeout(() => {
+    saveNotesToCloud(userId, state);
+  }, 1000); // Wait 1 second after last change before saving to cloud
+};
+
+const saveState = (get: () => NotesState & NotesActions) => {
+  const state = get();
+  saveToLocalStorage(state);
+  saveToCloudDebounced(state.getState(), currentUserId);
+};
+
+export const setUserId = (userId: string | null) => {
+  currentUserId = userId;
+};
+
+export const setLoadingFromCloud = (loading: boolean) => {
+  isLoadingFromCloud = loading;
+};
+
 export const useNotesStore = create<NotesState & NotesActions>()(
   immer((set, get) => ({
     ...initialState,
@@ -66,7 +98,7 @@ export const useNotesStore = create<NotesState & NotesActions>()(
         state.activeMainTabId = newId;
         state.activeSubTabId = newSubTabId;
       });
-      saveToLocalStorage(get());
+      saveState(get);
     },
 
     deleteMainTab: (id) => {
@@ -83,7 +115,7 @@ export const useNotesStore = create<NotesState & NotesActions>()(
           state.activeSubTabId = state.mainTabs[0].subTabs[0].id;
         }
       });
-      saveToLocalStorage(get());
+      saveState(get);
     },
 
     renameMainTab: (id, name) => {
@@ -93,7 +125,7 @@ export const useNotesStore = create<NotesState & NotesActions>()(
           tab.name = name;
         }
       });
-      saveToLocalStorage(get());
+      saveState(get);
     },
 
     setActiveMainTab: (id) => {
@@ -133,7 +165,7 @@ export const useNotesStore = create<NotesState & NotesActions>()(
 
         state.activeSubTabId = newSubTabId;
       });
-      saveToLocalStorage(get());
+      saveState(get);
     },
 
     deleteSubTab: (mainTabId, subTabId) => {
@@ -150,7 +182,7 @@ export const useNotesStore = create<NotesState & NotesActions>()(
           state.activeSubTabId = mainTab.subTabs[0].id;
         }
       });
-      saveToLocalStorage(get());
+      saveState(get);
     },
 
     renameSubTab: (mainTabId, subTabId, name) => {
@@ -163,7 +195,7 @@ export const useNotesStore = create<NotesState & NotesActions>()(
           subTab.name = name;
         }
       });
-      saveToLocalStorage(get());
+      saveState(get);
     },
 
     setActiveSubTab: (id) => {
@@ -182,14 +214,14 @@ export const useNotesStore = create<NotesState & NotesActions>()(
           subTab.content = content;
         }
       });
-      saveToLocalStorage(get());
+      saveState(get);
     },
 
     addCompletedTask: (task) => {
       set((state) => {
         state.completedTasks.push(task);
       });
-      saveToLocalStorage(get());
+      saveState(get);
     },
 
     deleteCompletedTask: (id) => {
@@ -199,14 +231,14 @@ export const useNotesStore = create<NotesState & NotesActions>()(
           state.completedTasks.splice(index, 1);
         }
       });
-      saveToLocalStorage(get());
+      saveState(get);
     },
 
     toggleHideCompleted: () => {
       set((state) => {
         state.hideCompleted = !state.hideCompleted;
       });
-      saveToLocalStorage(get());
+      saveState(get);
     },
 
     loadState: (newState) => {
