@@ -4,58 +4,38 @@ import { saveToLocalStorage } from "../lib/localStorage";
 import type { CompletedTask, NotesState } from "../types/notes";
 
 interface NotesActions {
-  // Main Tab actions
   addMainTab: () => void;
   deleteMainTab: (id: string) => void;
   renameMainTab: (id: string, name: string) => void;
-  reorderMainTabs: (fromIndex: number, toIndex: number) => void;
   setActiveMainTab: (id: string) => void;
-
-  // Sub Tab actions
   addSubTab: (mainTabId: string) => void;
   deleteSubTab: (mainTabId: string, subTabId: string) => void;
   renameSubTab: (mainTabId: string, subTabId: string, name: string) => void;
-  reorderSubTabs: (
-    mainTabId: string,
-    fromIndex: number,
-    toIndex: number
-  ) => void;
   setActiveSubTab: (id: string) => void;
-
-  // Content actions
   updateContent: (mainTabId: string, subTabId: string, content: string) => void;
-
-  // Task actions
   addCompletedTask: (task: CompletedTask) => void;
   deleteCompletedTask: (id: string) => void;
   toggleHideCompleted: () => void;
-
-  // State management
-  setState: (state: Partial<NotesState>) => void;
   loadState: (state: NotesState) => void;
   getState: () => NotesState;
 }
 
-// Generate IDs once for initial state
-const initialMainTabId = "main-tab-initial";
-const initialSubTabId = "sub-tab-initial";
-
 const initialState: NotesState = {
   mainTabs: [
     {
-      id: initialMainTabId,
+      id: "main-initial",
       name: "Notes",
       subTabs: [
         {
-          id: initialSubTabId,
+          id: "sub-initial",
           name: "Main",
           content: "",
         },
       ],
     },
   ],
-  activeMainTabId: initialMainTabId,
-  activeSubTabId: initialSubTabId,
+  activeMainTabId: "main-initial",
+  activeSubTabId: "sub-initial",
   completedTasks: [],
   hideCompleted: false,
   lastSelectedSubTabs: {},
@@ -66,7 +46,6 @@ export const useNotesStore = create<NotesState & NotesActions>()(
   immer((set, get) => ({
     ...initialState,
 
-    // Main Tab actions
     addMainTab: () => {
       set((state) => {
         const newId = Date.now().toString();
@@ -117,17 +96,8 @@ export const useNotesStore = create<NotesState & NotesActions>()(
       saveToLocalStorage(get());
     },
 
-    reorderMainTabs: (fromIndex, toIndex) => {
-      set((state) => {
-        const [removed] = state.mainTabs.splice(fromIndex, 1);
-        state.mainTabs.splice(toIndex, 0, removed);
-      });
-      saveToLocalStorage(get());
-    },
-
     setActiveMainTab: (id) => {
       set((state) => {
-        // Save current sub-tab selection
         if (state.activeMainTabId && state.activeSubTabId) {
           state.lastSelectedSubTabs[state.activeMainTabId] =
             state.activeSubTabId;
@@ -135,7 +105,6 @@ export const useNotesStore = create<NotesState & NotesActions>()(
 
         state.activeMainTabId = id;
 
-        // Restore last selected sub-tab or use first
         const mainTab = state.mainTabs.find((t) => t.id === id);
         if (mainTab) {
           const lastSubTabId = state.lastSelectedSubTabs[id];
@@ -150,7 +119,6 @@ export const useNotesStore = create<NotesState & NotesActions>()(
       });
     },
 
-    // Sub Tab actions
     addSubTab: (mainTabId) => {
       set((state) => {
         const mainTab = state.mainTabs.find((t) => t.id === mainTabId);
@@ -198,24 +166,12 @@ export const useNotesStore = create<NotesState & NotesActions>()(
       saveToLocalStorage(get());
     },
 
-    reorderSubTabs: (mainTabId, fromIndex, toIndex) => {
-      set((state) => {
-        const mainTab = state.mainTabs.find((t) => t.id === mainTabId);
-        if (!mainTab) return;
-
-        const [removed] = mainTab.subTabs.splice(fromIndex, 1);
-        mainTab.subTabs.splice(toIndex, 0, removed);
-      });
-      saveToLocalStorage(get());
-    },
-
     setActiveSubTab: (id) => {
       set((state) => {
         state.activeSubTabId = id;
       });
     },
 
-    // Content actions
     updateContent: (mainTabId, subTabId, content) => {
       set((state) => {
         const mainTab = state.mainTabs.find((t) => t.id === mainTabId);
@@ -229,7 +185,6 @@ export const useNotesStore = create<NotesState & NotesActions>()(
       saveToLocalStorage(get());
     },
 
-    // Task actions
     addCompletedTask: (task) => {
       set((state) => {
         state.completedTasks.push(task);
@@ -254,18 +209,8 @@ export const useNotesStore = create<NotesState & NotesActions>()(
       saveToLocalStorage(get());
     },
 
-    // State management
-    setState: (newState) => {
-      set((state) => {
-        Object.assign(state, newState);
-      });
-      saveToLocalStorage(get());
-    },
-
     loadState: (newState) => {
-      console.log("Loading state:", newState);
       set(newState);
-      // Don't save to localStorage when loading - avoid infinite loop
     },
 
     getState: () => {

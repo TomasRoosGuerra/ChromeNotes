@@ -18,70 +18,29 @@ function App() {
   const initAuth = useAuthStore((state) => state.initAuth);
   const activeSubTabId = useNotesStore((state) => state.activeSubTabId);
 
-  // Initialize auth on mount
   useEffect(() => {
-    console.log("App mounted, initializing auth...");
     initAuth();
   }, [initAuth]);
 
-  // Load from localStorage
   useLocalStorage();
-
-  // Sync with cloud
   useCloudSync();
 
-  const mainTabs = useNotesStore((state) => state.mainTabs);
-  const activeMainTabId = useNotesStore((state) => state.activeMainTabId);
-
-  console.log("App render:", {
-    user: !!user,
-    loading,
-    activeSubTabId,
-    activeMainTabId,
-    mainTabsCount: mainTabs.length,
-  });
-
   if (loading) {
-    console.log("Showing loading screen");
     return <LoadingScreen />;
   }
 
   if (!user) {
-    console.log("Showing sign-in screen");
     return <SignInScreen />;
   }
-
-  console.log("Showing main app with tabs:", mainTabs);
 
   const showDoneLog = activeSubTabId === "done-log";
 
   return (
     <>
-      <div className="h-screen flex flex-col bg-white" style={{ background: 'white' }}>
-        {/* Debug info - using inline styles to ensure visibility */}
-        <div style={{
-          background: '#10b981',
-          color: 'white',
-          padding: '12px',
-          fontSize: '14px',
-          fontWeight: 'bold',
-          textAlign: 'center'
-        }}>
-          ✅ REACT APP LOADED! Tabs: {mainTabs.length}, Active Tab: {activeMainTabId}, Sub: {activeSubTabId}
-        </div>
-
-        {/* Main Tabs */}
-        <div style={{ background: '#f0f0f0', padding: '8px', borderBottom: '2px solid #ccc' }}>
-          <MainTabs />
-        </div>
-
-        {/* Sub Tabs */}
-        <div style={{ background: '#fafafa', padding: '8px', borderBottom: '1px solid #ddd' }}>
-          <SubTabs />
-        </div>
-
-        {/* Content */}
-        <div style={{ flex: 1, overflow: 'auto', background: 'white' }}>
+      <div className="h-screen flex flex-col bg-[var(--bg-color)]">
+        <MainTabs />
+        <SubTabs />
+        <div className="flex-grow overflow-y-auto">
           {showDoneLog ? (
             <>
               <Toolbar editor={null} />
@@ -92,8 +51,6 @@ function App() {
           )}
         </div>
       </div>
-
-      {/* Toast Notifications */}
       <ToastContainer />
     </>
   );

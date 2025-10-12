@@ -16,7 +16,6 @@ export const DoneLog = () => {
     );
   }
 
-  // Group tasks by tab name
   const groupedByTab = completedTasks.reduce((acc, task) => {
     if (!acc[task.tabName]) {
       acc[task.tabName] = [];
@@ -26,14 +25,13 @@ export const DoneLog = () => {
   }, {} as Record<string, typeof completedTasks>);
 
   return (
-    <div className="p-6 overflow-y-auto">
+    <div className="p-4 sm:p-6 overflow-y-auto">
       {Object.entries(groupedByTab).map(([tabName, tasks]) => (
-        <div key={tabName} className="mb-8">
-          <h2 className="text-xl font-semibold mb-4 pb-2 border-b-2 border-[var(--accent-color)]">
+        <div key={tabName} className="mb-6 sm:mb-8">
+          <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 pb-2 border-b-2 border-[var(--accent-color)]">
             {tabName}
           </h2>
 
-          {/* Group by date within tab */}
           {Object.entries(
             tasks.reduce((acc, task) => {
               const date = format(task.completedAt, "MMMM d, yyyy");
@@ -45,25 +43,26 @@ export const DoneLog = () => {
             }, {} as Record<string, typeof tasks>)
           ).map(([date, dateTasks]) => (
             <div key={date} className="mb-4">
-              <h3 className="font-semibold mb-2 text-[var(--text-color)]">
+              <h3 className="text-base sm:text-lg font-semibold mb-2 text-[var(--text-color)]">
                 {date}
               </h3>
-              <div className="space-y-2 pl-4">
+              <div className="space-y-2 pl-2 sm:pl-4">
                 {dateTasks.map((task) => (
                   <div
                     key={task.id}
-                    className="flex items-center gap-3 group hover:bg-[var(--hover-bg-color)] p-2 rounded"
+                    className="flex items-center gap-3 group hover:bg-[var(--hover-bg-color)] p-3 sm:p-2 rounded-lg touch-manipulation"
                   >
-                    <FiCheck className="w-4 h-4 text-green-500 flex-shrink-0" />
-                    <span className="flex-grow text-[var(--completed-text-color)]">
+                    <FiCheck className="w-5 h-5 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" />
+                    <span className="flex-grow text-base sm:text-sm text-[var(--completed-text-color)] break-words">
                       {task.text}
                     </span>
                     <button
                       onClick={() => deleteCompletedTask(task.id)}
-                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 dark:hover:bg-red-900 rounded transition-all"
+                      className="opacity-100 sm:opacity-0 group-hover:opacity-100 p-2 sm:p-1 hover:bg-red-100 dark:hover:bg-red-900 rounded-lg transition-all touch-manipulation min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center"
                       title="Delete task"
+                      aria-label="Delete task"
                     >
-                      <FiX className="w-4 h-4 text-red-600" />
+                      <FiX className="w-5 h-5 sm:w-4 sm:h-4 text-red-600" />
                     </button>
                   </div>
                 ))}

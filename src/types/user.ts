@@ -1,9 +1,6 @@
-import type { User as FirebaseUser } from "firebase/auth";
-
-export type User = FirebaseUser;
-
-export interface AuthState {
-  user: User | null;
-  loading: boolean;
-  error: string | null;
+export interface User {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
 }

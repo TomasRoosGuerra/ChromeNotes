@@ -30,3 +30,7 @@ dist-ssr
 
 # Firebase
 .firebase
+
+# Import files (personal data)
+import.txt
+import-formatted.txt

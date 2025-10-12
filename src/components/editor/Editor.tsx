@@ -5,6 +5,7 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useCallback, useEffect } from "react";
 import { useNotesStore } from "../../store/notesStore";
+import { QuickFormatBar } from "./QuickFormatBar";
 import { Toolbar } from "./Toolbar";
 
 export const Editor = () => {
@@ -12,6 +13,7 @@ export const Editor = () => {
   const activeMainTabId = useNotesStore((state) => state.activeMainTabId);
   const activeSubTabId = useNotesStore((state) => state.activeSubTabId);
   const updateContent = useNotesStore((state) => state.updateContent);
+  const hideCompleted = useNotesStore((state) => state.hideCompleted);
 
   const activeMainTab = mainTabs.find((t) => t.id === activeMainTabId);
   const activeSubTab = activeMainTab?.subTabs.find(
@@ -26,14 +28,14 @@ export const Editor = () => {
         nested: true,
       }),
       Placeholder.configure({
-        placeholder: "Start typing... Try '# ', '- ', or '-. '",
+        placeholder: "Start typing... Try '# ', '- ', or '-.' for shortcuts",
       }),
     ],
     content: activeSubTab?.content || "",
     editorProps: {
       attributes: {
         class:
-          "prose prose-sm sm:prose lg:prose-lg xl:prose-2xl focus:outline-none min-h-full p-6",
+          "prose prose-sm sm:prose lg:prose-lg focus:outline-none min-h-full p-6",
       },
     },
     onUpdate: ({ editor }) => {
@@ -43,7 +45,6 @@ export const Editor = () => {
     },
   });
 
-  // Update editor content when tab changes
   useEffect(() => {
     if (editor && activeSubTab) {
       const currentContent = editor.getHTML();
@@ -53,7 +54,6 @@ export const Editor = () => {
     }
   }, [editor, activeSubTab]);
 
-  // Undo/Redo handlers
   const handleUndo = useCallback(() => {
     if (editor) {
       editor.chain().focus().undo().run();
@@ -82,9 +82,12 @@ export const Editor = () => {
         canUndo={canUndo}
         canRedo={canRedo}
       />
-      <div className="flex-grow overflow-y-auto">
-        <EditorContent editor={editor} />
+      <div className="flex-grow overflow-y-auto pb-16 sm:pb-0">
+        <div className={hideCompleted ? "hide-completed-tasks" : ""}>
+          <EditorContent editor={editor} />
+        </div>
       </div>
+      <QuickFormatBar editor={editor} />
     </>
   );
 };

@@ -16,9 +16,6 @@ interface AuthState {
 interface AuthActions {
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
-  setUser: (user: User | null) => void;
-  setLoading: (loading: boolean) => void;
-  setError: (error: string | null) => void;
   initAuth: () => void;
 }
 
@@ -54,10 +51,6 @@ export const useAuthStore = create<AuthState & AuthActions>((set) => ({
       });
     }
   },
-
-  setUser: (user) => set({ user }),
-  setLoading: (loading) => set({ loading }),
-  setError: (error) => set({ error }),
 
   initAuth: () => {
     onAuthStateChanged(auth, (user) => {

@@ -19,11 +19,3 @@ export const loadFromLocalStorage = (): NotesState | null => {
     return null;
   }
 };
-
-export const clearLocalStorage = (): void => {
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-  } catch (error) {
-    console.error("Error clearing localStorage:", error);
-  }
-};

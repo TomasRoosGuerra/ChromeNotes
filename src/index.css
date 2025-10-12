@@ -36,9 +36,17 @@
   }
 }
 
-/* TipTap Editor Styles */
+/* TipTap Editor Styles - Mobile First */
 .ProseMirror {
-  @apply outline-none min-h-full p-6;
+  @apply outline-none min-h-full p-4 sm:p-6;
+  font-size: 16px; /* Prevents iOS zoom on focus */
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (min-width: 640px) {
+  .ProseMirror {
+    font-size: 14px;
+  }
 }
 
 .ProseMirror:focus {
@@ -86,20 +94,6 @@
   @apply my-4 px-5 py-3 border-l-4 border-[var(--accent-color)] bg-[var(--accent-color)] bg-opacity-5 rounded-r italic;
 }
 
-.ProseMirror code {
-  @apply bg-gray-100 dark:bg-gray-800 border border-[var(--border-color)] rounded px-1.5 py-0.5 text-sm;
-  font-family: "SF Mono", Monaco, "Courier New", monospace;
-}
-
-.ProseMirror pre {
-  @apply bg-gray-100 dark:bg-gray-800 border border-[var(--border-color)] rounded-md p-4 my-4 overflow-x-auto;
-  font-family: "SF Mono", Monaco, "Courier New", monospace;
-}
-
-.ProseMirror pre code {
-  @apply bg-transparent border-0 p-0;
-}
-
 /* Task List Styles */
 .ProseMirror ul[data-type="taskList"] {
   @apply list-none pl-0;
@@ -125,9 +119,17 @@
   @apply w-5 h-5 cursor-pointer accent-[var(--accent-color)];
 }
 
+/* Hide completed tasks when toggle is active */
+.hide-completed-tasks
+  .ProseMirror
+  ul[data-type="taskList"]
+  li[data-checked="true"] {
+  display: none;
+}
+
 /* Scrollbar Styles */
 ::-webkit-scrollbar {
-  @apply w-3 h-3;
+  @apply w-2 h-2 sm:w-3 sm:h-3;
 }
 
 ::-webkit-scrollbar-track {
@@ -142,18 +144,50 @@
   @apply bg-[var(--accent-color)];
 }
 
-/* Smooth transitions */
-* {
-  @apply transition-colors duration-200;
-}
+/* Mobile Optimizations */
+@media (max-width: 640px) {
+  /* Better touch targets */
+  button,
+  a,
+  input[type="checkbox"] {
+    min-width: 44px;
+    min-height: 44px;
+  }
 
-/* Loading animation */
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
+  /* Prevent text size adjustment */
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Smooth scrolling */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Better keyboard handling */
+  .ProseMirror {
+    /* Prevent keyboard from hiding content */
+    min-height: calc(100vh - 300px);
+  }
+
+  /* Larger checkboxes on mobile */
+  .ProseMirror ul[data-type="taskList"] input[type="checkbox"] {
+    @apply w-6 h-6;
+  }
+
+  /* Better line height for readability */
+  .ProseMirror p,
+  .ProseMirror li {
+    line-height: 1.8;
   }
 }
 
-.animate-spin {
-  animation: spin 1s linear infinite;
+/* Touch-friendly utilities */
+.touch-manipulation {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  @apply w-1 h-1;
 }

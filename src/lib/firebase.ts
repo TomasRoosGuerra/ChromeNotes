@@ -11,13 +11,6 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-// Debug: Log config status
-console.log("Firebase config check:", {
-  hasApiKey: !!firebaseConfig.apiKey,
-  hasAuthDomain: !!firebaseConfig.authDomain,
-  hasProjectId: !!firebaseConfig.projectId,
-});
-
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
@@ -31,4 +24,4 @@ googleProvider.setCustomParameters({
   prompt: "select_account",
 });
 
-console.log("Firebase initialized successfully");
+console.log("✅ Firebase initialized");

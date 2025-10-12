@@ -1,20 +1,14 @@
 import type { Editor } from "@tiptap/react";
-import { clsx } from "clsx";
 import {
-  FiAlignLeft,
   FiBold,
-  FiCheckSquare,
   FiItalic,
   FiList,
-  FiLogOut,
+  FiMinus,
   FiRotateCcw,
   FiRotateCw,
   FiType,
 } from "react-icons/fi";
-import { MdFormatStrikethrough } from "react-icons/md";
-import { useAuthStore } from "../../store/authStore";
 import { Button } from "../ui/Button";
-import { MoreOptionsMenu } from "../ui/MoreOptionsMenu";
 
 interface ToolbarProps {
   editor: Editor | null;
@@ -31,62 +25,70 @@ export const Toolbar = ({
   canUndo = false,
   canRedo = false,
 }: ToolbarProps) => {
-  const signOut = useAuthStore((state) => state.signOut);
-  const user = useAuthStore((state) => state.user);
-
   if (!editor) {
-    return null;
+    return (
+      <div className="border-b border-[var(--border-color)] p-3 sm:p-2 bg-[var(--bg-color)]">
+        <div className="flex items-center gap-2 sm:gap-1">
+          <Button size="sm" disabled>
+            Loading...
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-[var(--border-color)] bg-[var(--bg-color)] overflow-x-auto">
-      {/* Format Controls */}
-      <div className="flex items-center gap-1 flex-shrink-0">
+    <div className="border-b border-[var(--border-color)] p-3 sm:p-2 bg-[var(--bg-color)] overflow-x-auto">
+      <div className="flex items-center gap-2 sm:gap-1 flex-nowrap sm:flex-wrap">
         <Button
           size="sm"
           onClick={() => editor.chain().focus().toggleBold().run()}
-          className={clsx(
-            editor.isActive("bold") && "bg-[var(--accent-color)] text-white"
-          )}
+          className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 ${
+            editor.isActive("bold") ? "bg-[var(--accent-color)] text-white" : ""
+          }`}
           title="Bold (Ctrl+B)"
         >
-          <FiBold />
+          <FiBold className="w-5 h-5 sm:w-4 sm:h-4" />
         </Button>
 
         <Button
           size="sm"
           onClick={() => editor.chain().focus().toggleItalic().run()}
-          className={clsx(
-            editor.isActive("italic") && "bg-[var(--accent-color)] text-white"
-          )}
+          className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 ${
+            editor.isActive("italic")
+              ? "bg-[var(--accent-color)] text-white"
+              : ""
+          }`}
           title="Italic (Ctrl+I)"
         >
-          <FiItalic />
+          <FiItalic className="w-5 h-5 sm:w-4 sm:h-4" />
         </Button>
 
         <Button
           size="sm"
           onClick={() => editor.chain().focus().toggleStrike().run()}
-          className={clsx(
-            editor.isActive("strike") && "bg-[var(--accent-color)] text-white"
-          )}
+          className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 ${
+            editor.isActive("strike")
+              ? "bg-[var(--accent-color)] text-white"
+              : ""
+          }`}
           title="Strikethrough"
         >
-          <MdFormatStrikethrough />
+          <FiMinus className="w-5 h-5 sm:w-4 sm:h-4" />
         </Button>
 
-        <div className="w-px h-5 bg-[var(--border-color)] mx-1" />
+        <div className="w-px h-10 sm:h-6 bg-[var(--border-color)] mx-1" />
 
         <Button
           size="sm"
           onClick={() =>
             editor.chain().focus().toggleHeading({ level: 1 }).run()
           }
-          className={clsx(
-            editor.isActive("heading", { level: 1 }) &&
-              "bg-[var(--accent-color)] text-white",
-            "font-bold text-xs"
-          )}
+          className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 text-base sm:text-sm font-semibold ${
+            editor.isActive("heading", { level: 1 })
+              ? "bg-[var(--accent-color)] text-white"
+              : ""
+          }`}
           title="Heading 1"
         >
           H1
@@ -97,11 +99,11 @@ export const Toolbar = ({
           onClick={() =>
             editor.chain().focus().toggleHeading({ level: 2 }).run()
           }
-          className={clsx(
-            editor.isActive("heading", { level: 2 }) &&
-              "bg-[var(--accent-color)] text-white",
-            "font-bold text-xs"
-          )}
+          className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 text-base sm:text-sm font-semibold ${
+            editor.isActive("heading", { level: 2 })
+              ? "bg-[var(--accent-color)] text-white"
+              : ""
+          }`}
           title="Heading 2"
         >
           H2
@@ -112,74 +114,80 @@ export const Toolbar = ({
           onClick={() =>
             editor.chain().focus().toggleHeading({ level: 3 }).run()
           }
-          className={clsx(
-            editor.isActive("heading", { level: 3 }) &&
-              "bg-[var(--accent-color)] text-white",
-            "font-bold text-xs"
-          )}
+          className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 text-base sm:text-sm font-semibold ${
+            editor.isActive("heading", { level: 3 })
+              ? "bg-[var(--accent-color)] text-white"
+              : ""
+          }`}
           title="Heading 3"
         >
           H3
         </Button>
 
-        <div className="w-px h-5 bg-[var(--border-color)] mx-1" />
+        <div className="w-px h-10 sm:h-6 bg-[var(--border-color)] mx-1" />
 
         <Button
           size="sm"
           onClick={() => editor.chain().focus().toggleBulletList().run()}
-          className={clsx(
-            editor.isActive("bulletList") &&
-              "bg-[var(--accent-color)] text-white"
-          )}
+          className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 ${
+            editor.isActive("bulletList")
+              ? "bg-[var(--accent-color)] text-white"
+              : ""
+          }`}
           title="Bullet List"
         >
-          <FiList />
+          <FiList className="w-5 h-5 sm:w-4 sm:h-4" />
         </Button>
 
         <Button
           size="sm"
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
-          className={clsx(
-            editor.isActive("orderedList") &&
-              "bg-[var(--accent-color)] text-white"
-          )}
+          className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 text-lg sm:text-sm font-semibold ${
+            editor.isActive("orderedList")
+              ? "bg-[var(--accent-color)] text-white"
+              : ""
+          }`}
           title="Numbered List"
         >
-          <FiType />
+          1.
         </Button>
 
         <Button
           size="sm"
           onClick={() => editor.chain().focus().toggleTaskList().run()}
-          className={clsx(
-            editor.isActive("taskList") && "bg-[var(--accent-color)] text-white"
-          )}
+          className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 text-lg sm:text-base ${
+            editor.isActive("taskList")
+              ? "bg-[var(--accent-color)] text-white"
+              : ""
+          }`}
           title="Task List"
         >
-          <FiCheckSquare />
+          ☑
         </Button>
 
         <Button
           size="sm"
           onClick={() => editor.chain().focus().toggleBlockquote().run()}
-          className={clsx(
-            editor.isActive("blockquote") &&
-              "bg-[var(--accent-color)] text-white"
-          )}
+          className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 ${
+            editor.isActive("blockquote")
+              ? "bg-[var(--accent-color)] text-white"
+              : ""
+          }`}
           title="Blockquote"
         >
-          <FiAlignLeft />
+          <FiType className="w-5 h-5 sm:w-4 sm:h-4" />
         </Button>
 
-        <div className="w-px h-5 bg-[var(--border-color)] mx-1" />
+        <div className="w-px h-10 sm:h-6 bg-[var(--border-color)] mx-1" />
 
         <Button
           size="sm"
           onClick={onUndo}
           disabled={!canUndo}
           title="Undo (Ctrl+Z)"
+          className="min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0"
         >
-          <FiRotateCcw />
+          <FiRotateCcw className="w-5 h-5 sm:w-4 sm:h-4" />
         </Button>
 
         <Button
@@ -187,23 +195,9 @@ export const Toolbar = ({
           onClick={onRedo}
           disabled={!canRedo}
           title="Redo (Ctrl+Y)"
+          className="min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0"
         >
-          <FiRotateCw />
-        </Button>
-      </div>
-
-      {/* User Controls */}
-      <div className="flex items-center gap-2 flex-shrink-0">
-        <MoreOptionsMenu />
-
-        {user && (
-          <span className="text-sm text-[var(--placeholder-color)] hidden md:block">
-            {user.email}
-          </span>
-        )}
-
-        <Button size="sm" onClick={signOut} title="Sign out">
-          <FiLogOut />
+          <FiRotateCw className="w-5 h-5 sm:w-4 sm:h-4" />
         </Button>
       </div>
     </div>

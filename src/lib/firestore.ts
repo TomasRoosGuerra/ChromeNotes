@@ -30,7 +30,6 @@ export const loadNotesFromCloud = async (
 
     if (docSnap.exists()) {
       const data = docSnap.data();
-      // Remove updatedAt field before returning
       const { updatedAt, ...notesData } = data;
       return notesData as NotesState;
     }
