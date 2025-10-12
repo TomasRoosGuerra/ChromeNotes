@@ -82,7 +82,7 @@ export const MoreOptionsMenu = () => {
   const handleEmail = () => {
     const defaultEmail = import.meta.env.VITE_DEFAULT_EMAIL || "";
     emailNotes(mainTabs, defaultEmail);
-    toast.info("Opening email client...");
+    toast("Opening email client...", { icon: "✉️" });
     setIsOpen(false);
   };
 

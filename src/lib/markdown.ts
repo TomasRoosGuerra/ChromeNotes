@@ -1,4 +1,4 @@
-import type { MainTab } from "../types/notes";
+import type { MainTab, SubTab } from "../types/notes";
 
 export const formatTabsForCopy = (mainTabs: MainTab[]): string => {
   let output = "";
@@ -38,7 +38,7 @@ const htmlToMarkdown = (html: string): string => {
   // Convert lists
   text = text.replace(/<li>(.*?)<\/li>/gi, "• $1\n");
   text = text.replace(/<ul[^>]*>(.*?)<\/ul>/gis, "$1");
-  text = text.replace(/<ol[^>]*>(.*?)<\/ol>/gis, (match, content) => {
+  text = text.replace(/<ol[^>]*>(.*?)<\/ol>/gis, (_match, content) => {
     let counter = 1;
     return content.replace(/• /g, () => `${counter++}. `);
   });
@@ -81,16 +81,19 @@ export const parseImportedContent = (text: string): MainTab[] => {
     if (lines.length === 0) return;
 
     let currentMainTab: MainTab | null = null;
-    let currentSubTab: { id: string; name: string; content: string } | null =
-      null;
+    let currentSubTab: SubTab | null = null;
     let contentBuffer: string[] = [];
 
     lines.forEach((line) => {
       // Main tab (# Heading)
       if (line.startsWith("# ")) {
-        if (currentMainTab && currentSubTab) {
-          currentSubTab.content = markdownToHtml(contentBuffer.join("\n"));
-          currentMainTab.subTabs.push(currentSubTab);
+        // Save previous sub tab if exists
+        if (currentMainTab !== null && currentSubTab !== null) {
+          const subTab: SubTab = {
+            ...currentSubTab,
+            content: markdownToHtml(contentBuffer.join("\n")),
+          };
+          currentMainTab.subTabs.push(subTab);
         }
 
         currentMainTab = {
@@ -103,9 +106,13 @@ export const parseImportedContent = (text: string): MainTab[] => {
       }
       // Sub tab (## Heading)
       else if (line.startsWith("## ")) {
-        if (currentMainTab && currentSubTab) {
-          currentSubTab.content = markdownToHtml(contentBuffer.join("\n"));
-          currentMainTab.subTabs.push(currentSubTab);
+        // Save previous sub tab if exists
+        if (currentMainTab !== null && currentSubTab !== null) {
+          const subTab: SubTab = {
+            ...currentSubTab,
+            content: markdownToHtml(contentBuffer.join("\n")),
+          };
+          currentMainTab.subTabs.push(subTab);
         }
 
         currentSubTab = {
@@ -116,16 +123,24 @@ export const parseImportedContent = (text: string): MainTab[] => {
         contentBuffer = [];
       }
       // Content
-      else if (currentSubTab) {
+      else if (currentSubTab !== null) {
         contentBuffer.push(line);
       }
     });
 
-    // Add last sub tab
-    if (currentMainTab && currentSubTab) {
-      currentSubTab.content = markdownToHtml(contentBuffer.join("\n"));
-      currentMainTab.subTabs.push(currentSubTab);
-      tabs.push(currentMainTab);
+    // Add last sub tab and main tab
+    if (currentMainTab) {
+      if (currentSubTab) {
+        (currentMainTab as MainTab).subTabs.push({
+          id: (currentSubTab as SubTab).id,
+          name: (currentSubTab as SubTab).name,
+          content: markdownToHtml(contentBuffer.join("\n")),
+        });
+      }
+      
+      if ((currentMainTab as MainTab).subTabs.length > 0) {
+        tabs.push(currentMainTab as MainTab);
+      }
     }
   });
 
