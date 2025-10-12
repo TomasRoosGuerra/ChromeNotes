@@ -263,7 +263,9 @@ export const useNotesStore = create<NotesState & NotesActions>()(
     },
 
     loadState: (newState) => {
+      console.log("Loading state:", newState);
       set(newState);
+      // Don't save to localStorage when loading - avoid infinite loop
     },
 
     getState: () => {

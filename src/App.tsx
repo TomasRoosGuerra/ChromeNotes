@@ -57,22 +57,40 @@ function App() {
 
   return (
     <>
-      <div className="h-screen flex flex-col bg-[var(--bg-color)]">
+      <div className="h-screen flex flex-col bg-white" style={{ background: 'white' }}>
+        {/* Debug info - using inline styles to ensure visibility */}
+        <div style={{
+          background: '#10b981',
+          color: 'white',
+          padding: '12px',
+          fontSize: '14px',
+          fontWeight: 'bold',
+          textAlign: 'center'
+        }}>
+          ✅ REACT APP LOADED! Tabs: {mainTabs.length}, Active Tab: {activeMainTabId}, Sub: {activeSubTabId}
+        </div>
+
         {/* Main Tabs */}
-        <MainTabs />
+        <div style={{ background: '#f0f0f0', padding: '8px', borderBottom: '2px solid #ccc' }}>
+          <MainTabs />
+        </div>
 
         {/* Sub Tabs */}
-        <SubTabs />
+        <div style={{ background: '#fafafa', padding: '8px', borderBottom: '1px solid #ddd' }}>
+          <SubTabs />
+        </div>
 
-        {/* Toolbar - Editor component will handle its own toolbar now */}
-        {showDoneLog ? (
-          <>
-            <Toolbar editor={null} />
-            <DoneLog />
-          </>
-        ) : (
-          <Editor />
-        )}
+        {/* Content */}
+        <div style={{ flex: 1, overflow: 'auto', background: 'white' }}>
+          {showDoneLog ? (
+            <>
+              <Toolbar editor={null} />
+              <DoneLog />
+            </>
+          ) : (
+            <Editor />
+          )}
+        </div>
       </div>
 
       {/* Toast Notifications */}
