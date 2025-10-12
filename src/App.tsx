@@ -20,6 +20,7 @@ function App() {
 
   // Initialize auth on mount
   useEffect(() => {
+    console.log("App mounted, initializing auth...");
     initAuth();
   }, [initAuth]);
 
@@ -29,13 +30,19 @@ function App() {
   // Sync with cloud
   useCloudSync();
 
+  console.log("App render:", { user: !!user, loading, activeSubTabId });
+
   if (loading) {
+    console.log("Showing loading screen");
     return <LoadingScreen />;
   }
 
   if (!user) {
+    console.log("Showing sign-in screen");
     return <SignInScreen />;
   }
+
+  console.log("Showing main app");
 
   const showDoneLog = activeSubTabId === "done-log";
 
