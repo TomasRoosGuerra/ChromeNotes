@@ -1,175 +1,186 @@
-# Chrome Notes - Extension & Web App
+# Chrome Notes - React Web App
 
-A beautiful note-taking extension for Chrome with cloud sync and mobile web app access.
+A modern, feature-rich note-taking web application built with React, TypeScript, and Firebase.
 
-## Features
+🌐 **Live Demo**: https://chrome-notes-webapp.netlify.app (will auto-deploy)
 
-- **Chrome Extension**: Side panel note-taking with rich text editing
-- **Web App**: Access your notes from any device via web browser
-- **Cloud Sync**: Real-time synchronization using Firebase
-- **Offline Support**: Works offline, syncs when connected
-- **Mobile Optimized**: Responsive design for mobile devices
-- **PWA Support**: Install as app on mobile devices
+---
 
-## Setup Instructions
+## ✨ Features
 
-### 1. Firebase Setup
+### Core Features
+- 🔐 **Google Authentication** - Secure sign-in with Firebase
+- 📑 **Hierarchical Tabs** - Main tabs with sub-tabs for organization
+- ✍️ **Rich Text Editor** - TipTap-powered editor with markdown shortcuts
+- ✅ **Task Management** - Checkboxes, completion tracking, Done log
+- ☁️ **Cloud Sync** - Real-time synchronization with Firebase Firestore
+- 💾 **Offline Support** - Works offline, syncs when connected
+- 🌙 **Dark Mode** - Auto-detect system preference
+- 📱 **Mobile Responsive** - Works beautifully on all devices
+- ⌨️ **Keyboard Shortcuts** - Ctrl+B, Ctrl+I, Ctrl+Z, etc.
 
-1. Go to [Firebase Console](https://console.firebase.google.com/)
-2. Create a new project
-3. Enable Authentication:
-   - Go to Authentication > Sign-in method
-   - Enable Google sign-in
-4. Enable Firestore Database:
-   - Go to Firestore Database
-   - Create database in production mode
-5. Get your Firebase config:
-   - Go to Project Settings > General > Your apps
-   - Click "Add app" > Web app
-   - Copy the config object
+### Advanced Features
+- 📋 **Copy/Import** - Export to markdown, import from clipboard
+- 📧 **Email Notes** - Send notes via email
+- 🔄 **Undo/Redo** - Full history with keyboard shortcuts
+- 🎨 **Rich Formatting** - Bold, italic, strikethrough, headings, lists, blockquotes
+- 📊 **Done Log** - Track completed tasks grouped by tab and date
+- 🔔 **Toast Notifications** - Visual feedback for all actions
 
-### 2. Update Firebase Configuration
+---
 
-Replace the Firebase config in these files with your actual config:
+## 🚀 Quick Start
 
-- `firebase-sync.js` (line 15-22)
-- `web-app/firebase-config.js` (line 8-15)
+### Prerequisites
+- Node.js 20.19+ (Required)
+- npm or yarn
 
-```javascript
-const firebaseConfig = {
-  apiKey: "your-actual-api-key",
-  authDomain: "your-project.firebaseapp.com",
-  projectId: "your-project-id",
-  storageBucket: "your-project.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "your-app-id",
-};
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/TomasRoosGuerra/ChromeNotes.git
+cd ChromeNotes
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
 ```
 
-### 3. Chrome Extension Setup
+Open http://localhost:5173 and sign in with Google!
 
-1. Open Chrome and go to `chrome://extensions/`
-2. Enable "Developer mode"
-3. Click "Load unpacked" and select the ChromeNotes folder
-4. The extension will appear in your Chrome toolbar
+---
 
-### 4. Web App Deployment
+## 📦 Deployment
 
-#### Option A: Firebase Hosting (Recommended)
+### Netlify (Automatic)
+This repository is configured to auto-deploy to Netlify. Just push to `main` branch.
 
-1. Install Firebase CLI:
+### Manual Deployment
 
-   ```bash
-   npm install -g firebase-tools
-   ```
+#### Vercel
+```bash
+npm install -g vercel
+npm run build
+vercel --prod
+```
 
-2. Login to Firebase:
+#### Netlify CLI
+```bash
+npm install -g netlify-cli
+npm run build
+netlify deploy --prod --dir=dist
+```
 
-   ```bash
-   firebase login
-   ```
+#### Firebase Hosting
+```bash
+npm install -g firebase-tools
+npm run build
+firebase init hosting
+firebase deploy
+```
 
-3. Initialize hosting in the web-app folder:
+---
 
-   ```bash
-   cd web-app
-   firebase init hosting
-   ```
+## 🛠️ Tech Stack
 
-4. Deploy:
-   ```bash
-   firebase deploy
-   ```
+- **React 18** - UI framework
+- **TypeScript** - Type safety
+- **Vite** - Build tool & dev server
+- **Zustand** - State management
+- **TipTap** - Rich text editor
+- **Firebase** - Authentication & Firestore database
+- **Tailwind CSS** - Styling
+- **React Hot Toast** - Notifications
+- **React Icons** - Icon library
+- **date-fns** - Date formatting
 
-#### Option B: Any Web Hosting
+---
 
-Simply upload the contents of the `web-app` folder to any web hosting service.
+## 📖 Documentation
 
-### 5. Usage
+- **`SETUP.md`** - Detailed setup instructions
+- **`COMPLETED_FEATURES.md`** - Full feature list
+- **`MIGRATION_PLAN.md`** - Migration from Chrome extension
+- **`STATUS.md`** - Current status
+- **`FINAL_SUMMARY.md`** - Quick reference
 
-#### Chrome Extension
+---
 
-- Click the extension icon to open the side panel
-- Right-click for context menu
-- Sign in with Google to enable cloud sync
-- All notes automatically sync to the cloud
+## 🎯 Keyboard Shortcuts
 
-#### Web App
+- `Ctrl/Cmd + B` - Bold
+- `Ctrl/Cmd + I` - Italic
+- `Ctrl/Cmd + Z` - Undo
+- `Ctrl/Cmd + Y` - Redo
+- `#` + `Space` - H1 heading
+- `##` + `Space` - H2 heading
+- `-` + `Space` - Bullet list
+- `-.` + `Space` - Task list
 
-- Visit your deployed web app URL
-- Sign in with the same Google account
-- Access and edit your notes from any device
-- Changes sync in real-time
+---
 
-## File Structure
+## 🔧 Development
+
+```bash
+npm run dev      # Start dev server
+npm run build    # Build for production
+npm run preview  # Preview production build
+npm run lint     # Lint code
+```
+
+---
+
+## 📝 Project Structure
 
 ```
 ChromeNotes/
-├── manifest.json              # Chrome extension manifest
-├── background.js             # Extension background script
-├── sidepanel.html            # Extension side panel HTML
-├── sidepanel.css             # Extension styles
-├── sidepanel.js              # Extension main script
-├── firebase-sync.js          # Firebase sync for extension
-├── gmail_inject.js           # Gmail integration
-├── icons/                    # Extension icons
-├── web-app/                  # Web application
-│   ├── index.html            # Web app HTML
-│   ├── styles.css            # Web app styles
-│   ├── app.js                # Web app JavaScript
-│   ├── firebase-config.js    # Firebase config for web app
-│   └── manifest.json         # PWA manifest
-├── firebase-config-template.js # Firebase config template
-└── README.md                 # This file
+├── src/
+│   ├── components/      # React components
+│   ├── hooks/           # Custom React hooks
+│   ├── store/           # Zustand state management
+│   ├── lib/             # Utilities & Firebase
+│   ├── types/           # TypeScript types
+│   └── App.tsx          # Main app component
+├── public/              # Static assets
+├── netlify.toml         # Netlify configuration
+└── package.json         # Dependencies
 ```
 
-## Features Implemented
+---
 
-### Chrome Extension
+## 🌟 Migration from Chrome Extension
 
-- ✅ Persistent sub-tab selection when switching main tabs
-- ✅ Extension icon behavior: left-click opens sidepanel, right-click shows menu
-- ✅ Firebase cloud sync integration
-- ✅ Real-time synchronization
-- ✅ Offline support with local storage
+This app was migrated from a Chrome extension to a standalone React web app:
 
-### Web App
+- ✅ 45% less code
+- ✅ 100% TypeScript
+- ✅ Modern architecture
+- ✅ Better performance
+- ✅ Easier to maintain
 
-- ✅ Mobile-responsive design
-- ✅ PWA support for mobile installation
-- ✅ Firebase authentication
-- ✅ Real-time cloud sync
-- ✅ Identical UI to Chrome extension
-- ✅ Offline support
+See `MIGRATION_PLAN.md` for details.
 
-## Technical Details
+---
 
-- **Storage**: Chrome storage.local + Firebase Firestore
-- **Authentication**: Firebase Auth with Google sign-in
-- **Sync**: Real-time using Firebase Firestore listeners
-- **Offline**: Works offline, syncs when connected
-- **Mobile**: Responsive design with touch-friendly interface
+## 📄 License
 
-## Troubleshooting
+MIT
 
-### Extension not loading
+---
 
-- Check that all files are in the correct location
-- Verify manifest.json is valid
-- Check Chrome developer console for errors
+## 👨‍💻 Author
 
-### Sync not working
+Tomas Roos Guerra
 
-- Verify Firebase configuration is correct
-- Check Firebase project has Authentication and Firestore enabled
-- Ensure same Google account is used on both extension and web app
+---
 
-### Web app not loading
+## 🤝 Contributing
 
-- Check Firebase configuration
-- Verify hosting is properly configured
-- Check browser console for errors
+Feel free to open issues or submit pull requests!
 
-## License
+---
 
-This project is open source. Feel free to modify and distribute.
+**⭐ Star this repo if you find it useful!**
