@@ -119,6 +119,21 @@
   @apply w-5 h-5 cursor-pointer accent-[var(--accent-color)];
 }
 
+/* Table styles – pasted or inserted tables */
+.ProseMirror .tableWrapper {
+  @apply overflow-x-auto my-4 rounded-lg border border-[var(--border-color)];
+}
+.ProseMirror table {
+  @apply w-full border-collapse;
+}
+.ProseMirror th,
+.ProseMirror td {
+  @apply border border-[var(--border-color)] px-3 py-2 text-left;
+}
+.ProseMirror th {
+  @apply bg-[var(--hover-bg-color)] font-semibold;
+}
+
 /* Hide completed tasks when toggle is active */
 .hide-completed-tasks
   .ProseMirror

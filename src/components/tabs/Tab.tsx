@@ -8,6 +8,11 @@ interface TabProps {
   onRename?: (newName: string) => void;
   onDelete?: () => void;
   showDelete?: boolean;
+  /** Enable drag-to-reorder (whole tab is draggable) */
+  draggable?: boolean;
+  onDragStart?: (e: React.DragEvent) => void;
+  onDragOver?: (e: React.DragEvent) => void;
+  onDrop?: (e: React.DragEvent) => void;
 }
 
 export const Tab = ({
@@ -17,6 +22,10 @@ export const Tab = ({
   onRename,
   onDelete,
   showDelete = true,
+  draggable: isDraggable,
+  onDragStart,
+  onDragOver,
+  onDrop,
 }: TabProps) => {
   const handleDoubleClick = () => {
     if (onRename) {
@@ -31,13 +40,19 @@ export const Tab = ({
     <div
       onClick={onSelect}
       onDoubleClick={handleDoubleClick}
-      className={`flex items-center gap-2 px-4 py-2.5 sm:px-3 sm:py-2 rounded-lg cursor-pointer transition-colors touch-manipulation min-h-[44px] sm:min-h-0 ${
+      draggable={isDraggable}
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      className={`flex items-center gap-2 px-4 py-2.5 sm:px-3 sm:py-2 rounded-lg cursor-pointer transition-colors touch-manipulation min-h-[44px] sm:min-h-0 flex-shrink min-w-0 max-w-[180px] sm:max-w-[140px] ${
+        isDraggable ? "cursor-grab active:cursor-grabbing" : ""
+      } ${
         active
           ? "bg-[var(--accent-color)] text-white shadow-md"
           : "bg-[var(--hover-bg-color)] hover:bg-[var(--border-color)]"
       }`}
     >
-      <span className="text-base sm:text-sm font-medium whitespace-nowrap">
+      <span className="text-base sm:text-sm font-medium truncate block min-w-0">
         {name}
       </span>
       {showDelete && onDelete && (

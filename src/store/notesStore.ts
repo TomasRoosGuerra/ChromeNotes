@@ -9,10 +9,12 @@ interface NotesActions {
   deleteMainTab: (id: string) => void;
   renameMainTab: (id: string, name: string) => void;
   setActiveMainTab: (id: string) => void;
+  reorderMainTabs: (fromIndex: number, toIndex: number) => void;
   addSubTab: (mainTabId: string) => void;
   deleteSubTab: (mainTabId: string, subTabId: string) => void;
   renameSubTab: (mainTabId: string, subTabId: string, name: string) => void;
   setActiveSubTab: (id: string) => void;
+  reorderSubTabs: (mainTabId: string, fromIndex: number, toIndex: number) => void;
   updateContent: (mainTabId: string, subTabId: string, content: string) => void;
   addCompletedTask: (task: CompletedTask) => void;
   deleteCompletedTask: (id: string) => void;
@@ -151,6 +153,16 @@ export const useNotesStore = create<NotesState & NotesActions>()(
       });
     },
 
+    reorderMainTabs: (fromIndex, toIndex) => {
+      set((state) => {
+        if (fromIndex === toIndex) return;
+        const item = state.mainTabs[fromIndex];
+        state.mainTabs.splice(fromIndex, 1);
+        state.mainTabs.splice(toIndex, 0, item);
+      });
+      saveState(get);
+    },
+
     addSubTab: (mainTabId) => {
       set((state) => {
         const mainTab = state.mainTabs.find((t) => t.id === mainTabId);
@@ -204,6 +216,17 @@ export const useNotesStore = create<NotesState & NotesActions>()(
       });
     },
 
+    reorderSubTabs: (mainTabId, fromIndex, toIndex) => {
+      set((state) => {
+        const mainTab = state.mainTabs.find((t) => t.id === mainTabId);
+        if (!mainTab || fromIndex === toIndex) return;
+        const item = mainTab.subTabs[fromIndex];
+        mainTab.subTabs.splice(fromIndex, 1);
+        mainTab.subTabs.splice(toIndex, 0, item);
+      });
+      saveState(get);
+    },
+
     updateContent: (mainTabId, subTabId, content) => {
       set((state) => {
         const mainTab = state.mainTabs.find((t) => t.id === mainTabId);
@@ -242,7 +265,40 @@ export const useNotesStore = create<NotesState & NotesActions>()(
     },
 
     loadState: (newState) => {
-      set(newState);
+      set((state) => {
+        state.mainTabs = newState.mainTabs ?? state.mainTabs;
+        state.activeMainTabId = newState.activeMainTabId ?? state.activeMainTabId;
+        state.activeSubTabId = newState.activeSubTabId ?? state.activeSubTabId;
+        state.completedTasks = newState.completedTasks ?? state.completedTasks;
+        state.hideCompleted = newState.hideCompleted ?? state.hideCompleted;
+        state.lastSelectedSubTabs =
+          newState.lastSelectedSubTabs ?? state.lastSelectedSubTabs;
+        state.scrollPositions = newState.scrollPositions ?? state.scrollPositions;
+
+        // Ensure active ids point to existing tabs (fixes blank screen after login/sync)
+        const mainTabs = state.mainTabs;
+        if (!mainTabs?.length) {
+          state.mainTabs = [...initialState.mainTabs];
+          state.activeMainTabId = initialState.activeMainTabId;
+          state.activeSubTabId = initialState.activeSubTabId;
+          return;
+        }
+        const mainTab = mainTabs.find((t) => t.id === state.activeMainTabId);
+        if (!mainTab) {
+          state.activeMainTabId = mainTabs[0].id;
+          state.activeSubTabId = mainTabs[0].subTabs[0]?.id ?? state.activeSubTabId;
+        } else if (!mainTab.subTabs?.length) {
+          state.activeSubTabId = state.activeSubTabId;
+        } else {
+          const subExists = mainTab.subTabs.some(
+            (st) => st.id === state.activeSubTabId
+          );
+          if (!subExists) {
+            state.activeSubTabId = mainTab.subTabs[0].id;
+          }
+        }
+      });
+      saveState(get);
     },
 
     getState: () => {

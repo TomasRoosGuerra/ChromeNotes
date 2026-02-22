@@ -137,7 +137,7 @@ export const parseImportedContent = (text: string): MainTab[] => {
           content: markdownToHtml(contentBuffer.join("\n")),
         });
       }
-      
+
       if ((currentMainTab as MainTab).subTabs.length > 0) {
         tabs.push(currentMainTab as MainTab);
       }

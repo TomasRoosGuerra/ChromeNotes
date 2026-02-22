@@ -4,6 +4,8 @@ import { Button } from "../ui/Button";
 import { MoreOptionsMenu } from "../ui/MoreOptionsMenu";
 import { Tab } from "./Tab";
 
+const TAB_DRAG_TYPE = "application/x-main-tab-index";
+
 export const MainTabs = () => {
   const mainTabs = useNotesStore((state) => state.mainTabs);
   const activeMainTabId = useNotesStore((state) => state.activeMainTabId);
@@ -11,11 +13,25 @@ export const MainTabs = () => {
   const addMainTab = useNotesStore((state) => state.addMainTab);
   const deleteMainTab = useNotesStore((state) => state.deleteMainTab);
   const renameMainTab = useNotesStore((state) => state.renameMainTab);
+  const reorderMainTabs = useNotesStore((state) => state.reorderMainTabs);
+
+  const handleDragStart = (index: number) => (e: React.DragEvent) => {
+    e.dataTransfer.setData(TAB_DRAG_TYPE, String(index));
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDrop = (toIndex: number) => (e: React.DragEvent) => {
+    e.preventDefault();
+    const from = e.dataTransfer.getData(TAB_DRAG_TYPE);
+    if (from === "") return;
+    const fromIndex = parseInt(from, 10);
+    if (!Number.isNaN(fromIndex)) reorderMainTabs(fromIndex, toIndex);
+  };
 
   return (
-    <div className="flex items-center gap-2 px-3 sm:px-4 py-3 sm:py-2 border-b border-[var(--border-color)] bg-[var(--bg-color)] overflow-x-auto">
-      <div className="flex gap-2 sm:gap-1 flex-grow overflow-x-auto scrollbar-thin">
-        {mainTabs.map((tab) => (
+    <div className="flex items-center gap-2 px-3 sm:px-4 py-3 sm:py-2 border-b border-[var(--border-color)] bg-[var(--bg-color)] min-w-0">
+      <div className="flex gap-2 sm:gap-1 flex-grow min-w-0 flex-shrink">
+        {mainTabs.map((tab, index) => (
           <Tab
             key={tab.id}
             id={tab.id}
@@ -27,6 +43,10 @@ export const MainTabs = () => {
               mainTabs.length > 1 ? () => deleteMainTab(tab.id) : undefined
             }
             showDelete={mainTabs.length > 1}
+            draggable={mainTabs.length > 1}
+            onDragStart={handleDragStart(index)}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={handleDrop(index)}
           />
         ))}
       </div>

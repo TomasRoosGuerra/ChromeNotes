@@ -12,6 +12,8 @@ export const Editor = () => {
   const mainTabs = useNotesStore((state) => state.mainTabs);
   const activeMainTabId = useNotesStore((state) => state.activeMainTabId);
   const activeSubTabId = useNotesStore((state) => state.activeSubTabId);
+  const setActiveMainTab = useNotesStore((state) => state.setActiveMainTab);
+  const setActiveSubTab = useNotesStore((state) => state.setActiveSubTab);
   const updateContent = useNotesStore((state) => state.updateContent);
   const hideCompleted = useNotesStore((state) => state.hideCompleted);
 
@@ -19,6 +21,26 @@ export const Editor = () => {
   const activeSubTab = activeMainTab?.subTabs.find(
     (st) => st.id === activeSubTabId
   );
+
+  // If active tab is missing (e.g. after sync), switch to first valid tab
+  useEffect(() => {
+    if (activeSubTabId === "done-log") return;
+    if (mainTabs.length === 0) return;
+    if (!activeMainTab) {
+      setActiveMainTab(mainTabs[0].id);
+      return;
+    }
+    if (!activeSubTab && activeMainTab.subTabs.length > 0) {
+      setActiveSubTab(activeMainTab.subTabs[0].id);
+    }
+  }, [
+    mainTabs,
+    activeMainTab,
+    activeSubTab,
+    activeSubTabId,
+    setActiveMainTab,
+    setActiveSubTab,
+  ]);
 
   const editor = useEditor({
     extensions: [
@@ -36,6 +58,10 @@ export const Editor = () => {
       attributes: {
         class:
           "prose prose-sm sm:prose lg:prose-lg focus:outline-none min-h-full p-6",
+      },
+      // Preserve formatting and tables when pasting (Apple Notes–style)
+      transformPastedHTML(html) {
+        return html;
       },
     },
     onUpdate: ({ editor }) => {
@@ -74,20 +100,22 @@ export const Editor = () => {
   }
 
   return (
-    <>
-      <Toolbar
-        editor={editor}
-        onUndo={handleUndo}
-        onRedo={handleRedo}
-        canUndo={canUndo}
-        canRedo={canRedo}
-      />
-      <div className="flex-grow overflow-y-auto pb-16 sm:pb-0">
+    <div className="flex flex-col flex-1 min-h-0">
+      <div className="flex-shrink-0 z-10 bg-[var(--bg-color)]">
+        <Toolbar
+          editor={editor}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          canUndo={canUndo}
+          canRedo={canRedo}
+        />
+      </div>
+      <div className="flex-1 min-h-0 overflow-y-auto pb-16 sm:pb-0">
         <div className={hideCompleted ? "hide-completed-tasks" : ""}>
           <EditorContent editor={editor} />
         </div>
       </div>
       <QuickFormatBar editor={editor} />
-    </>
+    </div>
   );
 };

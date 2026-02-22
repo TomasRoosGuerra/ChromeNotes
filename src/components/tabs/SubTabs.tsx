@@ -3,6 +3,8 @@ import { useNotesStore } from "../../store/notesStore";
 import { Button } from "../ui/Button";
 import { Tab } from "./Tab";
 
+const TAB_DRAG_TYPE = "application/x-sub-tab-index";
+
 export const SubTabs = () => {
   const mainTabs = useNotesStore((state) => state.mainTabs);
   const activeMainTabId = useNotesStore((state) => state.activeMainTabId);
@@ -11,15 +13,33 @@ export const SubTabs = () => {
   const addSubTab = useNotesStore((state) => state.addSubTab);
   const deleteSubTab = useNotesStore((state) => state.deleteSubTab);
   const renameSubTab = useNotesStore((state) => state.renameSubTab);
+  const reorderSubTabs = useNotesStore((state) => state.reorderSubTabs);
 
   const activeMainTab = mainTabs.find((t) => t.id === activeMainTabId);
 
+  const handleDragStart = (index: number) => (e: React.DragEvent) => {
+    e.dataTransfer.setData(TAB_DRAG_TYPE, String(index));
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDrop = (toIndex: number) => (e: React.DragEvent) => {
+    e.preventDefault();
+    const from = e.dataTransfer.getData(TAB_DRAG_TYPE);
+    if (from === "") return;
+    const fromIndex = parseInt(from, 10);
+    if (!Number.isNaN(fromIndex))
+      reorderSubTabs(activeMainTab!.id, fromIndex, toIndex);
+  };
+
   if (!activeMainTab) return null;
 
+  const subTabs = activeMainTab.subTabs;
+  const canReorder = subTabs.length > 1;
+
   return (
-    <div className="flex items-center gap-2 px-3 sm:px-4 py-3 sm:py-2 border-b border-[var(--border-color)] bg-[var(--bg-color)] overflow-x-auto">
-      <div className="flex gap-2 sm:gap-1 flex-grow overflow-x-auto scrollbar-thin">
-        {activeMainTab.subTabs.map((subTab) => (
+    <div className="flex items-center gap-2 px-3 sm:px-4 py-3 sm:py-2 border-b border-[var(--border-color)] bg-[var(--bg-color)] min-w-0">
+      <div className="flex gap-2 sm:gap-1 flex-grow min-w-0 flex-shrink">
+        {subTabs.map((subTab, index) => (
           <Tab
             key={subTab.id}
             id={subTab.id}
@@ -30,11 +50,15 @@ export const SubTabs = () => {
               renameSubTab(activeMainTab.id, subTab.id, newName)
             }
             onDelete={
-              activeMainTab.subTabs.length > 1
+              subTabs.length > 1
                 ? () => deleteSubTab(activeMainTab.id, subTab.id)
                 : undefined
             }
-            showDelete={activeMainTab.subTabs.length > 1}
+            showDelete={subTabs.length > 1}
+            draggable={canReorder}
+            onDragStart={handleDragStart(index)}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={handleDrop(index)}
           />
         ))}
         <Tab

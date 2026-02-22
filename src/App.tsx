@@ -42,13 +42,21 @@ function App() {
   return (
     <>
       <div className="h-screen flex flex-col bg-[var(--bg-color)]">
-        <MainTabs />
-        <SubTabs />
-        <div className="flex-grow overflow-y-auto">
+        {/* Tabs stay fixed at top – no scroll */}
+        <header className="flex-shrink-0 z-20 bg-[var(--bg-color)]">
+          <MainTabs />
+          <SubTabs />
+        </header>
+        {/* Only this content area scrolls; toolbar stays visible */}
+        <div className="flex-grow min-h-0 flex flex-col">
           {showDoneLog ? (
             <>
-              <Toolbar editor={null} />
-              <DoneLog />
+              <div className="flex-shrink-0">
+                <Toolbar editor={null} />
+              </div>
+              <div className="flex-1 min-h-0 overflow-y-auto">
+                <DoneLog />
+              </div>
             </>
           ) : (
             <Editor />
