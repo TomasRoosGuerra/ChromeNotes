@@ -38,7 +38,7 @@ export const SubTabs = () => {
 
   return (
     <div className="flex items-center gap-2 px-3 sm:px-4 py-3 sm:py-2 border-b border-[var(--border-color)] bg-[var(--bg-color)] min-w-0">
-      <div className="flex gap-2 sm:gap-1 flex-grow min-w-0 flex-shrink">
+      <div className="flex gap-2 sm:gap-1 flex-grow min-w-0 overflow-x-auto overflow-y-hidden scrollbar-thin flex-nowrap">
         {subTabs.map((subTab, index) => (
           <Tab
             key={subTab.id}

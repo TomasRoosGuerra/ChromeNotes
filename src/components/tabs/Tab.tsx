@@ -44,7 +44,7 @@ export const Tab = ({
       onDragStart={onDragStart}
       onDragOver={onDragOver}
       onDrop={onDrop}
-      className={`flex items-center gap-2 px-4 py-2.5 sm:px-3 sm:py-2 rounded-lg cursor-pointer transition-colors touch-manipulation min-h-[44px] sm:min-h-0 flex-shrink min-w-0 max-w-[180px] sm:max-w-[140px] ${
+      className={`flex items-center gap-2 px-4 py-2.5 sm:px-3 sm:py-2 rounded-lg cursor-pointer transition-colors touch-manipulation min-h-[44px] sm:min-h-0 flex-shrink-0 min-w-[7ch] ${
         isDraggable ? "cursor-grab active:cursor-grabbing" : ""
       } ${
         active
@@ -52,7 +52,7 @@ export const Tab = ({
           : "bg-[var(--hover-bg-color)] hover:bg-[var(--border-color)]"
       }`}
     >
-      <span className="text-base sm:text-sm font-medium truncate block min-w-0">
+      <span className="text-base sm:text-sm font-medium truncate block min-w-[7ch] max-w-full">
         {name}
       </span>
       {showDelete && onDelete && (
