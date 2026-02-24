@@ -1,7 +1,6 @@
 import { FiPlus } from "react-icons/fi";
 import { useNotesStore } from "../../store/notesStore";
 import { Button } from "../ui/Button";
-import { MoreOptionsMenu } from "../ui/MoreOptionsMenu";
 import { Tab } from "./Tab";
 
 const TAB_DRAG_TYPE = "application/x-main-tab-index";
@@ -58,7 +57,6 @@ export const MainTabs = () => {
       >
         <FiPlus className="w-5 h-5 sm:w-4 sm:h-4" />
       </Button>
-      <MoreOptionsMenu />
     </div>
   );
 };
