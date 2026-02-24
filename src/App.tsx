@@ -7,7 +7,6 @@ import { DoneLog } from "./components/tabs/DoneLog";
 import { MainTabs } from "./components/tabs/MainTabs";
 import { SubTabs } from "./components/tabs/SubTabs";
 import { ToastContainer } from "./components/ui/Toast";
-import { MoreOptionsMenu } from "./components/ui/MoreOptionsMenu";
 import { useCloudSync } from "./hooks/useCloudSync";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { useAuthStore } from "./store/authStore";
@@ -47,14 +46,7 @@ function App() {
       <div className="h-screen flex flex-col bg-[var(--bg-color)] safe-area-top">
         {/* Tabs stay fixed at top – no scroll */}
         <header className="flex-shrink-0 z-20 bg-[var(--bg-color)]">
-          {showMainTabs ? (
-            <MainTabs />
-          ) : (
-            // When main tabs are hidden, still show the options menu so it can be turned back on
-            <div className="flex justify-end px-3 sm:px-4 py-3 sm:py-2 border-b border-[var(--border-color)]">
-              <MoreOptionsMenu />
-            </div>
-          )}
+          {showMainTabs && <MainTabs />}
           {showSubTabs && <SubTabs />}
         </header>
         {/* Only this content area scrolls; toolbar stays visible */}

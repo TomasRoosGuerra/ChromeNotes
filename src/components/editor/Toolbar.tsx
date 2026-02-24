@@ -9,6 +9,7 @@ import {
   FiType,
 } from "react-icons/fi";
 import { Button } from "../ui/Button";
+import { MoreOptionsMenu } from "../ui/MoreOptionsMenu";
 
 interface ToolbarProps {
   editor: Editor | null;
@@ -29,6 +30,7 @@ export const Toolbar = ({
     return (
       <div className="border-b border-[var(--border-color)] p-3 sm:p-2 bg-[var(--bg-color)]">
         <div className="flex items-center gap-2 sm:gap-1">
+          <MoreOptionsMenu />
           <Button size="sm" disabled>
             Loading...
           </Button>
@@ -38,8 +40,14 @@ export const Toolbar = ({
   }
 
   return (
-    <div className="border-b border-[var(--border-color)] p-3 sm:p-2 bg-[var(--bg-color)] overflow-x-auto">
-      <div className="flex items-center gap-2 sm:gap-1 flex-nowrap sm:flex-wrap">
+    <div className="border-b border-[var(--border-color)] p-3 sm:p-2 bg-[var(--bg-color)]">
+      <div className="flex items-center gap-2 sm:gap-1">
+        {/* Left: menu, fixed (doesn't scroll) */}
+        <div className="flex-shrink-0">
+          <MoreOptionsMenu />
+        </div>
+        {/* Right: scrollable formatting buttons */}
+        <div className="flex items-center gap-2 sm:gap-1 flex-nowrap sm:flex-wrap overflow-x-auto">
         <Button
           size="sm"
           onClick={() => editor.chain().focus().toggleBold().run()}
@@ -199,6 +207,7 @@ export const Toolbar = ({
         >
           <FiRotateCw className="w-5 h-5 sm:w-4 sm:h-4" />
         </Button>
+        </div>
       </div>
     </div>
   );
