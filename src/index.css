@@ -215,3 +215,8 @@
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom);
 }
+
+/* Alternative: position elements just above bottom safe area */
+.bottom-safe {
+  bottom: env(safe-area-inset-bottom);
+}

@@ -25,7 +25,7 @@ export const QuickFormatBar = ({ editor }: QuickFormatBarProps) => {
   const canLift = inList && editor.can().liftListItem(listItemType);
 
   return (
-    <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-[var(--bg-color)] border-t border-[var(--border-color)] p-2 z-30 shadow-lg">
+    <div className="sm:hidden fixed left-0 right-0 bottom-safe bg-[var(--bg-color)] border-t border-[var(--border-color)] p-2 z-30 shadow-lg">
       <div className="flex items-center justify-around gap-2">
         <Button
           size="sm"
