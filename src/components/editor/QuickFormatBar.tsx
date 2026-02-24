@@ -17,25 +17,32 @@ interface QuickFormatBarProps {
 export const QuickFormatBar = ({ editor }: QuickFormatBarProps) => {
   if (!editor) return null;
 
-  // Keep the bar above the on-screen keyboard using the VisualViewport API (iOS/Android)
+  // Keep the bar above the on-screen keyboard using VisualViewport (where available),
+  // but avoid jitter by only reacting to meaningful changes.
   const [bottomOffset, setBottomOffset] = useState(0);
 
   useEffect(() => {
-    if (typeof window === "undefined" || !window.visualViewport) return;
+    if (typeof window === "undefined") return;
+
+    const vv = window.visualViewport;
+    if (!vv) return;
 
     const updateOffset = () => {
-      const vv = window.visualViewport!;
-      const offset = window.innerHeight - (vv.height + vv.offsetTop);
-      setBottomOffset(offset > 0 ? offset : 0);
+      // How much of the layout viewport is covered by keyboard/system UI
+      const rawOffset = window.innerHeight - (vv.height + vv.offsetTop);
+      // Treat very small changes as noise to avoid flicker
+      const threshold = 24; // px
+      const offset = rawOffset > threshold ? rawOffset : 0;
+      setBottomOffset(offset);
     };
 
     updateOffset();
-    window.visualViewport.addEventListener("resize", updateOffset);
-    window.visualViewport.addEventListener("scroll", updateOffset);
+    vv.addEventListener("resize", updateOffset);
+    vv.addEventListener("scroll", updateOffset);
 
     return () => {
-      window.visualViewport?.removeEventListener("resize", updateOffset);
-      window.visualViewport?.removeEventListener("scroll", updateOffset);
+      vv.removeEventListener("resize", updateOffset);
+      vv.removeEventListener("scroll", updateOffset);
     };
   }, []);
 
