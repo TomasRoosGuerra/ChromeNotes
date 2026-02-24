@@ -7,6 +7,7 @@ import {
   FiCornerDownLeft,
   FiCornerUpLeft,
 } from "react-icons/fi";
+import { useEffect, useState } from "react";
 import { Button } from "../ui/Button";
 
 interface QuickFormatBarProps {
@@ -15,6 +16,28 @@ interface QuickFormatBarProps {
 
 export const QuickFormatBar = ({ editor }: QuickFormatBarProps) => {
   if (!editor) return null;
+
+  // Keep the bar above the on-screen keyboard using the VisualViewport API (iOS/Android)
+  const [bottomOffset, setBottomOffset] = useState(0);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.visualViewport) return;
+
+    const updateOffset = () => {
+      const vv = window.visualViewport!;
+      const offset = window.innerHeight - (vv.height + vv.offsetTop);
+      setBottomOffset(offset > 0 ? offset : 0);
+    };
+
+    updateOffset();
+    window.visualViewport.addEventListener("resize", updateOffset);
+    window.visualViewport.addEventListener("scroll", updateOffset);
+
+    return () => {
+      window.visualViewport?.removeEventListener("resize", updateOffset);
+      window.visualViewport?.removeEventListener("scroll", updateOffset);
+    };
+  }, []);
 
   const inTaskList = editor.isActive("taskList");
   const inBulletOrOrdered =
@@ -25,7 +48,10 @@ export const QuickFormatBar = ({ editor }: QuickFormatBarProps) => {
   const canLift = inList && editor.can().liftListItem(listItemType);
 
   return (
-    <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-[var(--bg-color)] border-t border-[var(--border-color)] p-2 z-30 shadow-lg">
+    <div
+      className="sm:hidden fixed left-0 right-0 bg-[var(--bg-color)] border-t border-[var(--border-color)] p-2 z-30 shadow-lg"
+      style={{ bottom: bottomOffset }}
+    >
       <div className="flex items-center justify-around gap-2">
         <Button
           size="sm"
