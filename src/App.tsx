@@ -17,6 +17,8 @@ function App() {
   const loading = useAuthStore((state) => state.loading);
   const initAuth = useAuthStore((state) => state.initAuth);
   const activeSubTabId = useNotesStore((state) => state.activeSubTabId);
+  const showMainTabs = useNotesStore((state) => state.showMainTabs);
+  const showSubTabs = useNotesStore((state) => state.showSubTabs);
 
   useEffect(() => {
     initAuth();
@@ -41,11 +43,11 @@ function App() {
 
   return (
     <>
-      <div className="h-screen flex flex-col bg-[var(--bg-color)]">
+      <div className="h-screen flex flex-col bg-[var(--bg-color)] safe-area-top">
         {/* Tabs stay fixed at top – no scroll */}
         <header className="flex-shrink-0 z-20 bg-[var(--bg-color)]">
-          <MainTabs />
-          <SubTabs />
+          {showMainTabs && <MainTabs />}
+          {showSubTabs && <SubTabs />}
         </header>
         {/* Only this content area scrolls; toolbar stays visible */}
         <div className="flex-grow min-h-0 flex flex-col">

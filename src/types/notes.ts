@@ -26,4 +26,7 @@ export interface NotesState {
   hideCompleted: boolean;
   lastSelectedSubTabs: Record<string, string>;
   scrollPositions: Record<string, number>;
+  // UI preferences
+  showMainTabs: boolean;
+  showSubTabs: boolean;
 }

@@ -28,6 +28,12 @@ export const MoreOptionsMenu = () => {
   const toggleHideCompleted = useNotesStore(
     (state) => state.toggleHideCompleted
   );
+  const showMainTabs = useNotesStore((state) => state.showMainTabs);
+  const showSubTabs = useNotesStore((state) => state.showSubTabs);
+  const toggleShowMainTabs = useNotesStore(
+    (state) => state.toggleShowMainTabs
+  );
+  const toggleShowSubTabs = useNotesStore((state) => state.toggleShowSubTabs);
   const setState = useNotesStore((state) => state.loadState);
   const getState = useNotesStore((state) => state.getState);
 
@@ -212,6 +218,36 @@ export const MoreOptionsMenu = () => {
                 {hideCompleted
                   ? "Show completed tasks"
                   : "Hide completed tasks"}
+              </span>
+            </button>
+
+            <button
+              onClick={toggleShowMainTabs}
+              className="w-full px-4 py-3 sm:px-3 sm:py-2 text-left flex items-center gap-3 hover:bg-[var(--hover-bg-color)] transition-colors touch-manipulation text-[var(--text-color)]"
+            >
+              {showMainTabs ? (
+                <FiEyeOff className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+              ) : (
+                <FiEye className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+              )}
+              <span className="text-base sm:text-sm font-medium">
+                {showMainTabs ? "Hide top tabs (main)" : "Show top tabs (main)"}
+              </span>
+            </button>
+
+            <button
+              onClick={toggleShowSubTabs}
+              className="w-full px-4 py-3 sm:px-3 sm:py-2 text-left flex items-center gap-3 hover:bg-[var(--hover-bg-color)] transition-colors touch-manipulation text-[var(--text-color)]"
+            >
+              {showSubTabs ? (
+                <FiEyeOff className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+              ) : (
+                <FiEye className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+              )}
+              <span className="text-base sm:text-sm font-medium">
+                {showSubTabs
+                  ? "Hide middle tabs (sub)"
+                  : "Show middle tabs (sub)"}
               </span>
             </button>
 

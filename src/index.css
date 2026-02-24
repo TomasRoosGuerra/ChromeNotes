@@ -206,3 +206,12 @@
 .scrollbar-thin::-webkit-scrollbar {
   @apply w-1 h-1;
 }
+
+/* Safe area helpers for iOS notch / home indicator */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}

@@ -19,6 +19,8 @@ interface NotesActions {
   addCompletedTask: (task: CompletedTask) => void;
   deleteCompletedTask: (id: string) => void;
   toggleHideCompleted: () => void;
+  toggleShowMainTabs: () => void;
+  toggleShowSubTabs: () => void;
   loadState: (state: NotesState) => void;
   getState: () => NotesState;
 }
@@ -43,6 +45,8 @@ const initialState: NotesState = {
   hideCompleted: false,
   lastSelectedSubTabs: {},
   scrollPositions: {},
+  showMainTabs: true,
+  showSubTabs: true,
 };
 
 // Debounced cloud save to avoid excessive writes
@@ -264,6 +268,20 @@ export const useNotesStore = create<NotesState & NotesActions>()(
       saveState(get);
     },
 
+    toggleShowMainTabs: () => {
+      set((state) => {
+        state.showMainTabs = !state.showMainTabs;
+      });
+      saveState(get);
+    },
+
+    toggleShowSubTabs: () => {
+      set((state) => {
+        state.showSubTabs = !state.showSubTabs;
+      });
+      saveState(get);
+    },
+
     loadState: (newState) => {
       set((state) => {
         state.mainTabs = newState.mainTabs ?? state.mainTabs;
@@ -274,6 +292,10 @@ export const useNotesStore = create<NotesState & NotesActions>()(
         state.lastSelectedSubTabs =
           newState.lastSelectedSubTabs ?? state.lastSelectedSubTabs;
         state.scrollPositions = newState.scrollPositions ?? state.scrollPositions;
+         state.showMainTabs =
+          newState.showMainTabs ?? state.showMainTabs ?? initialState.showMainTabs;
+        state.showSubTabs =
+          newState.showSubTabs ?? state.showSubTabs ?? initialState.showSubTabs;
 
         // Ensure active ids point to existing tabs (fixes blank screen after login/sync)
         const mainTabs = state.mainTabs;
@@ -311,6 +333,8 @@ export const useNotesStore = create<NotesState & NotesActions>()(
         hideCompleted: state.hideCompleted,
         lastSelectedSubTabs: state.lastSelectedSubTabs,
         scrollPositions: state.scrollPositions,
+        showMainTabs: state.showMainTabs,
+        showSubTabs: state.showSubTabs,
       };
     },
   }))
