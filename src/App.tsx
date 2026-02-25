@@ -7,6 +7,7 @@ import { DoneLog } from "./components/tabs/DoneLog";
 import { MainTabs } from "./components/tabs/MainTabs";
 import { SubTabs } from "./components/tabs/SubTabs";
 import { ToastContainer } from "./components/ui/Toast";
+import { PlanningTab } from "./components/planning/PlanningTab";
 import { useCloudSync } from "./hooks/useCloudSync";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { useAuthStore } from "./store/authStore";
@@ -67,17 +68,7 @@ function App() {
                 <Toolbar editor={null} />
               </div>
               <div className="flex-1 min-h-0 overflow-y-auto">
-                {/* Lazy import to avoid circular deps */}
-                {/** PlanningTab is default-exported from its file */}
-                {/*
-                  We import here to keep the main editor bundle lean;
-                  the component itself renders the planning UI.
-                */}
-                {/* eslint-disable-next-line @typescript-eslint/no-var-requires */}
-                {(() => {
-                  const { PlanningTab } = require("./components/planning/PlanningTab");
-                  return <PlanningTab />;
-                })()}
+                <PlanningTab />
               </div>
             </>
           ) : (
