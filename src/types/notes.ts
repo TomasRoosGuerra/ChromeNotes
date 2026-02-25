@@ -18,6 +18,25 @@ export interface CompletedTask {
   completedAt: number;
 }
 
+// Auto-scheduling planning feature
+export interface PlanningTask {
+  id: string;
+  title: string;
+  /** Estimated duration in minutes (fallback used if missing) */
+  durationMinutes?: number;
+  /** Optional pinned start time in minutes from midnight (0–1439) */
+  pinnedStartMinutes?: number | null;
+  /** Optional qualitative metrics */
+  effort?: number | null;
+  benefit?: number | null;
+}
+
+export interface PlanningState {
+  /** Day start time in minutes from midnight (e.g. 8:00 = 480) */
+  dayStartMinutes: number;
+  tasks: PlanningTask[];
+}
+
 export interface NotesState {
   mainTabs: MainTab[];
   activeMainTabId: string;
@@ -29,4 +48,6 @@ export interface NotesState {
   // UI preferences
   showMainTabs: boolean;
   showSubTabs: boolean;
+  // Planning / auto-scheduling
+  planning: PlanningState;
 }

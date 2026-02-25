@@ -1,0 +1,67 @@
+Feature Specification: The "Auto-Scheduling Planning Tab"
+
+User Story:
+
+As a user, I want to list my daily tasks, estimate their durations, and set a global start time for my day so the app can automatically build my schedule. I also want the flexibility to pin specific tasks to hard time slots and have the rest of my list flow around them intelligently.
+
+
+
+1. Global Schedule Settings & Entry Point
+
+Action: Long-press the primary Bottom '+' FAB to create the Planning Tab.
+
+Global Day Setup: At the top of the newly created list, a sticky header displays the "Day Start Time" (defaulting to the current time, or if interacted with a user-configured default like 8:00 AM).
+
+UI Element: A large, easily tappable time pill at the top (e.g., Start Day: 09:00 AM). Tapping it opens a native time picker.
+
+2. Task Input & Time UI Structure
+
+Each populated row now acts as a block of time.
+
+
+
+Calculated Time Block (Left side): Next to the drag handle, the app dynamically displays the calculated start and end time (e.g., 09:00 - 09:30).
+
+Priority Metrics (Right side / Expandable): * Duration (Estimated Time): Quick input (e.g., "30m"). Engineering note: This drives the calculation of the next task's start time.
+
+Start Time (Optional Fixed Anchor): A toggle or button to "Pin to specific time." If pinned, a visual indicator (like a lock icon or a distinct color) appears.
+
+Effort & Benefit: Visual indicators (as defined previously).
+
+3. Core Interaction: Drag, Drop, & Auto-Scheduling
+
+The "Water Flow" Logic: Floating tasks (no fixed start time) flow like water around Fixed tasks (which act as boulders). If Task A takes 30m, and Task B takes 1h, they sit back-to-back.
+
+Dragging to Time Slots:
+
+Visual Snapping: When dragging a task, the UI should highlight available "Gaps" in the schedule.
+
+Duration Checking: If a user drags a 1-hour task into a 30-minute gap between two Fixed tasks, the drop zone should turn red or show a warning icon indicating it won't fit.
+
+Auto-Resolution on Drop:
+
+If dropped into a valid gap, the task snaps in, and all floating tasks below it instantly recalculate their start/end times.
+
+If a Fixed Task is dragged, it temporarily becomes "unlocked." When dropped, it snaps to the closest available 15-minute or 30-minute interval in the landing zone, automatically resetting its fixed start time to that slot.
+
+4. Engineering States & Edge Cases to Handle
+
+The Collision State (Overlaps): What happens if a cascading floating task bumps into a Fixed task (e.g., a 1h task starts at 11:30, but there's a locked meeting at 12:00)?
+
+UX Solution: The system automatically splits the list, moving the floating task to the next available opening after the fixed task. The UI inserts a visual "Gap" block (e.g., 30m Free Time) to show the user they have a gap before their meeting.
+
+The Overwhelmed State (Past Midnight): If the sum of task durations exceeds the waking hours of the day (pushes past midnight), the text color of those overflow times should turn red/orange to warn the user they have over-scheduled.
+
+The "Current Time" Progress: As the day progresses, a horizontal "Current Time Line" (like in a calendar app) should slowly move down the list. Tasks above the line that aren't checked off should visually indicate they are overdue (perhaps turning slightly red or prompting a "Reschedule" button).
+
+Missing Duration State: If a user doesn't enter an estimated time, the engine must use a default fallback (e.g., 15 minutes) so the cascading math doesn't break. This fallback should be visually ghosted so the user knows it's an assumption.
+
+5. Refined UX Recommendations
+
+Smart Gaps: If there is a 45-minute gap between a completed task and an upcoming fixed meeting, the app could show a subtle button in the empty space: "Fill gap (suggests a 30m task from later in the list)".
+
+Quick Add from Schedule: Allow users to tap directly into an empty "Gap" block on the timeline to instantly create a task that perfectly inherits the start time and duration of that empty slot.
+
+By mapping the tasks to a linear timeline, you're building a highly advanced feature. The secret to making this feel "pro" is ensuring the background math (recalculating start times on every single drag-and-drop or duration edit) happens instantly, with zero lag.
+
+Would you like me to help you define the exact data structure (JSON schema) for these tasks to hand off to your developers, or should we map out the specific logic for how "Overdue" tasks are handled when the real-world clock ticks past them?

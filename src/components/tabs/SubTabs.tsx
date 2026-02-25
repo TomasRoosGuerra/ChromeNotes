@@ -62,6 +62,13 @@ export const SubTabs = () => {
           />
         ))}
         <Tab
+          id="planning"
+          name="Plan"
+          active={activeSubTabId === "planning"}
+          onSelect={() => setActiveSubTab("planning")}
+          showDelete={false}
+        />
+        <Tab
           id="done-log"
           name="Done"
           active={activeSubTabId === "done-log"}

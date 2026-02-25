@@ -40,6 +40,7 @@ function App() {
   }
 
   const showDoneLog = activeSubTabId === "done-log";
+  const showPlanning = activeSubTabId === "planning";
 
   return (
     <>
@@ -58,6 +59,25 @@ function App() {
               </div>
               <div className="flex-1 min-h-0 overflow-y-auto">
                 <DoneLog />
+              </div>
+            </>
+          ) : showPlanning ? (
+            <>
+              <div className="flex-shrink-0">
+                <Toolbar editor={null} />
+              </div>
+              <div className="flex-1 min-h-0 overflow-y-auto">
+                {/* Lazy import to avoid circular deps */}
+                {/** PlanningTab is default-exported from its file */}
+                {/*
+                  We import here to keep the main editor bundle lean;
+                  the component itself renders the planning UI.
+                */}
+                {/* eslint-disable-next-line @typescript-eslint/no-var-requires */}
+                {(() => {
+                  const { PlanningTab } = require("./components/planning/PlanningTab");
+                  return <PlanningTab />;
+                })()}
               </div>
             </>
           ) : (

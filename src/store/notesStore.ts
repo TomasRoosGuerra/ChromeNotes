@@ -2,7 +2,11 @@ import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { saveNotesToCloud } from "../lib/firestore";
 import { saveToLocalStorage } from "../lib/localStorage";
-import type { CompletedTask, NotesState } from "../types/notes";
+import type {
+  CompletedTask,
+  NotesState,
+  PlanningTask,
+} from "../types/notes";
 
 interface NotesActions {
   addMainTab: () => void;
@@ -21,6 +25,12 @@ interface NotesActions {
   toggleHideCompleted: () => void;
   toggleShowMainTabs: () => void;
   toggleShowSubTabs: () => void;
+  // Planning
+  setPlanningDayStart: (minutes: number) => void;
+  addPlanningTask: () => void;
+  updatePlanningTask: (id: string, update: Partial<PlanningTask>) => void;
+  reorderPlanningTasks: (fromIndex: number, toIndex: number) => void;
+  deletePlanningTask: (id: string) => void;
   loadState: (state: NotesState) => void;
   getState: () => NotesState;
 }
@@ -47,6 +57,10 @@ const initialState: NotesState = {
   scrollPositions: {},
   showMainTabs: true,
   showSubTabs: true,
+  planning: {
+    dayStartMinutes: 9 * 60,
+    tasks: [],
+  },
 };
 
 // Debounced cloud save to avoid excessive writes
@@ -71,6 +85,8 @@ const saveState = (get: () => NotesState & NotesActions) => {
   saveToLocalStorage(state);
   saveToCloudDebounced(state.getState(), currentUserId);
 };
+
+const DEFAULT_PLANNING_DURATION_MINUTES = 15;
 
 export const setUserId = (userId: string | null) => {
   currentUserId = userId;
@@ -282,6 +298,55 @@ export const useNotesStore = create<NotesState & NotesActions>()(
       saveState(get);
     },
 
+    setPlanningDayStart: (minutes) => {
+      set((state) => {
+        state.planning.dayStartMinutes = minutes;
+      });
+      saveState(get);
+    },
+
+    addPlanningTask: () => {
+      set((state) => {
+        const newTask: PlanningTask = {
+          id: Date.now().toString(),
+          title: "",
+          durationMinutes: DEFAULT_PLANNING_DURATION_MINUTES,
+          pinnedStartMinutes: null,
+        };
+        state.planning.tasks.push(newTask);
+      });
+      saveState(get);
+    },
+
+    updatePlanningTask: (id, update) => {
+      set((state) => {
+        const task = state.planning.tasks.find((t) => t.id === id);
+        if (!task) return;
+        Object.assign(task, update);
+      });
+      saveState(get);
+    },
+
+    reorderPlanningTasks: (fromIndex, toIndex) => {
+      set((state) => {
+        const tasks = state.planning.tasks;
+        if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0) return;
+        if (fromIndex >= tasks.length || toIndex > tasks.length) return;
+        const [item] = tasks.splice(fromIndex, 1);
+        tasks.splice(toIndex, 0, item);
+      });
+      saveState(get);
+    },
+
+    deletePlanningTask: (id) => {
+      set((state) => {
+        const idx = state.planning.tasks.findIndex((t) => t.id === id);
+        if (idx === -1) return;
+        state.planning.tasks.splice(idx, 1);
+      });
+      saveState(get);
+    },
+
     loadState: (newState) => {
       set((state) => {
         state.mainTabs = newState.mainTabs ?? state.mainTabs;
@@ -292,10 +357,12 @@ export const useNotesStore = create<NotesState & NotesActions>()(
         state.lastSelectedSubTabs =
           newState.lastSelectedSubTabs ?? state.lastSelectedSubTabs;
         state.scrollPositions = newState.scrollPositions ?? state.scrollPositions;
-         state.showMainTabs =
+        state.showMainTabs =
           newState.showMainTabs ?? state.showMainTabs ?? initialState.showMainTabs;
         state.showSubTabs =
           newState.showSubTabs ?? state.showSubTabs ?? initialState.showSubTabs;
+        state.planning =
+          newState.planning ?? state.planning ?? initialState.planning;
 
         // Ensure active ids point to existing tabs (fixes blank screen after login/sync)
         const mainTabs = state.mainTabs;
@@ -333,6 +400,7 @@ export const useNotesStore = create<NotesState & NotesActions>()(
         hideCompleted: state.hideCompleted,
         lastSelectedSubTabs: state.lastSelectedSubTabs,
         scrollPositions: state.scrollPositions,
+        planning: state.planning,
         showMainTabs: state.showMainTabs,
         showSubTabs: state.showSubTabs,
       };
