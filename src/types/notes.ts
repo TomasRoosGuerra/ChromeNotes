@@ -18,22 +18,20 @@ export interface CompletedTask {
   completedAt: number;
 }
 
-// Auto-scheduling planning feature
+export type PlanningTaskId = string;
+
 export interface PlanningTask {
-  id: string;
+  id: PlanningTaskId;
   title: string;
-  /** Estimated duration in minutes (fallback used if missing) */
-  durationMinutes?: number;
-  /** Optional pinned start time in minutes from midnight (0–1439) */
-  pinnedStartMinutes?: number | null;
-  /** Optional qualitative metrics */
-  effort?: number | null;
-  benefit?: number | null;
+  durationMinutes: number;
+  fixedStartMinutes: number | null; // minutes from midnight, if fixed
+  effort: 1 | 2 | 3;
+  benefit: 1 | 2 | 3;
+  completed: boolean;
 }
 
 export interface PlanningState {
-  /** Day start time in minutes from midnight (e.g. 8:00 = 480) */
-  dayStartMinutes: number;
+  dayStartMinutes: number; // minutes from midnight (e.g. 9 * 60)
   tasks: PlanningTask[];
 }
 
@@ -48,6 +46,5 @@ export interface NotesState {
   // UI preferences
   showMainTabs: boolean;
   showSubTabs: boolean;
-  // Planning / auto-scheduling
   planning: PlanningState;
 }

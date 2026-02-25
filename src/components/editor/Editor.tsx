@@ -95,7 +95,7 @@ export const Editor = () => {
   const canUndo = editor?.can().undo() || false;
   const canRedo = editor?.can().redo() || false;
 
-  if (!activeSubTab || activeSubTabId === "done-log") {
+  if (!activeSubTab || activeSubTabId === "done-log" || activeSubTabId === "planning") {
     return null;
   }
 

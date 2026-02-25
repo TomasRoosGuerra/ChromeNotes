@@ -2,11 +2,7 @@ import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { saveNotesToCloud } from "../lib/firestore";
 import { saveToLocalStorage } from "../lib/localStorage";
-import type {
-  CompletedTask,
-  NotesState,
-  PlanningTask,
-} from "../types/notes";
+import type { CompletedTask, NotesState, PlanningTask } from "../types/notes";
 
 interface NotesActions {
   addMainTab: () => void;
@@ -18,19 +14,22 @@ interface NotesActions {
   deleteSubTab: (mainTabId: string, subTabId: string) => void;
   renameSubTab: (mainTabId: string, subTabId: string, name: string) => void;
   setActiveSubTab: (id: string) => void;
-  reorderSubTabs: (mainTabId: string, fromIndex: number, toIndex: number) => void;
+  reorderSubTabs: (
+    mainTabId: string,
+    fromIndex: number,
+    toIndex: number,
+  ) => void;
   updateContent: (mainTabId: string, subTabId: string, content: string) => void;
   addCompletedTask: (task: CompletedTask) => void;
   deleteCompletedTask: (id: string) => void;
   toggleHideCompleted: () => void;
   toggleShowMainTabs: () => void;
   toggleShowSubTabs: () => void;
-  // Planning
-  setPlanningDayStart: (minutes: number) => void;
-  addPlanningTask: () => void;
-  updatePlanningTask: (id: string, update: Partial<PlanningTask>) => void;
+  // Planning tab actions
+  setPlanningStartMinutes: (minutes: number) => void;
+  addPlanningTask: (task: Omit<PlanningTask, "id">) => void;
+  updatePlanningTask: (id: string, updates: Partial<PlanningTask>) => void;
   reorderPlanningTasks: (fromIndex: number, toIndex: number) => void;
-  deletePlanningTask: (id: string) => void;
   loadState: (state: NotesState) => void;
   getState: () => NotesState;
 }
@@ -58,7 +57,7 @@ const initialState: NotesState = {
   showMainTabs: true,
   showSubTabs: true,
   planning: {
-    dayStartMinutes: 9 * 60,
+    dayStartMinutes: 9 * 60, // 09:00
     tasks: [],
   },
 };
@@ -85,8 +84,6 @@ const saveState = (get: () => NotesState & NotesActions) => {
   saveToLocalStorage(state);
   saveToCloudDebounced(state.getState(), currentUserId);
 };
-
-const DEFAULT_PLANNING_DURATION_MINUTES = 15;
 
 export const setUserId = (userId: string | null) => {
   currentUserId = userId;
@@ -163,7 +160,7 @@ export const useNotesStore = create<NotesState & NotesActions>()(
         if (mainTab) {
           const lastSubTabId = state.lastSelectedSubTabs[id];
           const subTabExists = mainTab.subTabs.find(
-            (st) => st.id === lastSubTabId
+            (st) => st.id === lastSubTabId,
           );
 
           state.activeSubTabId = subTabExists
@@ -298,31 +295,29 @@ export const useNotesStore = create<NotesState & NotesActions>()(
       saveState(get);
     },
 
-    setPlanningDayStart: (minutes) => {
+    setPlanningStartMinutes: (minutes) => {
       set((state) => {
         state.planning.dayStartMinutes = minutes;
       });
       saveState(get);
     },
 
-    addPlanningTask: () => {
+    addPlanningTask: (task) => {
       set((state) => {
-        const newTask: PlanningTask = {
-          id: Date.now().toString(),
-          title: "",
-          durationMinutes: DEFAULT_PLANNING_DURATION_MINUTES,
-          pinnedStartMinutes: null,
-        };
-        state.planning.tasks.push(newTask);
+        const id = Date.now().toString();
+        state.planning.tasks.push({
+          id,
+          ...task,
+        });
       });
       saveState(get);
     },
 
-    updatePlanningTask: (id, update) => {
+    updatePlanningTask: (id, updates) => {
       set((state) => {
-        const task = state.planning.tasks.find((t) => t.id === id);
-        if (!task) return;
-        Object.assign(task, update);
+        const t = state.planning.tasks.find((task) => task.id === id);
+        if (!t) return;
+        Object.assign(t, updates);
       });
       saveState(get);
     },
@@ -330,19 +325,17 @@ export const useNotesStore = create<NotesState & NotesActions>()(
     reorderPlanningTasks: (fromIndex, toIndex) => {
       set((state) => {
         const tasks = state.planning.tasks;
-        if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0) return;
-        if (fromIndex >= tasks.length || toIndex > tasks.length) return;
+        if (
+          fromIndex === toIndex ||
+          fromIndex < 0 ||
+          toIndex < 0 ||
+          fromIndex >= tasks.length ||
+          toIndex >= tasks.length
+        ) {
+          return;
+        }
         const [item] = tasks.splice(fromIndex, 1);
         tasks.splice(toIndex, 0, item);
-      });
-      saveState(get);
-    },
-
-    deletePlanningTask: (id) => {
-      set((state) => {
-        const idx = state.planning.tasks.findIndex((t) => t.id === id);
-        if (idx === -1) return;
-        state.planning.tasks.splice(idx, 1);
       });
       saveState(get);
     },
@@ -350,19 +343,22 @@ export const useNotesStore = create<NotesState & NotesActions>()(
     loadState: (newState) => {
       set((state) => {
         state.mainTabs = newState.mainTabs ?? state.mainTabs;
-        state.activeMainTabId = newState.activeMainTabId ?? state.activeMainTabId;
+        state.activeMainTabId =
+          newState.activeMainTabId ?? state.activeMainTabId;
         state.activeSubTabId = newState.activeSubTabId ?? state.activeSubTabId;
         state.completedTasks = newState.completedTasks ?? state.completedTasks;
         state.hideCompleted = newState.hideCompleted ?? state.hideCompleted;
         state.lastSelectedSubTabs =
           newState.lastSelectedSubTabs ?? state.lastSelectedSubTabs;
-        state.scrollPositions = newState.scrollPositions ?? state.scrollPositions;
+        state.scrollPositions =
+          newState.scrollPositions ?? state.scrollPositions;
         state.showMainTabs =
-          newState.showMainTabs ?? state.showMainTabs ?? initialState.showMainTabs;
+          newState.showMainTabs ??
+          state.showMainTabs ??
+          initialState.showMainTabs;
         state.showSubTabs =
           newState.showSubTabs ?? state.showSubTabs ?? initialState.showSubTabs;
-        state.planning =
-          newState.planning ?? state.planning ?? initialState.planning;
+        state.planning = newState.planning ?? state.planning ?? initialState.planning;
 
         // Ensure active ids point to existing tabs (fixes blank screen after login/sync)
         const mainTabs = state.mainTabs;
@@ -375,12 +371,13 @@ export const useNotesStore = create<NotesState & NotesActions>()(
         const mainTab = mainTabs.find((t) => t.id === state.activeMainTabId);
         if (!mainTab) {
           state.activeMainTabId = mainTabs[0].id;
-          state.activeSubTabId = mainTabs[0].subTabs[0]?.id ?? state.activeSubTabId;
+          state.activeSubTabId =
+            mainTabs[0].subTabs[0]?.id ?? state.activeSubTabId;
         } else if (!mainTab.subTabs?.length) {
           state.activeSubTabId = state.activeSubTabId;
         } else {
           const subExists = mainTab.subTabs.some(
-            (st) => st.id === state.activeSubTabId
+            (st) => st.id === state.activeSubTabId,
           );
           if (!subExists) {
             state.activeSubTabId = mainTab.subTabs[0].id;
@@ -400,10 +397,10 @@ export const useNotesStore = create<NotesState & NotesActions>()(
         hideCompleted: state.hideCompleted,
         lastSelectedSubTabs: state.lastSelectedSubTabs,
         scrollPositions: state.scrollPositions,
-        planning: state.planning,
         showMainTabs: state.showMainTabs,
         showSubTabs: state.showSubTabs,
+        planning: state.planning,
       };
     },
-  }))
+  })),
 );

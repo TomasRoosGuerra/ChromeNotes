@@ -4,10 +4,10 @@ import { SignInScreen } from "./components/auth/SignInScreen";
 import { Editor } from "./components/editor/Editor";
 import { Toolbar } from "./components/editor/Toolbar";
 import { DoneLog } from "./components/tabs/DoneLog";
+import { PlanningView } from "./components/planning/PlanningView";
 import { MainTabs } from "./components/tabs/MainTabs";
 import { SubTabs } from "./components/tabs/SubTabs";
 import { ToastContainer } from "./components/ui/Toast";
-import { PlanningTab } from "./components/planning/PlanningTab";
 import { useCloudSync } from "./hooks/useCloudSync";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { useAuthStore } from "./store/authStore";
@@ -63,14 +63,7 @@ function App() {
               </div>
             </>
           ) : showPlanning ? (
-            <>
-              <div className="flex-shrink-0">
-                <Toolbar editor={null} />
-              </div>
-              <div className="flex-1 min-h-0 overflow-y-auto">
-                <PlanningTab />
-              </div>
-            </>
+            <PlanningView />
           ) : (
             <Editor />
           )}
