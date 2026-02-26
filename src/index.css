@@ -152,6 +152,13 @@
   cursor: grabbing;
 }
 
+@media (max-width: 640px) {
+  .drag-handle {
+    display: none;
+    pointer-events: none;
+  }
+}
+
 /* Table styles – pasted or inserted tables */
 .ProseMirror .tableWrapper {
   @apply overflow-x-auto my-4 rounded-lg border border-[var(--border-color)];
