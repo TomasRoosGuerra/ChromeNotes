@@ -3,6 +3,8 @@ import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import GlobalDragHandle from "tiptap-extension-global-drag-handle";
+import { Extension } from "@tiptap/core";
 import { useCallback, useEffect } from "react";
 import { useNotesStore } from "../../store/notesStore";
 import { QuickFormatBar } from "./QuickFormatBar";
@@ -42,6 +44,20 @@ export const Editor = () => {
     setActiveSubTab,
   ]);
 
+  const ListItemReorder = Extension.create({
+    name: "listItemReorder",
+    addKeyboardShortcuts() {
+      return {
+        "Alt-ArrowUp": () =>
+          this.editor.commands.liftListItem("listItem") ||
+          this.editor.commands.liftListItem("taskItem"),
+        "Alt-ArrowDown": () =>
+          this.editor.commands.sinkListItem("listItem") ||
+          this.editor.commands.sinkListItem("taskItem"),
+      };
+    },
+  });
+
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -52,6 +68,11 @@ export const Editor = () => {
       Placeholder.configure({
         placeholder: "Start typing... Try '# ', '- ', or '-.' for shortcuts",
       }),
+      GlobalDragHandle.configure({
+        excludedTags: ["p", "h1", "h2", "h3", "blockquote", "hr", "table"],
+        dragHandleSelector: ".drag-handle",
+      }),
+      ListItemReorder,
     ],
     content: activeSubTab?.content || "",
     editorProps: {
@@ -95,7 +116,7 @@ export const Editor = () => {
   const canUndo = editor?.can().undo() || false;
   const canRedo = editor?.can().redo() || false;
 
-  if (!activeSubTab || activeSubTabId === "done-log" || activeSubTabId === "planning") {
+  if (!activeSubTab || activeSubTabId === "done-log") {
     return null;
   }
 

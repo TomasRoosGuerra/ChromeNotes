@@ -7,6 +7,8 @@ export interface SubTab {
 export interface MainTab {
   id: string;
   name: string;
+  // "notes" = regular notes with subTabs, "planning" = daily schedule view
+  mode?: "notes" | "planning";
   subTabs: SubTab[];
 }
 
@@ -32,6 +34,7 @@ export interface PlanningTask {
 
 export interface PlanningState {
   dayStartMinutes: number; // minutes from midnight (e.g. 9 * 60)
+  dayEndMinutes: number; // minutes from midnight (e.g. 24 * 60 = 00:00)
   tasks: PlanningTask[];
 }
 

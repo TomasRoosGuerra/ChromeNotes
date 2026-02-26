@@ -31,7 +31,7 @@ export const SubTabs = () => {
       reorderSubTabs(activeMainTab!.id, fromIndex, toIndex);
   };
 
-  if (!activeMainTab) return null;
+  if (!activeMainTab || activeMainTab.mode === "planning") return null;
 
   const subTabs = activeMainTab.subTabs;
   const canReorder = subTabs.length > 1;
@@ -61,13 +61,6 @@ export const SubTabs = () => {
             onDrop={handleDrop(index)}
           />
         ))}
-        <Tab
-          id="planning"
-          name="Plan"
-          active={activeSubTabId === "planning"}
-          onSelect={() => setActiveSubTab("planning")}
-          showDelete={false}
-        />
         <Tab
           id="done-log"
           name="Done"

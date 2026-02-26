@@ -18,6 +18,8 @@ function App() {
   const loading = useAuthStore((state) => state.loading);
   const initAuth = useAuthStore((state) => state.initAuth);
   const activeSubTabId = useNotesStore((state) => state.activeSubTabId);
+  const mainTabs = useNotesStore((state) => state.mainTabs);
+  const activeMainTabId = useNotesStore((state) => state.activeMainTabId);
   const showMainTabs = useNotesStore((state) => state.showMainTabs);
   const showSubTabs = useNotesStore((state) => state.showSubTabs);
 
@@ -40,8 +42,9 @@ function App() {
     return <SignInScreen />;
   }
 
-  const showDoneLog = activeSubTabId === "done-log";
-  const showPlanning = activeSubTabId === "planning";
+  const activeMainTab = mainTabs.find((t) => t.id === activeMainTabId);
+  const showDoneLog = activeSubTabId === "done-log" && activeMainTab?.mode !== "planning";
+  const showPlanning = activeMainTab?.mode === "planning";
 
   return (
     <>
