@@ -11,6 +11,7 @@ import {
 } from "react-icons/fi";
 import { useEffect, useState } from "react";
 import { Button } from "../ui/Button";
+import { moveListItem } from "./listItemReorder";
 
 interface QuickFormatBarProps {
   editor: Editor | null;
@@ -65,7 +66,7 @@ export const QuickFormatBar = ({ editor }: QuickFormatBarProps) => {
       <div className="flex items-center justify-around gap-2">
         <Button
           size="sm"
-          onClick={() => editor.chain().focus().moveListItemUp().run()}
+          onClick={() => moveListItem(editor, "up")}
           disabled={!canMove}
           className={`flex-1 min-h-[48px] ${
             canMove ? "" : "opacity-50 pointer-events-none"
@@ -77,7 +78,7 @@ export const QuickFormatBar = ({ editor }: QuickFormatBarProps) => {
 
         <Button
           size="sm"
-          onClick={() => editor.chain().focus().moveListItemDown().run()}
+          onClick={() => moveListItem(editor, "down")}
           disabled={!canMove}
           className={`flex-1 min-h-[48px] ${
             canMove ? "" : "opacity-50 pointer-events-none"

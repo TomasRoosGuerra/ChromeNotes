@@ -5,65 +5,11 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import GlobalDragHandle from "tiptap-extension-global-drag-handle";
 import { Extension } from "@tiptap/core";
-import { TextSelection } from "@tiptap/pm/state";
 import { useCallback, useEffect } from "react";
 import { useNotesStore } from "../../store/notesStore";
 import { QuickFormatBar } from "./QuickFormatBar";
 import { Toolbar } from "./Toolbar";
-
-const moveListItem = (editorInstance: any, direction: "up" | "down") => {
-  const { state, view } = editorInstance;
-  const { selection } = state;
-  const $from = selection.$from;
-  const itemTypes = ["listItem", "taskItem"];
-
-  let itemDepth = -1;
-  for (let d = $from.depth; d > 0; d -= 1) {
-    const node = $from.node(d);
-    if (itemTypes.includes(node.type.name)) {
-      itemDepth = d;
-      break;
-    }
-  }
-  if (itemDepth === -1) return false;
-
-  const listDepth = itemDepth - 1;
-  const listNode = $from.node(listDepth);
-  const listPos = $from.before(listDepth);
-  const index = $from.index(listDepth);
-  const itemPos = $from.before(itemDepth);
-  const item = state.doc.nodeAt(itemPos);
-  if (!item || !listNode) return false;
-
-  if (direction === "up") {
-    if (index === 0) return false;
-    const prev = listNode.child(index - 1);
-    let tr = state.tr;
-    tr = tr.delete(itemPos, itemPos + item.nodeSize);
-    const insertPos = itemPos - prev.nodeSize;
-    tr = tr.insert(insertPos, item);
-    const newSelPos = insertPos + 1;
-    tr = tr.setSelection(
-      TextSelection.near(tr.doc.resolve(newSelPos), -1)
-    );
-    view.dispatch(tr.scrollIntoView());
-    return true;
-  }
-
-  if (index >= listNode.childCount - 1) return false;
-  const next = listNode.child(index + 1);
-  let tr = state.tr;
-  const afterItemPos = itemPos + item.nodeSize;
-  tr = tr.delete(itemPos, afterItemPos);
-  const insertPos = itemPos + next.nodeSize;
-  tr = tr.insert(insertPos, item);
-  const newSelPos = insertPos + 1;
-  tr = tr.setSelection(
-    TextSelection.near(tr.doc.resolve(newSelPos), -1)
-  );
-  view.dispatch(tr.scrollIntoView());
-  return true;
-};
+import { moveListItem } from "./listItemReorder";
 
 export const Editor = () => {
   const mainTabs = useNotesStore((state) => state.mainTabs);
@@ -101,24 +47,10 @@ export const Editor = () => {
 
   const ListItemReorder = Extension.create({
     name: "listItemReorder",
-    addCommands() {
-      return {
-        moveListItemUp:
-          () =>
-          ({ editor }) =>
-            moveListItem(editor, "up"),
-        moveListItemDown:
-          () =>
-          ({ editor }) =>
-            moveListItem(editor, "down"),
-      };
-    },
     addKeyboardShortcuts() {
       return {
-        "Alt-ArrowUp": () =>
-          this.editor.commands.moveListItemUp(),
-        "Alt-ArrowDown": () =>
-          this.editor.commands.moveListItemDown(),
+        "Alt-ArrowUp": () => moveListItem(this.editor, "up"),
+        "Alt-ArrowDown": () => moveListItem(this.editor, "down"),
       };
     },
   });
