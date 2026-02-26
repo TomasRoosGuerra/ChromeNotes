@@ -129,6 +129,9 @@
   height: 1.5rem;
   z-index: 50;
   cursor: grab;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
   background-image: linear-gradient(
       to bottom,
       rgba(0, 0, 0, 0.4) 20%,
@@ -152,10 +155,15 @@
   cursor: grabbing;
 }
 
+.ProseMirror.dragging {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 @media (max-width: 640px) {
   .drag-handle {
-    width: 1.6rem;
-    height: 2rem;
+    width: 2rem;
+    height: 2.4rem;
   }
 }
 
