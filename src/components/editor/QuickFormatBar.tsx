@@ -6,12 +6,9 @@ import {
   FiList,
   FiCornerDownLeft,
   FiCornerUpLeft,
-  FiChevronUp,
-  FiChevronDown,
 } from "react-icons/fi";
 import { useEffect, useState } from "react";
 import { Button } from "../ui/Button";
-import { moveListItem } from "./listItemReorder";
 
 interface QuickFormatBarProps {
   editor: Editor | null;
@@ -56,7 +53,6 @@ export const QuickFormatBar = ({ editor }: QuickFormatBarProps) => {
   const listItemType = inTaskList ? "taskItem" : "listItem";
   const canSink = inList && editor.can().sinkListItem(listItemType);
   const canLift = inList && editor.can().liftListItem(listItemType);
-  const canMove = inList;
 
   return (
     <div
@@ -64,30 +60,6 @@ export const QuickFormatBar = ({ editor }: QuickFormatBarProps) => {
       style={{ bottom: bottomOffset }}
     >
       <div className="flex items-center justify-around gap-2">
-        <Button
-          size="sm"
-          onClick={() => moveListItem(editor, "up")}
-          disabled={!canMove}
-          className={`flex-1 min-h-[48px] ${
-            canMove ? "" : "opacity-50 pointer-events-none"
-          }`}
-          title="Move item up"
-        >
-          <FiChevronUp className="w-5 h-5" aria-hidden />
-        </Button>
-
-        <Button
-          size="sm"
-          onClick={() => moveListItem(editor, "down")}
-          disabled={!canMove}
-          className={`flex-1 min-h-[48px] ${
-            canMove ? "" : "opacity-50 pointer-events-none"
-          }`}
-          title="Move item down"
-        >
-          <FiChevronDown className="w-5 h-5" aria-hidden />
-        </Button>
-
         <Button
           size="sm"
           onClick={() =>
