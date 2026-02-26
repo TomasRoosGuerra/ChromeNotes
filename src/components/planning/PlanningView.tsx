@@ -115,11 +115,6 @@ export const PlanningView = () => {
     [planning.dayStartMinutes, planning.dayEndMinutes, tasks],
   );
 
-  const currentTimeInsertIndex = useMemo(() => {
-    const i = scheduled.findIndex((item) => item.start > nowMinutes);
-    return i < 0 ? scheduled.length : i;
-  }, [scheduled, nowMinutes]);
-
   const collisionError =
     dropTarget?.isGap &&
     dropTarget.gapLength != null &&
