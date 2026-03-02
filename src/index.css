@@ -126,12 +126,7 @@
 }
 
 .ProseMirror li[data-progress][data-duration]::after {
-  content: attr(data-spent) "m / " attr(data-duration) "m";
-}
-
-/* When 100% done, show a simple check instead of time */
-.ProseMirror li[data-progress-level="4"]::after {
-  content: "✓";
+  content: attr(data-progress) "% / " attr(data-remaining) "m left";
 }
 
 .ProseMirror li[data-progress-level="1"]::before {
