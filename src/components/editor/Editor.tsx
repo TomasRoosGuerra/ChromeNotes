@@ -65,6 +65,7 @@ export const Editor = () => {
   const [progressEditor, setProgressEditor] = useState<{
     value: number;
     durationMinutes: number;
+    pos: number;
   } | null>(null);
 
   const editor = useEditor({
@@ -182,6 +183,7 @@ export const Editor = () => {
       setProgressEditor({
         value: currentValue,
         durationMinutes: currentDuration,
+        pos,
       });
     },
     [editor]
@@ -210,39 +212,44 @@ export const Editor = () => {
   const handleProgressSave = useCallback(() => {
     if (!editor || !progressEditor) return;
 
-    const { state } = editor;
-    const { $from } = state.selection;
-    const itemTypes = ["listItem", "taskItem"];
-    let nodeType: string | null = null;
-
-    for (let d = $from.depth; d > 0; d -= 1) {
-      const node = $from.node(d);
-      if (itemTypes.includes(node.type.name)) {
-        nodeType = node.type.name;
-        break;
-      }
-    }
-
-    if (!nodeType) {
-      setProgressEditor(null);
-      return;
-    }
-
     const clamped = Math.max(0, Math.min(100, progressEditor.value));
     const duration =
       progressEditor.durationMinutes <= 0
         ? null
         : Math.max(1, Math.min(24 * 60, progressEditor.durationMinutes));
 
-    const attrs: Record<string, number | null> = {
-      progress: clamped <= 0 ? null : clamped,
-      durationMinutes: duration,
-    };
+    editor.chain().focus()
+      .command(({ tr, state, dispatch }) => {
+        const $pos = state.doc.resolve(progressEditor.pos);
+        const itemTypes = ["listItem", "taskItem"];
+        let depth = -1;
 
-    editor
-      .chain()
-      .focus()
-      .updateAttributes(nodeType, attrs)
+        for (let d = $pos.depth; d > 0; d -= 1) {
+          const node = $pos.node(d);
+          if (itemTypes.includes(node.type.name)) {
+            depth = d;
+            break;
+          }
+        }
+
+        if (depth === -1) {
+          return false;
+        }
+
+        const node = $pos.node(depth);
+        const nodePos = $pos.before(depth);
+
+        const newAttrs = {
+          ...node.attrs,
+          progress: clamped,
+          durationMinutes: duration,
+        };
+
+        if (dispatch) {
+          dispatch(tr.setNodeMarkup(nodePos, node.type, newAttrs));
+        }
+        return true;
+      })
       .run();
 
     setProgressEditor(null);

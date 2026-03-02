@@ -20,7 +20,7 @@ export const ListItemProgress = Extension.create({
             },
             renderHTML: (attributes) => {
               const value = attributes.progress as number | null;
-              if (value == null || value <= 0) {
+              if (value == null) {
                 return {};
               }
 
