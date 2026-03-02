@@ -92,18 +92,18 @@
 
 /* Battery-style progress for list items */
 .ProseMirror li[data-progress] {
-  padding-left: 2rem;
+  padding-left: 2.8rem;
 }
 
 .ProseMirror li[data-progress]::before {
   content: "";
   position: absolute;
-  left: 0.25rem;
+  left: 0.4rem;
   top: 50%;
   transform: translateY(-50%);
   box-sizing: border-box;
-  width: 1.6rem;
-  height: 0.8rem;
+  width: 2.4rem;
+  height: 0.9rem;
   border-radius: 9999px;
   border: 1px solid var(--border-color);
   background-color: transparent;
@@ -112,14 +112,14 @@
 .ProseMirror li[data-progress]::after {
   content: attr(data-progress) "%";
   position: absolute;
-  left: 0.25rem;
+  left: 0.4rem;
   top: 50%;
   transform: translateY(-50%);
-  width: 1.6rem;
-  height: 0.8rem;
+  width: 2.4rem;
+  height: 0.9rem;
   border-radius: 9999px;
-  font-size: 0.6rem;
-  line-height: 0.8rem;
+  font-size: 0.55rem;
+  line-height: 0.9rem;
   text-align: center;
   color: var(--text-color);
 }
