@@ -299,7 +299,7 @@ export const Editor = () => {
                 <span className="text-sm text-[var(--placeholder-color)]">
                   %
                 </span>
-                <div className="flex gap-1 ml-auto">
+                <div className="flex gap-1 ml-auto overflow-x-auto whitespace-nowrap max-w-[7rem]">
                   {[25, 50, 75, 100].map((v) => (
                     <button
                       key={v}
@@ -329,7 +329,7 @@ export const Editor = () => {
                 <span className="text-sm text-[var(--placeholder-color)]">
                   min
                 </span>
-                <div className="flex gap-1 ml-auto">
+                <div className="flex gap-1 ml-auto overflow-x-auto whitespace-nowrap max-w-[7rem]">
                   {[15, 30, 60].map((v) => (
                     <button
                       key={v}
