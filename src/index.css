@@ -91,42 +91,18 @@
 }
 
 /* Battery-style progress for list items */
-.ProseMirror li[data-progress] {
-  padding-left: 4.4rem;
-}
-
 .ProseMirror li[data-progress]::before {
-  content: "";
-  position: absolute;
-  left: 0.5rem;
-  top: 50%;
-  transform: translateY(-50%);
-  box-sizing: border-box;
-  width: 3.4rem;
-  height: 0.9rem;
+  content: attr(data-progress) "% / " attr(data-remaining) "m left";
+  display: inline-flex;
+  align-items: center;
+  padding: 0 0.5rem;
+  margin-right: 0.75rem;
   border-radius: 9999px;
   border: 1px solid var(--border-color);
-  background-color: transparent;
-}
-
-.ProseMirror li[data-progress]::after {
-  content: attr(data-progress) "%";
-  position: absolute;
-  left: 0.5rem;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 3.4rem;
-  height: 0.9rem;
-  border-radius: 9999px;
-  font-size: 0.55rem;
-  line-height: 0.9rem;
-  text-align: center;
+  font-size: 0.65rem;
+  line-height: 1.1;
   white-space: nowrap;
   color: var(--text-color);
-}
-
-.ProseMirror li[data-progress][data-duration]::after {
-  content: attr(data-progress) "% / " attr(data-remaining) "m left";
 }
 
 .ProseMirror li[data-progress-level="1"]::before {
