@@ -87,7 +87,61 @@
 }
 
 .ProseMirror li {
-  @apply my-1;
+  @apply my-1 relative;
+}
+
+/* Battery-style progress for list items */
+.ProseMirror li[data-progress] {
+  padding-left: 2rem;
+}
+
+.ProseMirror li[data-progress]::before {
+  content: "";
+  position: absolute;
+  left: 0.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  box-sizing: border-box;
+  width: 1.6rem;
+  height: 0.8rem;
+  border-radius: 9999px;
+  border: 1px solid var(--border-color);
+  background-color: transparent;
+}
+
+.ProseMirror li[data-progress]::after {
+  content: attr(data-progress) "%";
+  position: absolute;
+  left: 0.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.6rem;
+  height: 0.8rem;
+  border-radius: 9999px;
+  font-size: 0.6rem;
+  line-height: 0.8rem;
+  text-align: center;
+  color: var(--text-color);
+}
+
+.ProseMirror li[data-progress][data-duration]::after {
+  content: attr(data-progress) "% / " attr(data-duration) "m";
+}
+
+.ProseMirror li[data-progress-level="1"]::before {
+  background-color: rgba(220, 38, 38, 0.15); /* red-ish */
+}
+
+.ProseMirror li[data-progress-level="2"]::before {
+  background-color: rgba(245, 158, 11, 0.18); /* amber */
+}
+
+.ProseMirror li[data-progress-level="3"]::before {
+  background-color: rgba(34, 197, 94, 0.18); /* green mid */
+}
+
+.ProseMirror li[data-progress-level="4"]::before {
+  background-color: rgba(34, 197, 94, 0.35); /* full */
 }
 
 .ProseMirror blockquote {
