@@ -126,7 +126,7 @@
 }
 
 .ProseMirror li[data-progress][data-duration]::after {
-  content: attr(data-remaining) "m left";
+  content: attr(data-spent) "m / " attr(data-duration) "m";
 }
 
 /* When 100% done, show a simple check instead of time */

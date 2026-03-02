@@ -135,9 +135,10 @@ export const Editor = () => {
 
       const rect = li.getBoundingClientRect();
 
-      // Treat taps/clicks near the left edge of the list item as
-      // interactions with the progress battery.
-      if (event.clientX > rect.left + 32) {
+      // Treat taps/clicks very close to the left edge as
+      // interactions with the progress battery, to avoid
+      // accidental triggers when placing the caret.
+      if (event.clientX > rect.left + 28) {
         return;
       }
 

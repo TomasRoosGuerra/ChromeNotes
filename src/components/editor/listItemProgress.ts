@@ -57,14 +57,11 @@ export const ListItemProgress = Extension.create({
               const clamped = Math.max(0, Math.min(24 * 60, total));
               const progress = (attributes.progress as number | null) ?? 0;
               const ratio = Math.max(0, Math.min(1, progress / 100));
-              const remaining = Math.max(
-                0,
-                Math.round(clamped * (1 - ratio))
-              );
+              const spent = Math.max(0, Math.round(clamped * ratio));
 
               return {
                 "data-duration": String(clamped),
-                "data-remaining": String(remaining),
+                "data-spent": String(spent),
               };
             },
           },
