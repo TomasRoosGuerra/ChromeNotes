@@ -18,7 +18,9 @@ import { Toolbar } from "./Toolbar";
 import { moveListItem } from "./listItemReorder";
 import { ListItemProgress } from "./listItemProgress";
 
-const COLLAPSE_GUTTER_PX = 96;
+// Width of the left-side “curtain” gutter where clicks
+// should toggle collapse instead of placing the caret.
+const COLLAPSE_GUTTER_PX = 40;
 
 export const Editor = () => {
   const mainTabs = useNotesStore((state) => state.mainTabs);
@@ -136,9 +138,15 @@ export const Editor = () => {
       const clickX = event.clientX;
       const { state, view } = editor;
 
-      // 1) Heading collapse/expand (make it very forgiving: any click on heading line)
+      // 1) Heading collapse/expand – only when clicking in the left gutter
       const heading = target.closest("h1, h2, h3") as HTMLElement | null;
       if (heading) {
+        const rect = heading.getBoundingClientRect();
+        if (clickX > rect.left + COLLAPSE_GUTTER_PX) {
+          // Click landed on the heading text area – let TipTap handle caret/selection.
+          return;
+        }
+
         event.preventDefault();
         event.stopPropagation();
 
@@ -180,13 +188,12 @@ export const Editor = () => {
         listParent.parentElement &&
         listParent.parentElement.classList.contains("ProseMirror");
 
-      // Collapse/expand top-level list titles when clicking in left/center area
+      // Collapse/expand top-level list titles when clicking in left gutter
       if (isTopLevelListItem) {
-        const collapseEdge =
-          liRect.left + Math.min(liRect.width * 0.7, COLLAPSE_GUTTER_PX);
+        const collapseEdge = liRect.left + COLLAPSE_GUTTER_PX;
         if (clickX <= collapseEdge) {
-        event.preventDefault();
-        event.stopPropagation();
+          event.preventDefault();
+          event.stopPropagation();
 
           const isCollapsed =
             liElement.getAttribute("data-collapsed") === "true";

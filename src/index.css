@@ -98,6 +98,20 @@
   content: "▸";
 }
 
+/* Thin gutter separator between collapse zone and heading text */
+.ProseMirror h1::after,
+.ProseMirror h2::after,
+.ProseMirror h3::after {
+  content: "";
+  position: absolute;
+  left: 1.75rem;
+  top: 0.35rem;
+  bottom: 0.35rem;
+  width: 1px;
+  background-color: rgba(148, 163, 184, 0.45); /* subtle slate-ish line */
+  pointer-events: none;
+}
+
 .ProseMirror ul,
 .ProseMirror ol {
   @apply pl-7 my-3;
@@ -157,6 +171,28 @@
 
 .ProseMirror li {
   @apply my-1 relative;
+}
+
+/* Visual caret for top-level list “titles” */
+.ProseMirror > ul > li,
+.ProseMirror > ol > li {
+  padding-left: 2rem;
+}
+
+.ProseMirror > ul > li::before,
+.ProseMirror > ol > li::before {
+  content: "▾";
+  position: absolute;
+  left: 0.25rem;
+  top: 0.2rem;
+  font-size: 0.8rem;
+  color: var(--placeholder-color);
+  cursor: pointer;
+}
+
+.ProseMirror > ul > li[data-collapsed="true"]::before,
+.ProseMirror > ol > li[data-collapsed="true"]::before {
+  content: "▸";
 }
 
 /* Battery-style progress for list items */
