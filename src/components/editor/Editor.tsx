@@ -150,29 +150,75 @@ export const Editor = () => {
         event.preventDefault();
         event.stopPropagation();
 
-        const isCollapsed = heading.dataset.collapsed === "true";
-        const nextCollapsed = !isCollapsed;
-        heading.dataset.collapsed = nextCollapsed ? "true" : "false";
+        // Use the document structure to determine section boundaries,
+        // so same-level (or higher-level) headings always start new sections.
+        const { state, view } = editor;
+        const centerPos = view.posAtCoords({
+          left: rect.left + rect.width / 2,
+          top: rect.top + rect.height / 2,
+        });
+        if (!centerPos) return;
 
-        const currentLevel = Number(heading.tagName.substring(1)) || 1;
-
-        let sibling = heading.nextElementSibling as HTMLElement | null;
-        while (sibling) {
-          if (sibling.matches("h1, h2, h3")) {
-            const siblingLevel = Number(sibling.tagName.substring(1)) || 1;
-            // Same-size or higher-level heading starts a new container
-            if (siblingLevel <= currentLevel) {
-              break;
-            }
+        const $pos = state.doc.resolve(centerPos.pos);
+        let headingDepth = -1;
+        for (let d = $pos.depth; d >= 0; d -= 1) {
+          const node = $pos.node(d) as any;
+          if (node.type?.name === "heading") {
+            headingDepth = d;
+            break;
           }
-
-          if (nextCollapsed) {
-            sibling.classList.add("collapsed-block");
-          } else {
-            sibling.classList.remove("collapsed-block");
-          }
-          sibling = sibling.nextElementSibling as HTMLElement | null;
         }
+        if (headingDepth === -1) return;
+
+        const headingNode = $pos.node(headingDepth) as any;
+        const headingPos = $pos.before(headingDepth);
+        const headingLevel = headingNode.attrs?.level ?? 1;
+
+        const headingDom = view.nodeDOM(headingPos) as HTMLElement | null;
+        if (!headingDom) return;
+
+        const isCollapsed = headingDom.getAttribute("data-collapsed") === "true";
+        const nextCollapsed = !isCollapsed;
+        headingDom.setAttribute(
+          "data-collapsed",
+          nextCollapsed ? "true" : "false"
+        );
+
+        // Find the end of this section: next heading of level <= current, or end of doc.
+        let sectionEnd = state.doc.nodeSize - 2;
+        state.doc.nodesBetween(
+          headingPos + headingNode.nodeSize,
+          state.doc.nodeSize - 2,
+          (node, pos) => {
+            if (node.type.name === "heading") {
+              const lvl = (node.attrs as any)?.level ?? 1;
+              if (lvl <= headingLevel) {
+                sectionEnd = pos;
+                return false;
+              }
+            }
+            return true;
+          }
+        );
+
+        // Toggle visibility for all block nodes in this section.
+        state.doc.nodesBetween(
+          headingPos + headingNode.nodeSize,
+          sectionEnd,
+          (node, pos) => {
+            if (!node.isBlock) return true;
+            const dom = view.nodeDOM(pos) as HTMLElement | null;
+            if (dom && dom.nodeType === Node.ELEMENT_NODE) {
+              if (nextCollapsed) {
+                dom.classList.add("collapsed-block");
+              } else {
+                dom.classList.remove("collapsed-block");
+              }
+            }
+            return true;
+          }
+        );
+
         return;
       }
 
