@@ -93,91 +93,6 @@ export const Editor = () => {
         class:
           "prose prose-sm sm:prose lg:prose-lg focus:outline-none min-h-full p-6",
       },
-      handleClickOn(view, pos, node, nodePos, event) {
-        const mouseEvent = event as MouseEvent;
-        const clickX = mouseEvent.clientX;
-
-        // Collapse/expand headings
-        if (node.type.name === "heading") {
-          const headingDom = view.nodeDOM(nodePos) as HTMLElement | null;
-          if (!headingDom) return false;
-          const rect = headingDom.getBoundingClientRect();
-          if (clickX <= rect.left + COLLAPSE_GUTTER_PX) {
-            const { state } = view;
-
-            // Toggle visual state on the heading itself
-            const currentlyCollapsed =
-              headingDom.getAttribute("data-collapsed") === "true";
-            const nextCollapsed = !currentlyCollapsed;
-            headingDom.setAttribute(
-              "data-collapsed",
-              nextCollapsed ? "true" : "false"
-            );
-
-            // Walk DOM siblings until the next heading and hide/show them.
-            let sibling = headingDom.nextElementSibling as HTMLElement | null;
-            while (sibling) {
-              if (
-                sibling.matches("h1") ||
-                sibling.matches("h2") ||
-                sibling.matches("h3")
-              ) {
-                break;
-              }
-              if (nextCollapsed) {
-                sibling.classList.add("collapsed-block");
-              } else {
-                sibling.classList.remove("collapsed-block");
-              }
-              sibling = sibling.nextElementSibling as HTMLElement | null;
-            }
-
-            return true;
-          }
-        }
-
-        // Collapse/expand top-level list "titles"
-        if (node.type.name === "listItem" || node.type.name === "taskItem") {
-          const $pos = view.state.doc.resolve(nodePos);
-          // doc -> list -> listItem => depth 2 for top-level list items
-          if ($pos.depth === 2) {
-            const parent = $pos.node(1);
-            if (
-              parent.type.name === "bulletList" ||
-              parent.type.name === "orderedList"
-            ) {
-              const liDom = view.nodeDOM(nodePos) as HTMLElement | null;
-              if (!liDom) return false;
-              const rect = liDom.getBoundingClientRect();
-              if (clickX <= rect.left + COLLAPSE_GUTTER_PX) {
-                const currentlyCollapsed =
-                  liDom.getAttribute("data-collapsed") === "true";
-                const nextCollapsed = !currentlyCollapsed;
-                liDom.setAttribute(
-                  "data-collapsed",
-                  nextCollapsed ? "true" : "false"
-                );
-
-                // Hide/show all nested list items under this top-level title
-                const nestedItems = liDom.querySelectorAll("li");
-                nestedItems.forEach((child) => {
-                  const el = child as HTMLElement;
-                  if (el === liDom) return;
-                  if (nextCollapsed) {
-                    el.classList.add("collapsed-block");
-                  } else {
-                    el.classList.remove("collapsed-block");
-                  }
-                });
-
-                return true;
-              }
-            }
-          }
-        }
-
-        return false;
-      },
       // Preserve formatting and tables when pasting (Apple Notes–style)
       transformPastedHTML(html) {
         return html;
@@ -221,6 +136,36 @@ export const Editor = () => {
       const clickX = event.clientX;
       const { state, view } = editor;
 
+      // 1) Heading collapse/expand (make it very forgiving: any click on heading line)
+      const heading = target.closest("h1, h2, h3") as HTMLElement | null;
+      if (heading) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const isCollapsed = heading.dataset.collapsed === "true";
+        const nextCollapsed = !isCollapsed;
+        heading.dataset.collapsed = nextCollapsed ? "true" : "false";
+
+        let sibling = heading.nextElementSibling as HTMLElement | null;
+        while (sibling) {
+          if (
+            sibling.matches("h1") ||
+            sibling.matches("h2") ||
+            sibling.matches("h3")
+          ) {
+            break;
+          }
+          if (nextCollapsed) {
+            sibling.classList.add("collapsed-block");
+          } else {
+            sibling.classList.remove("collapsed-block");
+          }
+          sibling = sibling.nextElementSibling as HTMLElement | null;
+        }
+        return;
+      }
+
+      // 2) List title collapse/expand or progress pill
       const liElement = target.closest("li") as HTMLElement | null;
       if (!liElement) return;
 
@@ -232,13 +177,43 @@ export const Editor = () => {
         listParent.parentElement &&
         listParent.parentElement.classList.contains("ProseMirror");
 
-      // Progress pill editor (band starts after collapse gutter handled by TipTap)
-      if (event.clientX <= liRect.left + COLLAPSE_GUTTER_PX) {
-        // Inside collapse gutter – TipTap already handled this via handleClickOn
+      // Collapse/expand top-level list titles when clicking in left/center area
+      if (isTopLevelListItem) {
+        const collapseEdge =
+          liRect.left + Math.min(liRect.width * 0.7, COLLAPSE_GUTTER_PX);
+        if (clickX <= collapseEdge) {
+        event.preventDefault();
+        event.stopPropagation();
+
+          const isCollapsed =
+            liElement.getAttribute("data-collapsed") === "true";
+          const nextCollapsed = !isCollapsed;
+          liElement.setAttribute(
+            "data-collapsed",
+            nextCollapsed ? "true" : "false"
+          );
+
+          const nestedItems = liElement.querySelectorAll("li");
+          nestedItems.forEach((child) => {
+            const el = child as HTMLElement;
+            if (el === liElement) return;
+            if (nextCollapsed) {
+              el.classList.add("collapsed-block");
+            } else {
+              el.classList.remove("collapsed-block");
+            }
+          });
+          return;
+        }
+      }
+
+      // 3) Progress pill editor (band just to the right of the collapse gutter)
+      if (clickX <= liRect.left + COLLAPSE_GUTTER_PX) {
+        // Not a top-level list item; ignore special behavior
         return;
       }
 
-      if (event.clientX > liRect.left + COLLAPSE_GUTTER_PX + 60) {
+      if (clickX > liRect.left + COLLAPSE_GUTTER_PX + 60) {
         return;
       }
 
