@@ -100,7 +100,7 @@
   content: none;
 }
 
-.ProseMirror ol > li::before {
+.ProseMirror ol > li::after {
   content: counter(ol-counter-level1) ". ";
   margin-right: 0.25rem;
 }
@@ -113,7 +113,7 @@
   counter-increment: ol-counter-level2;
 }
 
-.ProseMirror ol ol > li::before {
+.ProseMirror ol ol > li::after {
   content: counter(ol-counter-level1) "." counter(ol-counter-level2) " ";
 }
 
@@ -125,7 +125,7 @@
   counter-increment: ol-counter-level3;
 }
 
-.ProseMirror ol ol ol > li::before {
+.ProseMirror ol ol ol > li::after {
   content: counter(ol-counter-level1) "." counter(ol-counter-level2) "."
     counter(ol-counter-level3) " ";
 }
@@ -150,7 +150,7 @@
 }
 
 /* Align ordered-list numbers with pill and text */
-.ProseMirror ol > li::before {
+.ProseMirror ol > li::after {
   display: inline-block;
   min-width: 2.5rem;
   text-align: right;

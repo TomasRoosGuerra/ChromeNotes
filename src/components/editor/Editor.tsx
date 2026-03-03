@@ -139,7 +139,7 @@ export const Editor = () => {
       // Treat taps/clicks very close to the left edge as
       // interactions with the progress battery, to avoid
       // accidental triggers when placing the caret.
-      if (event.clientX > rect.left + 28) {
+      if (event.clientX > rect.left + 40) {
         return;
       }
 
