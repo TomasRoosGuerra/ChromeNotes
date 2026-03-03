@@ -146,15 +146,18 @@ export const Editor = () => {
         const nextCollapsed = !isCollapsed;
         heading.dataset.collapsed = nextCollapsed ? "true" : "false";
 
+        const currentLevel = Number(heading.tagName.substring(1)) || 1;
+
         let sibling = heading.nextElementSibling as HTMLElement | null;
         while (sibling) {
-          if (
-            sibling.matches("h1") ||
-            sibling.matches("h2") ||
-            sibling.matches("h3")
-          ) {
-            break;
+          if (sibling.matches("h1, h2, h3")) {
+            const siblingLevel = Number(sibling.tagName.substring(1)) || 1;
+            // Same-size or higher-level heading starts a new container
+            if (siblingLevel <= currentLevel) {
+              break;
+            }
           }
+
           if (nextCollapsed) {
             sibling.classList.add("collapsed-block");
           } else {
