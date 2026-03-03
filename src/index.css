@@ -63,14 +63,39 @@
 
 .ProseMirror h1 {
   @apply text-3xl font-semibold mt-6 mb-4 pb-2 border-b-2 border-[var(--border-color)];
+  position: relative;
+  padding-left: 2.25rem;
 }
 
 .ProseMirror h2 {
   @apply text-2xl font-semibold mt-5 mb-3 pb-1 border-b border-[var(--border-color)];
+  position: relative;
+  padding-left: 2.25rem;
 }
 
 .ProseMirror h3 {
   @apply text-xl font-semibold mt-4 mb-2;
+  position: relative;
+  padding-left: 2.25rem;
+}
+
+.ProseMirror h1::before,
+.ProseMirror h2::before,
+.ProseMirror h3::before {
+  content: "▾";
+  position: absolute;
+  left: 0.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.95rem;
+  color: var(--placeholder-color);
+  cursor: pointer;
+}
+
+.ProseMirror h1[data-collapsed="true"]::before,
+.ProseMirror h2[data-collapsed="true"]::before,
+.ProseMirror h3[data-collapsed="true"]::before {
+  content: "▸";
 }
 
 .ProseMirror ul,
@@ -170,6 +195,10 @@
 
 .ProseMirror li[data-progress-level="4"]::before {
   background-color: rgba(34, 197, 94, 0.35); /* full */
+}
+
+.ProseMirror .collapsed-block {
+  display: none;
 }
 
 .ProseMirror blockquote {

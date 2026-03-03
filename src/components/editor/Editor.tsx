@@ -18,6 +18,8 @@ import { Toolbar } from "./Toolbar";
 import { moveListItem } from "./listItemReorder";
 import { ListItemProgress } from "./listItemProgress";
 
+const COLLAPSE_GUTTER_PX = 96;
+
 export const Editor = () => {
   const mainTabs = useNotesStore((state) => state.mainTabs);
   const activeMainTabId = useNotesStore((state) => state.activeMainTabId);
@@ -91,6 +93,91 @@ export const Editor = () => {
         class:
           "prose prose-sm sm:prose lg:prose-lg focus:outline-none min-h-full p-6",
       },
+      handleClickOn(view, pos, node, nodePos, event) {
+        const mouseEvent = event as MouseEvent;
+        const clickX = mouseEvent.clientX;
+
+        // Collapse/expand headings
+        if (node.type.name === "heading") {
+          const headingDom = view.nodeDOM(nodePos) as HTMLElement | null;
+          if (!headingDom) return false;
+          const rect = headingDom.getBoundingClientRect();
+          if (clickX <= rect.left + COLLAPSE_GUTTER_PX) {
+            const { state } = view;
+
+            // Toggle visual state on the heading itself
+            const currentlyCollapsed =
+              headingDom.getAttribute("data-collapsed") === "true";
+            const nextCollapsed = !currentlyCollapsed;
+            headingDom.setAttribute(
+              "data-collapsed",
+              nextCollapsed ? "true" : "false"
+            );
+
+            // Walk DOM siblings until the next heading and hide/show them.
+            let sibling = headingDom.nextElementSibling as HTMLElement | null;
+            while (sibling) {
+              if (
+                sibling.matches("h1") ||
+                sibling.matches("h2") ||
+                sibling.matches("h3")
+              ) {
+                break;
+              }
+              if (nextCollapsed) {
+                sibling.classList.add("collapsed-block");
+              } else {
+                sibling.classList.remove("collapsed-block");
+              }
+              sibling = sibling.nextElementSibling as HTMLElement | null;
+            }
+
+            return true;
+          }
+        }
+
+        // Collapse/expand top-level list "titles"
+        if (node.type.name === "listItem" || node.type.name === "taskItem") {
+          const $pos = view.state.doc.resolve(nodePos);
+          // doc -> list -> listItem => depth 2 for top-level list items
+          if ($pos.depth === 2) {
+            const parent = $pos.node(1);
+            if (
+              parent.type.name === "bulletList" ||
+              parent.type.name === "orderedList"
+            ) {
+              const liDom = view.nodeDOM(nodePos) as HTMLElement | null;
+              if (!liDom) return false;
+              const rect = liDom.getBoundingClientRect();
+              if (clickX <= rect.left + COLLAPSE_GUTTER_PX) {
+                const currentlyCollapsed =
+                  liDom.getAttribute("data-collapsed") === "true";
+                const nextCollapsed = !currentlyCollapsed;
+                liDom.setAttribute(
+                  "data-collapsed",
+                  nextCollapsed ? "true" : "false"
+                );
+
+                // Hide/show all nested list items under this top-level title
+                const nestedItems = liDom.querySelectorAll("li");
+                nestedItems.forEach((child) => {
+                  const el = child as HTMLElement;
+                  if (el === liDom) return;
+                  if (nextCollapsed) {
+                    el.classList.add("collapsed-block");
+                  } else {
+                    el.classList.remove("collapsed-block");
+                  }
+                });
+
+                return true;
+              }
+            }
+          }
+        }
+
+        return false;
+      },
       // Preserve formatting and tables when pasting (Apple Notes–style)
       transformPastedHTML(html) {
         return html;
@@ -131,15 +218,27 @@ export const Editor = () => {
       const target = event.target as HTMLElement | null;
       if (!target) return;
 
-      const li = target.closest("li");
-      if (!li) return;
+      const clickX = event.clientX;
+      const { state, view } = editor;
 
-      const rect = li.getBoundingClientRect();
+      const liElement = target.closest("li") as HTMLElement | null;
+      if (!liElement) return;
 
-      // Treat taps/clicks very close to the left edge as
-      // interactions with the progress battery, to avoid
-      // accidental triggers when placing the caret.
-      if (event.clientX > rect.left + 40) {
+      const liRect = liElement.getBoundingClientRect();
+
+      const listParent = liElement.parentElement;
+      const isTopLevelListItem =
+        listParent &&
+        listParent.parentElement &&
+        listParent.parentElement.classList.contains("ProseMirror");
+
+      // Progress pill editor (band starts after collapse gutter handled by TipTap)
+      if (event.clientX <= liRect.left + COLLAPSE_GUTTER_PX) {
+        // Inside collapse gutter – TipTap already handled this via handleClickOn
+        return;
+      }
+
+      if (event.clientX > liRect.left + COLLAPSE_GUTTER_PX + 60) {
         return;
       }
 
@@ -147,14 +246,13 @@ export const Editor = () => {
       event.stopPropagation();
 
       const posInfo = editor.view.posAtCoords({
-        left: rect.left + 4,
-        top: rect.top + rect.height / 2,
+        left: liRect.left + 4,
+        top: liRect.top + liRect.height / 2,
       });
 
       if (!posInfo) return;
 
       const { pos } = posInfo;
-      const { state, view } = editor;
       const tr = state.tr.setSelection(
         TextSelection.near(state.doc.resolve(pos), -1)
       );
