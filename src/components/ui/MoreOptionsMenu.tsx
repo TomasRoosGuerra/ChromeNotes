@@ -5,6 +5,7 @@ import {
   FiDownload,
   FiEye,
   FiEyeOff,
+  FiHelpCircle,
   FiLogOut,
   FiMail,
   FiMoreVertical,
@@ -16,9 +17,11 @@ import { formatTabsForCopy, parseImportedContent } from "../../lib/markdown";
 import { useAuthStore } from "../../store/authStore";
 import { useNotesStore } from "../../store/notesStore";
 import { Button } from "./Button";
+import { KeyboardShortcuts } from "./KeyboardShortcuts";
 
 export const MoreOptionsMenu = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const user = useAuthStore((state) => state.user);
@@ -95,7 +98,7 @@ export const MoreOptionsMenu = () => {
   const handleCleanAll = () => {
     if (
       confirm(
-        "Are you sure you want to delete all content from all tabs? This cannot be undone."
+        "Are you sure you want to delete all content, completed tasks, and planning tasks? This cannot be undone."
       )
     ) {
       const currentState = getState();
@@ -107,11 +110,30 @@ export const MoreOptionsMenu = () => {
         })),
       }));
 
-      setState({ ...currentState, mainTabs: cleanedTabs });
-      toast.success("All tabs cleaned!");
+      setState({
+        ...currentState,
+        mainTabs: cleanedTabs,
+        completedTasks: [],
+        planning: {
+          ...currentState.planning,
+          tasks: [],
+        },
+      });
+      toast.success("Everything cleaned!");
       setIsOpen(false);
     }
   };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "/") {
+        e.preventDefault();
+        setShowShortcuts(true);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const handleSignOut = async () => {
     if (confirm("Are you sure you want to sign out?")) {
@@ -251,6 +273,22 @@ export const MoreOptionsMenu = () => {
               </span>
             </button>
 
+            <button
+              onClick={() => {
+                setShowShortcuts(true);
+                setIsOpen(false);
+              }}
+              className="w-full px-4 py-3 sm:px-3 sm:py-2 text-left flex items-center gap-3 hover:bg-[var(--hover-bg-color)] transition-colors touch-manipulation text-[var(--text-color)]"
+            >
+              <FiHelpCircle className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+              <span className="text-base sm:text-sm font-medium">
+                Keyboard shortcuts
+              </span>
+              <span className="ml-auto text-[10px] text-[var(--placeholder-color)] hidden sm:inline">
+                {/Mac|iPod|iPhone|iPad/.test(navigator.userAgent) ? "⌘/" : "Ctrl+/"}
+              </span>
+            </button>
+
             <div className="border-t border-[var(--border-color)] my-1" />
 
             <button
@@ -286,6 +324,9 @@ export const MoreOptionsMenu = () => {
             </div>
           </div>
         </>
+      )}
+      {showShortcuts && (
+        <KeyboardShortcuts onClose={() => setShowShortcuts(false)} />
       )}
     </div>
   );

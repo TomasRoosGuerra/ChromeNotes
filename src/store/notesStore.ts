@@ -32,6 +32,7 @@ interface NotesActions {
   addCompletedTask: (task: CompletedTask) => void;
   deleteCompletedTask: (id: string) => void;
   toggleHideCompleted: () => void;
+  setScrollPosition: (key: string, position: number) => void;
   toggleShowMainTabs: () => void;
   toggleShowSubTabs: () => void;
   // Planning tab actions
@@ -313,6 +314,12 @@ export const useNotesStore = create<NotesState & NotesActions>()(
         state.hideCompleted = !state.hideCompleted;
       });
       saveState(get);
+    },
+
+    setScrollPosition: (key, position) => {
+      set((state) => {
+        state.scrollPositions[key] = position;
+      });
     },
 
     toggleShowMainTabs: () => {

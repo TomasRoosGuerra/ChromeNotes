@@ -5,41 +5,281 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import GlobalDragHandle from "tiptap-extension-global-drag-handle";
 import { Extension } from "@tiptap/core";
-import { TextSelection } from "@tiptap/pm/state";
-import {
-  MouseEvent as ReactMouseEvent,
-  useCallback,
-  useEffect,
-  useState,
-} from "react";
+import { Plugin, PluginKey } from "@tiptap/pm/state";
+import { Decoration, DecorationSet } from "@tiptap/pm/view";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNotesStore } from "../../store/notesStore";
 import { QuickFormatBar } from "./QuickFormatBar";
 import { Toolbar } from "./Toolbar";
+import { SearchBar } from "./SearchBar";
 import { moveListItem } from "./listItemReorder";
 import { ListItemProgress } from "./listItemProgress";
 
-// Width of the left-side “curtain” gutter where clicks
-// should toggle collapse instead of placing the caret.
-const COLLAPSE_GUTTER_PX = 40;
+function extractCheckedTasks(doc: {
+  descendants: (
+    fn: (node: {
+      type: { name: string };
+      attrs?: Record<string, unknown>;
+      textContent?: string;
+    }) => boolean | void
+  ) => void;
+}): Map<string, boolean> {
+  const tasks = new Map<string, boolean>();
+  let idx = 0;
+  doc.descendants((node) => {
+    if (node.type.name === "taskItem") {
+      const text = (node.textContent ?? "").trim();
+      const checked = node.attrs?.checked === true;
+      tasks.set(`${idx}:${text}`, checked);
+      idx++;
+    }
+  });
+  return tasks;
+}
+
+const collapsiblePluginKey = new PluginKey("collapsibleSections");
+
+type CollapsibleState = {
+  headings: number[];
+  lists: number[];
+  decorations: DecorationSet;
+};
+
+function hasNestedList(node: {
+  descendants: (
+    f: (n: { type: { name: string } }) => boolean | void
+  ) => void;
+}): boolean {
+  let found = false;
+  node.descendants((n) => {
+    if (
+      n.type.name === "bulletList" ||
+      n.type.name === "orderedList" ||
+      n.type.name === "taskList"
+    ) {
+      found = true;
+      return false;
+    }
+  });
+  return found;
+}
+
+const CollapsibleSections = Extension.create({
+  name: "collapsibleSections",
+  addProseMirrorPlugins() {
+    return [
+      new Plugin<CollapsibleState>({
+        key: collapsiblePluginKey,
+        props: {
+          decorations(state) {
+            return collapsiblePluginKey.getState(state)?.decorations || null;
+          },
+        },
+        state: {
+          init: () => ({
+            headings: [],
+            lists: [],
+            decorations: DecorationSet.empty,
+          }),
+          apply(tr, value) {
+            const doc = tr.doc;
+
+            const mapPositions = (
+              positions: number[],
+              type: "heading" | "list"
+            ) => {
+              const mapped: number[] = [];
+              for (const pos of positions) {
+                const mappedPos = tr.mapping.map(pos, -1);
+                if (type === "heading") {
+                  const node = doc.nodeAt(mappedPos);
+                  if (node?.type.name === "heading") mapped.push(mappedPos);
+                } else {
+                  const $pos = doc.resolve(mappedPos);
+                  for (let d = $pos.depth; d > 0; d -= 1) {
+                    const node = $pos.node(d);
+                    if (
+                      (node.type.name === "listItem" ||
+                        node.type.name === "taskItem") &&
+                      d === 2
+                    ) {
+                      const parent = $pos.node(1);
+                      if (
+                        ["bulletList", "orderedList", "taskList"].includes(
+                          parent.type.name
+                        ) &&
+                        hasNestedList(node)
+                      ) {
+                        mapped.push($pos.before(d));
+                      }
+                      break;
+                    }
+                  }
+                }
+              }
+              return mapped;
+            };
+
+            let headings = mapPositions(value.headings, "heading");
+            let lists = mapPositions(value.lists, "list");
+
+            const meta = tr.getMeta(collapsiblePluginKey) as
+              | {
+                  headingPos?: number;
+                  listPos?: number;
+                  setHeadings?: number[];
+                  setLists?: number[];
+                }
+              | undefined;
+
+            // Collapse-all / expand-all: set entire arrays at once
+            if (meta?.setHeadings != null) headings = meta.setHeadings;
+            if (meta?.setLists != null) lists = meta.setLists;
+
+            // Single-item toggle
+            if (meta?.headingPos != null) {
+              const p = meta.headingPos;
+              const idx = headings.indexOf(p);
+              headings =
+                idx >= 0
+                  ? [...headings.slice(0, idx), ...headings.slice(idx + 1)]
+                  : [...headings, p];
+            }
+            if (meta?.listPos != null) {
+              const p = meta.listPos;
+              const idx = lists.indexOf(p);
+              lists =
+                idx >= 0
+                  ? [...lists.slice(0, idx), ...lists.slice(idx + 1)]
+                  : [...lists, p];
+            }
+
+            const decorations: Decoration[] = [];
+            const headingSet = new Set(headings);
+            const listSet = new Set(lists);
+
+            // Headings: collapse content until next heading of same or higher level
+            doc.descendants((node, pos) => {
+              if (node.type.name !== "heading" || !headingSet.has(pos))
+                return true;
+              const level = (node.attrs as { level?: number })?.level ?? 1;
+
+              let sectionEnd = doc.content.size;
+              let hiddenCount = 0;
+              let offset = 0;
+              for (let i = 0; i < doc.content.childCount; i++) {
+                const child = doc.content.child(i);
+                if (
+                  offset > pos &&
+                  child.type.name === "heading" &&
+                  ((child.attrs as { level?: number })?.level ?? 1) <= level
+                ) {
+                  sectionEnd = offset;
+                  break;
+                }
+                if (offset > pos) hiddenCount++;
+                offset += child.nodeSize;
+              }
+
+              decorations.push(
+                Decoration.node(pos, pos + node.nodeSize, {
+                  "data-collapsed": "true",
+                  "data-collapsed-count": String(hiddenCount),
+                })
+              );
+
+              doc.nodesBetween(pos + node.nodeSize, sectionEnd, (n, p) => {
+                if (n.isBlock) {
+                  decorations.push(
+                    Decoration.node(p, p + n.nodeSize, {
+                      class: "collapsed-block",
+                    })
+                  );
+                }
+                return true;
+              });
+              return true;
+            });
+
+            // Lists: collapse nested items under top-level list item
+            doc.descendants((node, pos) => {
+              if (
+                node.type.name !== "listItem" &&
+                node.type.name !== "taskItem"
+              )
+                return true;
+              if (!listSet.has(pos)) return true;
+
+              const $pos = doc.resolve(pos);
+              if ($pos.depth !== 2) return true;
+              const parent = $pos.node(1);
+              if (
+                !["bulletList", "orderedList", "taskList"].includes(
+                  parent.type.name
+                )
+              )
+                return true;
+
+              let hiddenItems = 0;
+              doc.nodesBetween(pos, pos + node.nodeSize, (n, p) => {
+                if (p === pos) return true;
+                if (
+                  n.type.name === "listItem" ||
+                  n.type.name === "taskItem"
+                ) {
+                  hiddenItems++;
+                  decorations.push(
+                    Decoration.node(p, p + n.nodeSize, {
+                      class: "collapsed-block",
+                    })
+                  );
+                }
+                return true;
+              });
+
+              decorations.push(
+                Decoration.node(pos, pos + node.nodeSize, {
+                  "data-collapsed": "true",
+                  "data-collapsed-count": String(hiddenItems),
+                })
+              );
+              return true;
+            });
+
+            return {
+              headings,
+              lists,
+              decorations: DecorationSet.create(doc, decorations),
+            };
+          },
+        },
+      }),
+    ];
+  },
+});
 
 export const Editor = () => {
-  const mainTabs = useNotesStore((state) => state.mainTabs);
-  const activeMainTabId = useNotesStore((state) => state.activeMainTabId);
-  const activeSubTabId = useNotesStore((state) => state.activeSubTabId);
-  const setActiveMainTab = useNotesStore((state) => state.setActiveMainTab);
-  const setActiveSubTab = useNotesStore((state) => state.setActiveSubTab);
-  const updateContent = useNotesStore((state) => state.updateContent);
-  const hideCompleted = useNotesStore((state) => state.hideCompleted);
+  const mainTabs = useNotesStore((s) => s.mainTabs);
+  const activeMainTabId = useNotesStore((s) => s.activeMainTabId);
+  const activeSubTabId = useNotesStore((s) => s.activeSubTabId);
+  const setActiveMainTab = useNotesStore((s) => s.setActiveMainTab);
+  const setActiveSubTab = useNotesStore((s) => s.setActiveSubTab);
+  const updateContent = useNotesStore((s) => s.updateContent);
+  const hideCompleted = useNotesStore((s) => s.hideCompleted);
+  const scrollPositions = useNotesStore((s) => s.scrollPositions);
+  const setScrollPosition = useNotesStore((s) => s.setScrollPosition);
+
+  const addCompletedTask = useNotesStore((s) => s.addCompletedTask);
 
   const activeMainTab = mainTabs.find((t) => t.id === activeMainTabId);
   const activeSubTab = activeMainTab?.subTabs.find(
     (st) => st.id === activeSubTabId
   );
 
-  // If active tab is missing (e.g. after sync), switch to first valid tab
+  const prevCheckedRef = useRef<Map<string, boolean>>(new Map());
+
   useEffect(() => {
-    if (activeSubTabId === "done-log") return;
-    if (mainTabs.length === 0) return;
+    if (activeSubTabId === "done-log" || mainTabs.length === 0) return;
     if (!activeMainTab) {
       setActiveMainTab(mainTabs[0].id);
       return;
@@ -72,15 +312,15 @@ export const Editor = () => {
     pos: number;
   } | null>(null);
 
+  const [searchOpen, setSearchOpen] = useState(false);
+
   const editor = useEditor({
     extensions: [
       StarterKit,
       TaskList,
-      TaskItem.configure({
-        nested: true,
-      }),
+      TaskItem.configure({ nested: true }),
       Placeholder.configure({
-        placeholder: "Start typing... Try '# ', '- ', or '-.' for shortcuts",
+        placeholder: "Start typing... (# heading, - list, [] task, > quote)",
       }),
       GlobalDragHandle.configure({
         excludedTags: ["p", "h1", "h2", "h3", "blockquote", "hr", "table"],
@@ -88,6 +328,7 @@ export const Editor = () => {
       }),
       ListItemReorder,
       ListItemProgress,
+      CollapsibleSections,
     ],
     content: activeSubTab?.content || "",
     editorProps: {
@@ -95,405 +336,506 @@ export const Editor = () => {
         class:
           "prose prose-sm sm:prose lg:prose-lg focus:outline-none min-h-full p-6",
       },
-      // Preserve formatting and tables when pasting (Apple Notes–style)
       transformPastedHTML(html) {
         return html;
       },
+      handleDOMEvents: {
+        keydown: (view, event) => {
+          if ((event.metaKey || event.ctrlKey) && event.key === "f") {
+            event.preventDefault();
+            setSearchOpen(true);
+            return true;
+          }
+          if (event.altKey && (event.key === "p" || event.key === "P")) {
+            handleOpenProgressFromToolbar();
+            event.preventDefault();
+            return true;
+          }
+          // Collapse/expand at cursor: Cmd/Ctrl+Shift+[ or ]
+          if (
+            (event.metaKey || event.ctrlKey) &&
+            event.shiftKey &&
+            (event.key === "[" || event.key === "]")
+          ) {
+            const { state } = view;
+            const { $from } = state.selection;
+            const wantCollapse = event.key === "[";
+
+            // Check if cursor is inside a heading
+            for (let d = $from.depth; d >= 0; d--) {
+              if ($from.node(d).type.name === "heading") {
+                const headingPos = $from.before(d);
+                const pluginState = collapsiblePluginKey.getState(
+                  state
+                ) as CollapsibleState | undefined;
+                const isCollapsed =
+                  pluginState?.headings.includes(headingPos) ?? false;
+                if (
+                  (wantCollapse && !isCollapsed) ||
+                  (!wantCollapse && isCollapsed)
+                ) {
+                  event.preventDefault();
+                  view.dispatch(
+                    state.tr.setMeta(collapsiblePluginKey, {
+                      headingPos,
+                    })
+                  );
+                  return true;
+                }
+                return false;
+              }
+            }
+
+            // Check if cursor is inside a top-level list item with nested lists
+            for (let d = $from.depth; d > 0; d--) {
+              const node = $from.node(d);
+              if (
+                ["listItem", "taskItem"].includes(node.type.name) &&
+                d === 2
+              ) {
+                const parent = $from.node(1);
+                if (
+                  ["bulletList", "orderedList", "taskList"].includes(
+                    parent.type.name
+                  ) &&
+                  hasNestedList(node)
+                ) {
+                  const listPos = $from.before(d);
+                  const pluginState = collapsiblePluginKey.getState(
+                    state
+                  ) as CollapsibleState | undefined;
+                  const isCollapsed =
+                    pluginState?.lists.includes(listPos) ?? false;
+                  if (
+                    (wantCollapse && !isCollapsed) ||
+                    (!wantCollapse && isCollapsed)
+                  ) {
+                    event.preventDefault();
+                    view.dispatch(
+                      state.tr.setMeta(collapsiblePluginKey, {
+                        listPos,
+                      })
+                    );
+                    return true;
+                  }
+                }
+                return false;
+              }
+            }
+            return false;
+          }
+          return false;
+        },
+      },
     },
-    onUpdate: ({ editor }) => {
+    onUpdate: ({ editor: ed }) => {
       if (activeMainTab && activeSubTab) {
-        updateContent(activeMainTab.id, activeSubTab.id, editor.getHTML());
+        updateContent(activeMainTab.id, activeSubTab.id, ed.getHTML());
+
+        const currentTasks = extractCheckedTasks(ed.state.doc);
+        const prev = prevCheckedRef.current;
+        currentTasks.forEach((checked, key) => {
+          if (checked && !prev.get(key)) {
+            const text = key.replace(/^\d+:/, "");
+            if (text) {
+              addCompletedTask({
+                id: `task-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                text,
+                tabName: activeMainTab.name,
+                subTabName: activeSubTab.name,
+                completedAt: Date.now(),
+              });
+            }
+          }
+        });
+        prevCheckedRef.current = currentTasks;
       }
     },
   });
 
   useEffect(() => {
     if (editor && activeSubTab) {
-      const currentContent = editor.getHTML();
-      if (currentContent !== activeSubTab.content) {
+      if (editor.getHTML() !== activeSubTab.content) {
         editor.commands.setContent(activeSubTab.content);
       }
+      prevCheckedRef.current = extractCheckedTasks(editor.state.doc);
     }
   }, [editor, activeSubTab]);
 
-  const handleUndo = useCallback(() => {
-    if (editor) {
-      editor.chain().focus().undo().run();
-    }
-  }, [editor]);
+  // ── Collapse/Expand handler ──────────────────────────────────────
+  // Uses mousedown (fires before ProseMirror click handlers) and
+  // DOM node comparison via view.nodeDOM() for bulletproof detection.
+  const handleEditorMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (!editor || e.button !== 0) return;
+      const target = e.target as HTMLElement;
+      const clickX = e.clientX;
+      const { view, state } = editor;
+      const gutter = window.innerWidth <= 640 ? 56 : 48;
 
-  const handleRedo = useCallback(() => {
-    if (editor) {
-      editor.chain().focus().redo().run();
-    }
-  }, [editor]);
-
-  const handleEditorClick = useCallback(
-    (event: ReactMouseEvent<HTMLDivElement>) => {
-      if (!editor) return;
-
-      const target = event.target as HTMLElement | null;
-      if (!target) return;
-
-      const clickX = event.clientX;
-      const { state, view } = editor;
-
-      // 1) Heading collapse/expand – only when clicking in the left gutter
-      const heading = target.closest("h1, h2, h3") as HTMLElement | null;
-      if (heading) {
-        const rect = heading.getBoundingClientRect();
-        if (clickX > rect.left + COLLAPSE_GUTTER_PX) {
-          // Click landed on the heading text area – let TipTap handle caret/selection.
-          return;
-        }
-
-        event.preventDefault();
-        event.stopPropagation();
-
-        // Use the document structure to determine section boundaries,
-        // so same-level (or higher-level) headings always start new sections.
-        const { state, view } = editor;
-        const centerPos = view.posAtCoords({
-          left: rect.left + rect.width / 2,
-          top: rect.top + rect.height / 2,
-        });
-        if (!centerPos) return;
-
-        const $pos = state.doc.resolve(centerPos.pos);
-        let headingDepth = -1;
-        for (let d = $pos.depth; d >= 0; d -= 1) {
-          const node = $pos.node(d) as any;
-          if (node.type?.name === "heading") {
-            headingDepth = d;
-            break;
+      // 1) Heading collapse — match clicked heading to doc positions via DOM
+      const headingEl = target.closest("h1, h2, h3") as HTMLElement | null;
+      if (headingEl) {
+        const rect = headingEl.getBoundingClientRect();
+        if (clickX <= rect.left + gutter) {
+          let offset = 0;
+          for (let i = 0; i < state.doc.content.childCount; i++) {
+            const child = state.doc.content.child(i);
+            if (child.type.name === "heading") {
+              try {
+                const domNode = view.nodeDOM(offset);
+                if (domNode === headingEl) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  view.dispatch(
+                    state.tr.setMeta(collapsiblePluginKey, {
+                      headingPos: offset,
+                    })
+                  );
+                  return;
+                }
+              } catch { /* nodeDOM can throw if view is updating */ }
+            }
+            offset += child.nodeSize;
           }
         }
-        if (headingDepth === -1) return;
+        return;
+      }
 
-        const headingNode = $pos.node(headingDepth) as any;
-        const headingPos = $pos.before(headingDepth);
-        const headingLevel = headingNode.attrs?.level ?? 1;
-
-        const headingDom = view.nodeDOM(headingPos) as HTMLElement | null;
-        if (!headingDom) return;
-
-        const isCollapsed = headingDom.getAttribute("data-collapsed") === "true";
-        const nextCollapsed = !isCollapsed;
-        headingDom.setAttribute(
-          "data-collapsed",
-          nextCollapsed ? "true" : "false"
-        );
-
-        // Find the end of this section: next heading of level <= current, or end of doc.
-        let sectionEnd = state.doc.nodeSize - 2;
-        state.doc.nodesBetween(
-          headingPos + headingNode.nodeSize,
-          state.doc.nodeSize - 2,
-          (node, pos) => {
-            if (node.type.name === "heading") {
-              const lvl = (node.attrs as any)?.level ?? 1;
-              if (lvl <= headingLevel) {
-                sectionEnd = pos;
-                return false;
+      // 2) List item collapse — match clicked li to top-level list items
+      const liEl = target.closest("li") as HTMLElement | null;
+      if (liEl) {
+        const liRect = liEl.getBoundingClientRect();
+        if (clickX <= liRect.left + gutter) {
+          let offset = 0;
+          for (let i = 0; i < state.doc.content.childCount; i++) {
+            const child = state.doc.content.child(i);
+            if (
+              ["bulletList", "orderedList", "taskList"].includes(
+                child.type.name
+              )
+            ) {
+              let itemOffset = offset + 1;
+              for (let j = 0; j < child.content.childCount; j++) {
+                const item = child.content.child(j);
+                if (
+                  ["listItem", "taskItem"].includes(item.type.name) &&
+                  hasNestedList(item)
+                ) {
+                  try {
+                    const domNode = view.nodeDOM(itemOffset) as
+                      | HTMLElement
+                      | undefined;
+                    if (domNode === liEl || domNode?.contains(liEl)) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      view.dispatch(
+                        state.tr.setMeta(collapsiblePluginKey, {
+                          listPos: itemOffset,
+                        })
+                      );
+                      return;
+                    }
+                  } catch { /* nodeDOM can throw if view is updating */ }
+                }
+                itemOffset += item.nodeSize;
               }
             }
-            return true;
+            offset += child.nodeSize;
           }
-        );
-
-        // Toggle visibility for all block nodes in this section.
-        state.doc.nodesBetween(
-          headingPos + headingNode.nodeSize,
-          sectionEnd,
-          (node, pos) => {
-            if (!node.isBlock) return true;
-            const dom = view.nodeDOM(pos) as HTMLElement | null;
-            if (dom && dom.nodeType === Node.ELEMENT_NODE) {
-              if (nextCollapsed) {
-                dom.classList.add("collapsed-block");
-              } else {
-                dom.classList.remove("collapsed-block");
-              }
-            }
-            return true;
-          }
-        );
-
-        return;
-      }
-
-      // 2) List title collapse/expand or progress pill
-      const liElement = target.closest("li") as HTMLElement | null;
-      if (!liElement) return;
-
-      const liRect = liElement.getBoundingClientRect();
-
-      const listParent = liElement.parentElement;
-      const isTopLevelListItem =
-        listParent &&
-        listParent.parentElement &&
-        listParent.parentElement.classList.contains("ProseMirror");
-
-      // Collapse/expand top-level list titles when clicking in left gutter
-      if (isTopLevelListItem) {
-        const collapseEdge = liRect.left + COLLAPSE_GUTTER_PX;
-        if (clickX <= collapseEdge) {
-          event.preventDefault();
-          event.stopPropagation();
-
-          const isCollapsed =
-            liElement.getAttribute("data-collapsed") === "true";
-          const nextCollapsed = !isCollapsed;
-          liElement.setAttribute(
-            "data-collapsed",
-            nextCollapsed ? "true" : "false"
-          );
-
-          const nestedItems = liElement.querySelectorAll("li");
-          nestedItems.forEach((child) => {
-            const el = child as HTMLElement;
-            if (el === liElement) return;
-            if (nextCollapsed) {
-              el.classList.add("collapsed-block");
-            } else {
-              el.classList.remove("collapsed-block");
-            }
-          });
-          return;
         }
       }
-
-      // 3) Progress pill editor (band just to the right of the collapse gutter)
-      if (clickX <= liRect.left + COLLAPSE_GUTTER_PX) {
-        // Not a top-level list item; ignore special behavior
-        return;
-      }
-
-      if (clickX > liRect.left + COLLAPSE_GUTTER_PX + 60) {
-        return;
-      }
-
-      event.preventDefault();
-      event.stopPropagation();
-
-      const posInfo = editor.view.posAtCoords({
-        left: liRect.left + 4,
-        top: liRect.top + liRect.height / 2,
-      });
-
-      if (!posInfo) return;
-
-      const { pos } = posInfo;
-      const tr = state.tr.setSelection(
-        TextSelection.near(state.doc.resolve(pos), -1)
-      );
-      view.dispatch(tr);
-
-      const { $from } = editor.state.selection;
-      const itemTypes = ["listItem", "taskItem"];
-      let currentValue = 0;
-      let currentDuration = 0;
-
-      for (let d = $from.depth; d > 0; d -= 1) {
-        const node = $from.node(d) as any;
-        if (itemTypes.includes(node.type.name)) {
-          const p = node.attrs?.progress;
-          const dur = node.attrs?.durationMinutes;
-          if (typeof p === "number") {
-            currentValue = p;
-          }
-          if (typeof dur === "number") {
-            currentDuration = dur;
-          }
-          break;
-        }
-      }
-
-      setProgressEditor({
-        value: currentValue,
-        durationMinutes: currentDuration,
-        pos,
-      });
     },
     [editor]
   );
 
-  const handleProgressChange = useCallback(
-    (value: number) => {
-      setProgressEditor((prev) =>
-        prev ? { ...prev, value: Math.max(0, Math.min(100, value)) } : prev
+  // ── Collapse All / Expand All ────────────────────────────────────
+  const handleCollapseAll = useCallback(() => {
+    if (!editor) return;
+    const { view, state } = editor;
+    const headingPositions: number[] = [];
+    const listPositions: number[] = [];
+
+    let offset = 0;
+    for (let i = 0; i < state.doc.content.childCount; i++) {
+      const child = state.doc.content.child(i);
+      if (child.type.name === "heading") {
+        headingPositions.push(offset);
+      }
+      if (
+        ["bulletList", "orderedList", "taskList"].includes(child.type.name)
+      ) {
+        let itemOffset = offset + 1;
+        for (let j = 0; j < child.content.childCount; j++) {
+          const item = child.content.child(j);
+          if (
+            ["listItem", "taskItem"].includes(item.type.name) &&
+            hasNestedList(item)
+          ) {
+            listPositions.push(itemOffset);
+          }
+          itemOffset += item.nodeSize;
+        }
+      }
+      offset += child.nodeSize;
+    }
+
+    const pluginState = collapsiblePluginKey.getState(state) as
+      | CollapsibleState
+      | undefined;
+    const allCollapsed =
+      headingPositions.every((p) => pluginState?.headings.includes(p)) &&
+      listPositions.every((p) => pluginState?.lists.includes(p));
+
+    if (allCollapsed) {
+      // Expand all — set both arrays to empty
+      view.dispatch(
+        state.tr.setMeta(collapsiblePluginKey, { setHeadings: [], setLists: [] })
       );
-    },
-    []
-  );
+    } else {
+      // Collapse all
+      view.dispatch(
+        state.tr.setMeta(collapsiblePluginKey, {
+          setHeadings: headingPositions,
+          setLists: listPositions,
+        })
+      );
+    }
+  }, [editor]);
+
+  // ── Progress helpers ──────────────────────────────────────────────
+  const handleOpenProgressFromToolbar = useCallback(() => {
+    if (!editor) return;
+    const { $from } = editor.state.selection;
+    const itemTypes = ["listItem", "taskItem"];
+    for (let d = $from.depth; d > 0; d--) {
+      const node = $from.node(d) as {
+        type: { name: string };
+        attrs?: { progress?: number; durationMinutes?: number };
+      };
+      if (itemTypes.includes(node.type.name)) {
+        setProgressEditor({
+          value: (node.attrs?.progress as number) ?? 0,
+          durationMinutes: (node.attrs?.durationMinutes as number) ?? 0,
+          pos: $from.before(d),
+        });
+        return;
+      }
+    }
+  }, [editor]);
+
+  const handleProgressChange = useCallback((value: number) => {
+    setProgressEditor((prev) =>
+      prev ? { ...prev, value: Math.max(0, Math.min(100, value)) } : prev
+    );
+  }, []);
 
   const handleDurationChange = useCallback((value: number) => {
     setProgressEditor((prev) =>
       prev
-        ? {
-            ...prev,
-            durationMinutes: Math.max(0, Math.min(24 * 60, value)),
-          }
+        ? { ...prev, durationMinutes: Math.max(0, Math.min(24 * 60, value)) }
         : prev
     );
   }, []);
 
   const handleProgressSave = useCallback(() => {
     if (!editor || !progressEditor) return;
-
     const clamped = Math.max(0, Math.min(100, progressEditor.value));
     const duration =
       progressEditor.durationMinutes <= 0
         ? null
         : Math.max(1, Math.min(24 * 60, progressEditor.durationMinutes));
 
-    editor.chain().focus()
+    editor
+      .chain()
+      .focus()
       .command(({ tr, state, dispatch }) => {
         const $pos = state.doc.resolve(progressEditor.pos);
-        const itemTypes = ["listItem", "taskItem"];
-        let depth = -1;
-
-        for (let d = $pos.depth; d > 0; d -= 1) {
+        for (let d = $pos.depth; d > 0; d--) {
           const node = $pos.node(d);
-          if (itemTypes.includes(node.type.name)) {
-            depth = d;
-            break;
+          if (["listItem", "taskItem"].includes(node.type.name)) {
+            if (dispatch) {
+              dispatch(
+                tr.setNodeMarkup($pos.before(d), node.type, {
+                  ...node.attrs,
+                  progress: clamped,
+                  durationMinutes: duration,
+                })
+              );
+            }
+            return true;
           }
         }
-
-        if (depth === -1) {
-          return false;
-        }
-
-        const node = $pos.node(depth);
-        const nodePos = $pos.before(depth);
-
-        const newAttrs = {
-          ...node.attrs,
-          progress: clamped,
-          durationMinutes: duration,
-        };
-
-        if (dispatch) {
-          dispatch(tr.setNodeMarkup(nodePos, node.type, newAttrs));
-        }
-        return true;
+        return false;
       })
       .run();
-
     setProgressEditor(null);
   }, [editor, progressEditor]);
 
-  const handleProgressCancel = useCallback(() => {
-    setProgressEditor(null);
-  }, []);
+  const progressInputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (progressEditor && progressInputRef.current) {
+      progressInputRef.current.focus();
+      progressInputRef.current.select();
+    }
+  }, [progressEditor]);
+
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const scrollKey = activeSubTab ? `${activeMainTabId}:${activeSubTab.id}` : "";
+
+  // Save scroll position when switching away
+  const prevScrollKeyRef = useRef(scrollKey);
+  useEffect(() => {
+    if (prevScrollKeyRef.current !== scrollKey && prevScrollKeyRef.current) {
+      const el = scrollContainerRef.current;
+      if (el) {
+        setScrollPosition(prevScrollKeyRef.current, el.scrollTop);
+      }
+    }
+    prevScrollKeyRef.current = scrollKey;
+  }, [scrollKey, setScrollPosition]);
+
+  // Restore scroll position when switching to a tab
+  useEffect(() => {
+    if (!scrollKey) return;
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const saved = scrollPositions[scrollKey];
+    requestAnimationFrame(() => {
+      el.scrollTop = saved ?? 0;
+    });
+  }, [scrollKey]); // intentionally exclude scrollPositions to avoid re-triggering on save
 
   const canUndo = editor?.can().undo() || false;
   const canRedo = editor?.can().redo() || false;
 
-  if (!activeSubTab || activeSubTabId === "done-log") {
-    return null;
-  }
+  if (!activeSubTab || activeSubTabId === "done-log") return null;
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
       <div className="flex-shrink-0 z-10 bg-[var(--bg-color)]">
         <Toolbar
           editor={editor}
-          onUndo={handleUndo}
-          onRedo={handleRedo}
+          onUndo={() => editor?.chain().focus().undo().run()}
+          onRedo={() => editor?.chain().focus().redo().run()}
           canUndo={canUndo}
           canRedo={canRedo}
+          onSetProgress={handleOpenProgressFromToolbar}
+          onSearch={() => setSearchOpen(true)}
+          onCollapseAll={handleCollapseAll}
         />
       </div>
-      <div className="flex-1 min-h-0 overflow-y-auto pb-16 sm:pb-0">
-        <div className={hideCompleted ? "hide-completed-tasks" : ""}>
-          <EditorContent editor={editor} onClick={handleEditorClick} />
+
+      {searchOpen && editor && (
+        <SearchBar editor={editor} onClose={() => setSearchOpen(false)} />
+      )}
+
+      <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-y-auto pb-16 sm:pb-0">
+        <div
+          className={hideCompleted ? "hide-completed-tasks" : ""}
+          onMouseDownCapture={handleEditorMouseDown}
+        >
+          <EditorContent editor={editor} />
         </div>
       </div>
-      <QuickFormatBar editor={editor} />
+
+      <QuickFormatBar
+        editor={editor}
+        onSetProgress={handleOpenProgressFromToolbar}
+      />
+
+      {/* Progress modal */}
       {editor && progressEditor && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30">
-          <div className="bg-[var(--bg-color)] border border-[var(--border-color)] rounded-lg shadow-lg p-4 w-72 max-w-[90vw]">
-            <div className="mb-3 font-semibold text-sm">
-              Set item progress
+        <div
+          className="fixed inset-0 z-40 flex items-end sm:items-center justify-center bg-black/30 backdrop-blur-sm"
+          onClick={() => setProgressEditor(null)}
+        >
+          <div
+            className="bg-[var(--bg-color)] border border-[var(--border-color)] rounded-t-2xl sm:rounded-xl shadow-xl p-5 w-full sm:w-80 max-w-[100vw] sm:max-w-[90vw] animate-slide-up sm:animate-none"
+            onClick={(ev) => ev.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-sm">Set Progress</h3>
+              <span className="text-[10px] text-[var(--placeholder-color)] bg-[var(--hover-bg-color)] px-2 py-0.5 rounded">
+                Alt+P
+              </span>
             </div>
-            <div className="space-y-3 mb-3">
-              <div className="flex items-center gap-2">
-                <label className="text-xs text-[var(--placeholder-color)]">
+
+            {/* Progress slider */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-[var(--placeholder-color)]">
                   Progress
-                </label>
-                <input
-                  type="number"
-                  min={0}
-                  max={100}
-                  value={progressEditor.value}
-                  onChange={(e) =>
-                    handleProgressChange(Number(e.target.value || 0))
-                  }
-                  className="w-20 px-2 py-1 border border-[var(--border-color)] rounded text-sm bg-[var(--bg-color)]"
-                />
-                <span className="text-sm text-[var(--placeholder-color)]">
-                  %
                 </span>
-                <div className="flex gap-1 ml-auto overflow-x-auto whitespace-nowrap max-w-[7rem]">
-                  {[25, 50, 75, 100].map((v) => (
-                    <button
-                      key={v}
-                      type="button"
-                      onClick={() => handleProgressChange(v)}
-                      className="px-2 py-1 text-xs border border-[var(--border-color)] rounded bg-[var(--bg-color)] hover:bg-[var(--hover-bg-color)]"
-                    >
-                      {v}%
-                    </button>
-                  ))}
-                </div>
+                <span className="text-sm font-semibold tabular-nums">
+                  {progressEditor.value}%
+                </span>
               </div>
-              <div className="flex items-center gap-2">
-                <label className="text-xs text-[var(--placeholder-color)]">
-                  Length
-                </label>
-                <input
-                  type="number"
-                  min={0}
-                  max={24 * 60}
-                  value={progressEditor.durationMinutes}
-                  onChange={(e) =>
-                    handleDurationChange(Number(e.target.value || 0))
-                  }
-                  className="w-24 px-2 py-1 border border-[var(--border-color)] rounded text-sm bg-[var(--bg-color)]"
-                />
-                <span className="text-sm text-[var(--placeholder-color)]">
-                  min
-                </span>
-                <div className="flex gap-1 ml-auto overflow-x-auto whitespace-nowrap max-w-[7rem]">
-                  {[15, 30, 60].map((v) => (
-                    <button
-                      key={v}
-                      type="button"
-                      onClick={() => handleDurationChange(v)}
-                      className="px-2 py-1 text-xs border border-[var(--border-color)] rounded bg-[var(--bg-color)] hover:bg-[var(--hover-bg-color)]"
-                    >
-                      {v}m
-                    </button>
-                  ))}
-                </div>
+              <input
+                ref={progressInputRef}
+                type="range"
+                min={0}
+                max={100}
+                step={5}
+                value={progressEditor.value}
+                onChange={(e) => handleProgressChange(Number(e.target.value))}
+                className="w-full h-2 rounded-full appearance-none cursor-pointer accent-[var(--accent-color)] bg-[var(--border-color)]"
+              />
+              <div className="flex gap-1.5 mt-2">
+                {[0, 25, 50, 75, 100].map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => handleProgressChange(v)}
+                    className={`flex-1 py-1.5 text-xs rounded-lg border transition-colors ${
+                      progressEditor.value === v
+                        ? "bg-[var(--accent-color)] text-white border-[var(--accent-color)]"
+                        : "border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--hover-bg-color)]"
+                    }`}
+                  >
+                    {v}%
+                  </button>
+                ))}
               </div>
             </div>
-            <div className="flex justify-end gap-2">
+
+            {/* Duration */}
+            <div className="mb-5">
+              <span className="text-xs font-medium text-[var(--placeholder-color)] block mb-2">
+                Duration (minutes)
+              </span>
+              <div className="flex gap-1.5">
+                {[0, 15, 30, 60, 120].map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => handleDurationChange(v)}
+                    className={`flex-1 py-1.5 text-xs rounded-lg border transition-colors ${
+                      progressEditor.durationMinutes === v
+                        ? "bg-[var(--accent-color)] text-white border-[var(--accent-color)]"
+                        : "border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--hover-bg-color)]"
+                    }`}
+                  >
+                    {v === 0 ? "—" : `${v}m`}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex gap-2">
               <button
                 type="button"
-                onClick={handleProgressCancel}
-                className="px-3 py-1 text-sm border border-[var(--border-color)] rounded bg-[var(--bg-color)] hover:bg-[var(--hover-bg-color)]"
+                onClick={() => setProgressEditor(null)}
+                className="flex-1 px-3 py-2.5 text-sm border border-[var(--border-color)] rounded-lg bg-[var(--bg-color)] hover:bg-[var(--hover-bg-color)] transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleProgressSave}
-                className="px-3 py-1 text-sm rounded bg-[var(--accent-color)] text-white hover:opacity-90"
+                className="flex-1 px-3 py-2.5 text-sm font-medium rounded-lg bg-[var(--accent-color)] text-white hover:bg-[var(--accent-hover)] transition-colors"
               >
-                Done
+                Save
               </button>
             </div>
           </div>

@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { FiChevronDown } from "react-icons/fi";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FiCheck, FiChevronDown } from "react-icons/fi";
 import { useNotesStore } from "../../store/notesStore";
 import { formatDurationMinutes, minutesToLabel } from "../../lib/duration";
 import {
@@ -34,6 +34,46 @@ export const PlanningView = () => {
   const reorderPlanningTasks = useNotesStore(
     (state) => state.reorderPlanningTasks,
   );
+
+  const deletePlanningTask = useNotesStore((state) => state.deletePlanningTask);
+  const [scheduleMenuOpen, setScheduleMenuOpen] = useState(false);
+  const scheduleMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!scheduleMenuOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (scheduleMenuRef.current?.contains(e.target as Node)) return;
+      setScheduleMenuOpen(false);
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [scheduleMenuOpen]);
+
+  const handleSortByBenefit = () => {
+    const incomplete = tasks.filter((t) => !t.completed);
+    const sorted = [...incomplete].sort((a, b) => b.benefit - a.benefit || a.effort - b.effort);
+    sorted.forEach((task, i) => {
+      const currentIdx = tasks.findIndex((t) => t.id === task.id);
+      if (currentIdx !== i) reorderPlanningTasks(currentIdx, i);
+    });
+    setScheduleMenuOpen(false);
+  };
+
+  const handleSortByEffort = () => {
+    const incomplete = tasks.filter((t) => !t.completed);
+    const sorted = [...incomplete].sort((a, b) => a.effort - b.effort || b.benefit - a.benefit);
+    sorted.forEach((task, i) => {
+      const currentIdx = tasks.findIndex((t) => t.id === task.id);
+      if (currentIdx !== i) reorderPlanningTasks(currentIdx, i);
+    });
+    setScheduleMenuOpen(false);
+  };
+
+  const handleClearCompleted = () => {
+    const completedIds = tasks.filter((t) => t.completed).map((t) => t.id);
+    completedIds.forEach((id) => deletePlanningTask(id));
+    setScheduleMenuOpen(false);
+  };
 
   const [isHeaderExpanded, setIsHeaderExpanded] = useState(false);
   const [isEditingStart, setIsEditingStart] = useState(false);
@@ -74,6 +114,8 @@ export const PlanningView = () => {
     gapStart: number;
     gapLength: number;
   } | null>(null);
+  const setActiveSubTab = useNotesStore((state) => state.setActiveSubTab);
+  const completedTasks = useNotesStore((state) => state.completedTasks);
   const [completedSectionExpanded, setCompletedSectionExpanded] = useState(false);
 
   const [nowMinutes, setNowMinutes] = useState(
@@ -338,6 +380,17 @@ export const PlanningView = () => {
   return (
     <div className="h-full bg-[var(--bg-color)] text-[var(--text-color)]">
       <div className="sticky top-0 z-10 px-4 py-2 border-b border-[var(--border-color)] bg-[var(--bg-color)]/95 backdrop-blur">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-semibold text-[var(--placeholder-color)] uppercase tracking-wider">Schedule</span>
+          <button
+            type="button"
+            onClick={() => setActiveSubTab("done-log")}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--hover-bg-color)] border border-[var(--border-color)] text-xs font-medium text-[var(--text-color)] hover:bg-[var(--border-color)] transition-colors"
+          >
+            <FiCheck className="w-3.5 h-3.5 text-emerald-500" />
+            Done{completedTasks.length > 0 ? ` (${completedTasks.length})` : ""}
+          </button>
+        </div>
         {!isHeaderExpanded ? (
           <button
             type="button"
@@ -483,15 +536,43 @@ export const PlanningView = () => {
           >
             Score
           </span>
-          <span className="flex items-center justify-end min-w-0">
+          <span className="flex items-center justify-end min-w-0 relative" ref={scheduleMenuRef}>
             <button
               type="button"
               className="p-1 rounded-lg border border-[var(--border-color)] bg-[var(--hover-bg-color)] text-[10px]"
               title="Schedule options"
               aria-label="Schedule options"
+              onClick={() => setScheduleMenuOpen(!scheduleMenuOpen)}
             >
               ⋯
             </button>
+            {scheduleMenuOpen && (
+              <div className="absolute right-0 top-full mt-1 w-48 rounded-lg bg-[var(--bg-color)] border border-[var(--border-color)] shadow-xl z-30 py-1 animate-slide-down">
+                <button
+                  className="w-full text-left px-3 py-2 text-xs hover:bg-[var(--hover-bg-color)] text-[var(--text-color)]"
+                  onClick={handleSortByBenefit}
+                >
+                  Sort by benefit (high → low)
+                </button>
+                <button
+                  className="w-full text-left px-3 py-2 text-xs hover:bg-[var(--hover-bg-color)] text-[var(--text-color)]"
+                  onClick={handleSortByEffort}
+                >
+                  Sort by effort (low → high)
+                </button>
+                {tasks.some((t) => t.completed) && (
+                  <>
+                    <div className="border-t border-[var(--border-color)] my-1" />
+                    <button
+                      className="w-full text-left px-3 py-2 text-xs hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400"
+                      onClick={handleClearCompleted}
+                    >
+                      Clear completed tasks
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
           </span>
         </div>
       </div>

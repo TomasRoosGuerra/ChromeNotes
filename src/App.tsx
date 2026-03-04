@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { LoadingScreen } from "./components/auth/LoadingScreen";
 import { SignInScreen } from "./components/auth/SignInScreen";
 import { Editor } from "./components/editor/Editor";
@@ -20,12 +20,31 @@ function App() {
   const activeSubTabId = useNotesStore((state) => state.activeSubTabId);
   const mainTabs = useNotesStore((state) => state.mainTabs);
   const activeMainTabId = useNotesStore((state) => state.activeMainTabId);
+  const setActiveMainTab = useNotesStore((state) => state.setActiveMainTab);
   const showMainTabs = useNotesStore((state) => state.showMainTabs);
   const showSubTabs = useNotesStore((state) => state.showSubTabs);
 
   useEffect(() => {
     initAuth();
   }, [initAuth]);
+
+  // Cmd/Ctrl+1-9 to switch main tabs
+  const handleGlobalKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey)) return;
+      const num = parseInt(e.key, 10);
+      if (num >= 1 && num <= 9 && num <= mainTabs.length) {
+        e.preventDefault();
+        setActiveMainTab(mainTabs[num - 1].id);
+      }
+    },
+    [mainTabs, setActiveMainTab]
+  );
+
+  useEffect(() => {
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+  }, [handleGlobalKeyDown]);
 
   useEffect(() => {
     setUserId(user?.uid ?? null);
@@ -43,14 +62,14 @@ function App() {
   }
 
   const activeMainTab = mainTabs.find((t) => t.id === activeMainTabId);
-  const showDoneLog = activeSubTabId === "done-log" && activeMainTab?.mode !== "planning";
-  const showPlanning = activeMainTab?.mode === "planning";
+  const showDoneLog = activeSubTabId === "done-log";
+  const showPlanning = activeMainTab?.mode === "planning" && !showDoneLog;
 
   return (
     <>
       <div className="h-screen flex flex-col bg-[var(--bg-color)] safe-area-top">
         {/* Tabs stay fixed at top – no scroll */}
-        <header className="flex-shrink-0 z-20 bg-[var(--bg-color)]">
+        <header className="flex-shrink-0 z-20 bg-[var(--bg-color)]/95 backdrop-blur-sm">
           {showMainTabs && <MainTabs />}
           {showSubTabs && <SubTabs />}
         </header>

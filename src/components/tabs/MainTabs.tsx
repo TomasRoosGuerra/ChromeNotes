@@ -47,25 +47,31 @@ export const MainTabs = () => {
     }
   };
 
+  const [isLongPressing, setIsLongPressing] = useState(false);
+
   const handleFabPointerDown: PointerEventHandler<HTMLButtonElement> = (e) => {
     if (e.button !== 0) return; // only primary button / touch
     longPressTriggeredRef.current = false;
     clearLongPressTimeout();
+    setIsLongPressing(true);
     longPressTimeoutRef.current = window.setTimeout(() => {
       longPressTriggeredRef.current = true;
       setIsFabMenuOpen(true);
+      setIsLongPressing(false);
+      if (navigator.vibrate) navigator.vibrate(50);
     }, LONG_PRESS_MS);
   };
 
   const handleFabPointerUp: PointerEventHandler<HTMLButtonElement> = () => {
     if (!longPressTriggeredRef.current) {
-      // Treat as regular tap -> add main notes tab
       addMainTab();
     }
+    setIsLongPressing(false);
     clearLongPressTimeout();
   };
 
   const handleFabPointerLeave: PointerEventHandler<HTMLButtonElement> = () => {
+    setIsLongPressing(false);
     clearLongPressTimeout();
   };
 
@@ -85,30 +91,43 @@ export const MainTabs = () => {
   return (
     <div className="flex items-center gap-2 px-3 sm:px-4 py-3 sm:py-2 border-b border-[var(--border-color)] bg-[var(--bg-color)] min-w-0">
       <div className="flex gap-2 sm:gap-1 flex-grow min-w-0 overflow-x-auto overflow-y-hidden scrollbar-thin flex-nowrap">
-        {mainTabs.map((tab, index) => (
-          <Tab
-            key={tab.id}
-            id={tab.id}
-            name={tab.name}
-            active={tab.id === activeMainTabId}
-            onSelect={() => setActiveMainTab(tab.id)}
-            onRename={(newName) => renameMainTab(tab.id, newName)}
-            onDelete={
-              mainTabs.length > 1 ? () => deleteMainTab(tab.id) : undefined
-            }
-            showDelete={mainTabs.length > 1}
-            draggable={mainTabs.length > 1}
-            onDragStart={handleDragStart(index)}
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={handleDrop(index)}
-          />
-        ))}
+        {mainTabs.map((tab, index) => {
+          const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.userAgent);
+          const shortcutHint =
+            index < 9
+              ? ` (${isMac ? "⌘" : "Ctrl+"}${index + 1})`
+              : "";
+          return (
+            <Tab
+              key={tab.id}
+              id={tab.id}
+              name={tab.name}
+              active={tab.id === activeMainTabId}
+              onSelect={() => setActiveMainTab(tab.id)}
+              onRename={(newName) => renameMainTab(tab.id, newName)}
+              onDelete={
+                mainTabs.length > 1 ? () => deleteMainTab(tab.id) : undefined
+              }
+              showDelete={mainTabs.length > 1}
+              hasContent={tab.subTabs.some(
+                (st) => st.content.trim().length > 0
+              )}
+              draggable={mainTabs.length > 1}
+              onDragStart={handleDragStart(index)}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={handleDrop(index)}
+              title={`${tab.name}${shortcutHint}`}
+            />
+          );
+        })}
       </div>
       <div className="relative flex-shrink-0" ref={fabMenuRef}>
         <Button
           size="sm"
-          title="Add main tab"
-          className="min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0"
+          title="Tap: new tab · Long-press: menu"
+          className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 transition-transform duration-150 ${
+            isLongPressing ? "scale-110" : ""
+          }`}
           onPointerDown={handleFabPointerDown}
           onPointerUp={handleFabPointerUp}
           onPointerLeave={handleFabPointerLeave}

@@ -55,6 +55,7 @@ export const SubTabs = () => {
                 : undefined
             }
             showDelete={subTabs.length > 1}
+            hasContent={subTab.content.trim().length > 0}
             draggable={canReorder}
             onDragStart={handleDragStart(index)}
             onDragOver={(e) => e.preventDefault()}
