@@ -359,11 +359,11 @@
 }
 
 .ProseMirror ul[data-type="taskList"] li {
-  @apply flex items-start my-2;
+  @apply flex items-center my-2;
 }
 
 .ProseMirror ul[data-type="taskList"] li > label {
-  @apply flex-shrink-0 mr-3 mt-1;
+  @apply flex-shrink-0 mr-3;
 }
 
 .ProseMirror ul[data-type="taskList"] li > div {
@@ -375,7 +375,7 @@
 }
 
 .ProseMirror ul[data-type="taskList"] input[type="checkbox"] {
-  @apply w-5 h-5 cursor-pointer accent-[var(--accent-color)];
+  @apply w-4 h-4 cursor-pointer accent-[var(--accent-color)];
 }
 
 /* Global drag handle for list items */
@@ -468,10 +468,9 @@
 
 /* Mobile Optimizations */
 @media (max-width: 640px) {
-  /* Better touch targets */
+  /* Better touch targets (exclude task list checkboxes – they stay text-sized) */
   button,
-  a,
-  input[type="checkbox"] {
+  a {
     min-width: 44px;
     min-height: 44px;
   }
@@ -492,9 +491,16 @@
     min-height: calc(100vh - 300px);
   }
 
-  /* Larger checkboxes on mobile */
+  /* Task list checkboxes: match text size, label provides tap area */
+  .ProseMirror ul[data-type="taskList"] li > label {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
   .ProseMirror ul[data-type="taskList"] input[type="checkbox"] {
-    @apply w-6 h-6;
+    @apply w-4 h-4;
   }
 
   /* Better line height for readability */
