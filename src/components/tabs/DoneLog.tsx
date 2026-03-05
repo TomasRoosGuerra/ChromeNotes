@@ -38,7 +38,7 @@ export const DoneLog = () => {
           </p>
           <div className="text-xs text-[var(--placeholder-color)] bg-[var(--hover-bg-color)] rounded-lg px-4 py-3 max-w-xs">
             <p className="font-medium text-[var(--text-color)] mb-1">Quick tip</p>
-            <p>Type <kbd className="px-1 py-0.5 rounded bg-[var(--border-color)] text-[10px] font-mono">[]</kbd> + Space to create a task list, then check items off to track them here.</p>
+            <p>Type <kbd className="px-1 py-0.5 rounded bg-[var(--border-color)] text-[10px] font-mono">--</kbd> or <kbd className="px-1 py-0.5 rounded bg-[var(--border-color)] text-[10px] font-mono">[]</kbd> + Space to create a task list, then check items off to track them here.</p>
           </div>
         </div>
       </div>

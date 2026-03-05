@@ -14,6 +14,7 @@ import { Toolbar } from "./Toolbar";
 import { SearchBar } from "./SearchBar";
 import { moveListItem } from "./listItemReorder";
 import { ListItemProgress } from "./listItemProgress";
+import { TaskListDashInputRule } from "./taskListDashInputRule";
 
 function extractCheckedTasks(doc: {
   descendants: (
@@ -319,8 +320,9 @@ export const Editor = () => {
       StarterKit,
       TaskList,
       TaskItem.configure({ nested: true }),
+      TaskListDashInputRule,
       Placeholder.configure({
-        placeholder: "Start typing... (# heading, - list, [] task, > quote)",
+        placeholder: "Start typing... (# heading, - list, -- task, > quote)",
       }),
       GlobalDragHandle.configure({
         excludedTags: ["p", "h1", "h2", "h3", "blockquote", "hr", "table"],

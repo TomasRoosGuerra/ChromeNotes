@@ -21,6 +21,7 @@ const shortcuts = [
   { keys: "- + Space", label: "Bullet list" },
   { keys: "1. + Space", label: "Numbered list" },
   { keys: "-. + Space", label: "Task list" },
+  { keys: "-- + Space", label: "Task list (alt)" },
   { keys: "> + Space", label: "Blockquote" },
   { keys: "Tab", label: "Indent list item" },
   { keys: "Shift+Tab", label: "Outdent list item" },
