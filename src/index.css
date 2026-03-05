@@ -359,11 +359,13 @@
 }
 
 .ProseMirror ul[data-type="taskList"] li {
-  @apply flex items-center my-2;
+  @apply flex items-start my-2;
 }
 
+/* Align checkbox with first line of text (works for top-level and nested items) */
 .ProseMirror ul[data-type="taskList"] li > label {
   @apply flex-shrink-0 mr-3;
+  margin-top: 0.3em;
 }
 
 .ProseMirror ul[data-type="taskList"] li > div {
@@ -495,6 +497,7 @@
   .ProseMirror ul[data-type="taskList"] li > label {
     min-width: 44px;
     min-height: 44px;
+    margin-top: 0.35em; /* Slightly more for mobile line-height 1.8 */
     display: inline-flex;
     align-items: center;
     justify-content: center;
