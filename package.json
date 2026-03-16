@@ -10,6 +10,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@tiptap/extension-link": "^2.1.13",
     "@tiptap/extension-placeholder": "^2.1.13",
     "@tiptap/extension-table": "^2.27.2",
     "@tiptap/extension-task-item": "^2.1.13",

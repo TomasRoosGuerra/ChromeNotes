@@ -3,6 +3,7 @@ import {
   FiBold,
   FiChevronsDown,
   FiItalic,
+  FiLink,
   FiList,
   FiMinus,
   FiRotateCcw,
@@ -31,6 +32,7 @@ interface ToolbarProps {
   onSetProgress?: () => void;
   onSearch?: () => void;
   onCollapseAll?: () => void;
+  onAddLink?: () => void;
 }
 
 export const Toolbar = ({
@@ -42,6 +44,7 @@ export const Toolbar = ({
   onSetProgress,
   onSearch,
   onCollapseAll,
+  onAddLink,
 }: ToolbarProps) => {
   const inListItem =
     editor?.isActive("listItem") || editor?.isActive("taskItem") || false;
@@ -103,6 +106,19 @@ export const Toolbar = ({
             title="Strikethrough"
           >
             <FiMinus className="w-5 h-5 sm:w-4 sm:h-4" />
+          </Button>
+
+          <Button
+            size="sm"
+            onClick={onAddLink}
+            className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 transition-colors duration-150 ${
+              editor.isActive("link")
+                ? "bg-[var(--accent-color)] text-white"
+                : ""
+            }`}
+            title="Add link (Ctrl+K)"
+          >
+            <FiLink className="w-5 h-5 sm:w-4 sm:h-4" />
           </Button>
 
           <div className="w-px h-10 sm:h-6 bg-[var(--border-color)] mx-0.5" />

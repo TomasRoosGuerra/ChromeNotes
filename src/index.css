@@ -57,6 +57,18 @@
   @apply outline-none;
 }
 
+/* Editor links – clickable, accent color, underline */
+.ProseMirror a,
+.ProseMirror a.editor-link {
+  color: var(--accent-color);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.ProseMirror a:hover,
+.ProseMirror a.editor-link:hover {
+  color: var(--accent-hover);
+}
+
 .ProseMirror p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   float: left;

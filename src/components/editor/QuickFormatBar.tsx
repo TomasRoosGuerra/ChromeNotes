@@ -4,6 +4,7 @@ import {
   FiBold,
   FiCheckSquare,
   FiItalic,
+  FiLink,
   FiList,
   FiCornerDownLeft,
   FiCornerUpLeft,
@@ -14,9 +15,14 @@ import { Button } from "../ui/Button";
 interface QuickFormatBarProps {
   editor: Editor | null;
   onSetProgress?: () => void;
+  onAddLink?: () => void;
 }
 
-export const QuickFormatBar = ({ editor, onSetProgress }: QuickFormatBarProps) => {
+export const QuickFormatBar = ({
+  editor,
+  onSetProgress,
+  onAddLink,
+}: QuickFormatBarProps) => {
   if (!editor) return null;
 
   // Keep the bar above the on-screen keyboard using VisualViewport (where available),
@@ -114,6 +120,19 @@ export const QuickFormatBar = ({ editor, onSetProgress }: QuickFormatBarProps) =
           title="Italic (Ctrl+I)"
         >
           <FiItalic className="w-5 h-5" />
+        </Button>
+
+        <Button
+          size="sm"
+          onClick={onAddLink}
+          className={`flex-1 min-h-[48px] transition-colors duration-150 ${
+            editor.isActive("link")
+              ? "bg-[var(--accent-color)] text-white"
+              : ""
+          }`}
+          title="Add link (Ctrl+K)"
+        >
+          <FiLink className="w-5 h-5" />
         </Button>
 
         <Button

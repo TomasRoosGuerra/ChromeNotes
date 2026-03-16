@@ -1,3 +1,4 @@
+import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
@@ -9,6 +10,7 @@ import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNotesStore } from "../../store/notesStore";
+import { LinkPopover } from "./LinkPopover";
 import { QuickFormatBar } from "./QuickFormatBar";
 import { Toolbar } from "./Toolbar";
 import { SearchBar } from "./SearchBar";
@@ -346,10 +348,22 @@ export const Editor = () => {
   } | null>(null);
 
   const [searchOpen, setSearchOpen] = useState(false);
+  const [linkPopoverOpen, setLinkPopoverOpen] = useState(false);
 
   const editor = useEditor({
     extensions: [
       StarterKit,
+      Link.configure({
+        openOnClick: true,
+        linkOnPaste: true,
+        autolink: true,
+        defaultProtocol: "https",
+        HTMLAttributes: {
+          target: "_blank",
+          rel: "noopener noreferrer nofollow",
+          class: "editor-link",
+        },
+      }),
       TaskList,
       TaskItem.configure({ nested: true }),
       TaskListDashInputRule,
@@ -378,6 +392,11 @@ export const Editor = () => {
           if ((event.metaKey || event.ctrlKey) && event.key === "f") {
             event.preventDefault();
             setSearchOpen(true);
+            return true;
+          }
+          if ((event.metaKey || event.ctrlKey) && event.key === "k") {
+            event.preventDefault();
+            setLinkPopoverOpen(true);
             return true;
           }
           if (event.altKey && (event.key === "p" || event.key === "P")) {
@@ -487,16 +506,22 @@ export const Editor = () => {
     },
   });
 
+  const prevSubTabIdRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (editor && activeSubTab) {
       if (editor.getHTML() !== activeSubTab.content) {
         editor.commands.setContent(activeSubTab.content);
       }
       prevCheckedRef.current = extractCheckedTasks(editor.state.doc);
-      // Default: all sections collapsed when tab is shown
-      editor.view.dispatch(
-        editor.state.tr.setMeta(collapsiblePluginKey, { initCollapsed: true })
-      );
+      // Only collapse all when switching tabs, not on every content edit
+      const tabJustSwitched = prevSubTabIdRef.current !== activeSubTab.id;
+      prevSubTabIdRef.current = activeSubTab.id;
+      if (tabJustSwitched) {
+        editor.view.dispatch(
+          editor.state.tr.setMeta(collapsiblePluginKey, { initCollapsed: true })
+        );
+      }
     }
   }, [editor, activeSubTab]);
 
@@ -761,11 +786,19 @@ export const Editor = () => {
           onSetProgress={handleOpenProgressFromToolbar}
           onSearch={() => setSearchOpen(true)}
           onCollapseAll={handleCollapseAll}
+          onAddLink={() => setLinkPopoverOpen(true)}
         />
       </div>
 
       {searchOpen && editor && (
         <SearchBar editor={editor} onClose={() => setSearchOpen(false)} />
+      )}
+
+      {linkPopoverOpen && editor && (
+        <LinkPopover
+          editor={editor}
+          onClose={() => setLinkPopoverOpen(false)}
+        />
       )}
 
       <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-y-auto pb-16 sm:pb-0">
@@ -780,6 +813,7 @@ export const Editor = () => {
       <QuickFormatBar
         editor={editor}
         onSetProgress={handleOpenProgressFromToolbar}
+        onAddLink={() => setLinkPopoverOpen(true)}
       />
 
       {/* Progress modal */}

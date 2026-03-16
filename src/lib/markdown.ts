@@ -59,6 +59,12 @@ const htmlToMarkdown = (html: string): string => {
   text = text.replace(/<s[^>]*>(.*?)<\/s>/gi, "~~$1~~");
   text = text.replace(/<strike[^>]*>(.*?)<\/strike>/gi, "~~$1~~");
 
+  // Convert links: <a href="url">text</a> -> [text](url)
+  text = text.replace(
+    /<a\s+href="([^"]*)"[^>]*>(.*?)<\/a>/gi,
+    "[$2]($1)"
+  );
+
   // Convert paragraphs
   text = text.replace(/<p[^>]*>(.*?)<\/p>/gi, "$1\n");
 
@@ -180,6 +186,9 @@ const markdownToHtml = (markdown: string): string => {
   html = html.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
   html = html.replace(/_(.*?)_/g, "<em>$1</em>");
   html = html.replace(/~~(.*?)~~/g, "<strike>$1</strike>");
+
+  // Convert links: [text](url) -> <a href="url">text</a>
+  html = html.replace(/\[([^\]]*)\]\(([^)]*)\)/g, '<a href="$2">$1</a>');
 
   // Convert paragraphs
   html = html.replace(/^(?!<[hbu]|<li|<blockquote)(.+)$/gm, "<p>$1</p>");
