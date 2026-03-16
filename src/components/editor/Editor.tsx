@@ -130,8 +130,40 @@ const CollapsibleSections = Extension.create({
                   listPos?: number;
                   setHeadings?: number[];
                   setLists?: number[];
+                  initCollapsed?: boolean;
                 }
               | undefined;
+
+            // Default: all sections collapsed when tab is opened
+            if (meta?.initCollapsed) {
+              const allHeadings: number[] = [];
+              const allLists: number[] = [];
+              let offset = 0;
+              for (let i = 0; i < doc.content.childCount; i++) {
+                const child = doc.content.child(i);
+                if (child.type.name === "heading") allHeadings.push(offset);
+                if (
+                  ["bulletList", "orderedList", "taskList"].includes(
+                    child.type.name
+                  )
+                ) {
+                  let itemOffset = offset + 1;
+                  for (let j = 0; j < child.content.childCount; j++) {
+                    const item = child.content.child(j);
+                    if (
+                      ["listItem", "taskItem"].includes(item.type.name) &&
+                      hasNestedList(item)
+                    ) {
+                      allLists.push(itemOffset);
+                    }
+                    itemOffset += item.nodeSize;
+                  }
+                }
+                offset += child.nodeSize;
+              }
+              headings = allHeadings;
+              lists = allLists;
+            }
 
             // Collapse-all / expand-all: set entire arrays at once
             if (meta?.setHeadings != null) headings = meta.setHeadings;
@@ -461,6 +493,10 @@ export const Editor = () => {
         editor.commands.setContent(activeSubTab.content);
       }
       prevCheckedRef.current = extractCheckedTasks(editor.state.doc);
+      // Default: all sections collapsed when tab is shown
+      editor.view.dispatch(
+        editor.state.tr.setMeta(collapsiblePluginKey, { initCollapsed: true })
+      );
     }
   }, [editor, activeSubTab]);
 
