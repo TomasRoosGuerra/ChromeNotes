@@ -1,13 +1,17 @@
 import { getMarkRange, posToDOMRect } from "@tiptap/core";
 import type { Editor } from "@tiptap/core";
-import { BubbleMenu } from "@tiptap/react";
-import type { EditorState } from "@tiptap/pm/state";
-import { PluginKey } from "@tiptap/pm/state";
-import type { EditorView } from "@tiptap/pm/view";
 import { FiEdit2 } from "react-icons/fi";
-import { useCallback, useRef } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
+import { createPortal } from "react-dom";
 
-const linkEditBubblePluginKey = new PluginKey("linkEditBubble");
+const BTN_PX = 16;
+const GAP_PX = 2;
 
 interface LinkEditBubbleProps {
   editor: Editor | null;
@@ -15,85 +19,122 @@ interface LinkEditBubbleProps {
   linkPopoverOpen: boolean;
 }
 
-type ShouldShowProps = {
-  editor: Editor;
-  element: HTMLElement;
-  view: EditorView;
-  state: EditorState;
-  oldState?: EditorState;
-  from: number;
-  to: number;
-};
-
+/**
+ * Floating pen control anchored to the link mark (top-end). Manual positioning
+ * avoids BubbleMenu + Tippy blur/focus races that broke clicks on touch and desktop.
+ */
 export const LinkEditBubble = ({
   editor,
   onEditLink,
   linkPopoverOpen,
 }: LinkEditBubbleProps) => {
-  const editorRef = useRef(editor);
-  editorRef.current = editor;
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  /** True between pointer down on the pen and opening the popover — keeps UI visible while editor blurs. */
+  const pointerEngagedRef = useRef(false);
 
-  const linkPopoverOpenRef = useRef(linkPopoverOpen);
-  linkPopoverOpenRef.current = linkPopoverOpen;
+  const updatePosition = useCallback(() => {
+    if (!editor || editor.isDestroyed || linkPopoverOpen) {
+      setPos(null);
+      return;
+    }
+    if (!editor.isActive("link")) {
+      setPos(null);
+      return;
+    }
+    if (!editor.isFocused && !pointerEngagedRef.current) {
+      setPos(null);
+      return;
+    }
 
-  const shouldShow = useCallback(({ editor: ed, view, element }: ShouldShowProps) => {
-    if (!ed.isEditable || linkPopoverOpenRef.current) return false;
-    if (!ed.isActive("link")) return false;
-
-    const isChildOfMenu = element.contains(document.activeElement);
-    const hasEditorFocus = view.hasFocus() || isChildOfMenu;
-    if (!hasEditorFocus) return false;
-
-    return true;
-  }, []);
-
-  const getReferenceClientRect = useCallback(() => {
-    const ed = editorRef.current;
-    if (!ed) return new DOMRect();
-    const { state, view } = ed;
-    const { $from } = state.selection;
+    const { state, view } = editor;
+    const $from = state.selection.$from;
     const linkType = state.schema.marks.link;
-    if (!linkType) return new DOMRect();
+    if (!linkType) {
+      setPos(null);
+      return;
+    }
 
     const range = getMarkRange($from, linkType);
     if (!range) {
-      return posToDOMRect(view, state.selection.from, state.selection.to);
+      setPos(null);
+      return;
     }
-    return posToDOMRect(view, range.from, range.to);
-  }, []);
 
-  if (!editor) return null;
+    const rect = posToDOMRect(view, range.from, range.to);
+    setPos({
+      top: rect.top - BTN_PX - GAP_PX,
+      left: rect.right - BTN_PX,
+    });
+  }, [editor, linkPopoverOpen]);
 
-  return (
-    <BubbleMenu
-      editor={editor}
-      pluginKey={linkEditBubblePluginKey}
-      updateDelay={0}
-      shouldShow={shouldShow}
-      tippyOptions={{
-        placement: "top-end",
-        offset: [0, 6],
-        appendTo: () => document.body,
-        zIndex: 50,
-        moveTransition: "transform 0.12s ease-out",
-        getReferenceClientRect,
+  useLayoutEffect(() => {
+    if (!editor) return;
+
+    const schedule = () => {
+      requestAnimationFrame(updatePosition);
+    };
+
+    editor.on("selectionUpdate", schedule);
+    editor.on("transaction", schedule);
+    editor.on("focus", schedule);
+    editor.on("blur", schedule);
+
+    window.addEventListener("scroll", schedule, true);
+    window.addEventListener("resize", schedule);
+
+    schedule();
+
+    return () => {
+      editor.off("selectionUpdate", schedule);
+      editor.off("transaction", schedule);
+      editor.off("focus", schedule);
+      editor.off("blur", schedule);
+      window.removeEventListener("scroll", schedule, true);
+      window.removeEventListener("resize", schedule);
+    };
+  }, [editor, updatePosition]);
+
+  useEffect(() => {
+    if (linkPopoverOpen) {
+      pointerEngagedRef.current = false;
+      setPos(null);
+    }
+  }, [linkPopoverOpen]);
+
+  if (!editor || !pos || linkPopoverOpen) {
+    return null;
+  }
+
+  const bubble = (
+    <button
+      type="button"
+      tabIndex={-1}
+      className="link-edit-bubble"
+      style={{
+        position: "fixed",
+        top: pos.top,
+        left: pos.left,
+        zIndex: 10000,
       }}
-      className="link-edit-bubble-root"
+      onPointerDown={(e) => {
+        pointerEngagedRef.current = true;
+        e.stopPropagation();
+      }}
+      onPointerUp={(e) => {
+        e.stopPropagation();
+      }}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        pointerEngagedRef.current = false;
+        onEditLink();
+      }}
+      title="Edit link"
+      aria-label="Edit link"
     >
-      <button
-        type="button"
-        className="link-edit-bubble"
-        onMouseDown={(e) => e.preventDefault()}
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          onEditLink();
-        }}
-        title="Edit link"
-        aria-label="Edit link"
-      >
-        <FiEdit2 className="w-4 h-4" aria-hidden />
-      </button>
-    </BubbleMenu>
+      <FiEdit2 className="link-edit-bubble-icon" aria-hidden />
+    </button>
   );
+
+  return createPortal(bubble, document.body);
 };

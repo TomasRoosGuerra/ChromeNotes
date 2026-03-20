@@ -69,25 +69,28 @@
   color: var(--accent-hover);
 }
 
-/* Link edit pen (BubbleMenu) – round, high z-index via tippy */
-.link-edit-bubble-root {
-  padding: 0;
-  background: transparent;
-  border: none;
-}
-
+/* Link edit pen – compact (cap-height scale), fixed size matches LinkEditBubble.tsx BTN_PX */
 .link-edit-bubble {
-  @apply flex items-center justify-center rounded-full shrink-0;
-  min-width: 36px;
-  min-height: 36px;
-  padding: 0;
+  @apply flex items-center justify-center rounded-full shrink-0 p-0;
+  box-sizing: border-box;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  min-height: 16px;
   background: var(--accent-color);
   color: white;
   border: none;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
   cursor: pointer;
   transition: background-color 0.15s ease;
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.link-edit-bubble-icon {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
 }
 
 .link-edit-bubble:hover {
@@ -96,14 +99,7 @@
 
 .link-edit-bubble:focus-visible {
   outline: 2px solid var(--accent-color);
-  outline-offset: 2px;
-}
-
-@media (max-width: 640px) {
-  .link-edit-bubble {
-    min-width: 44px;
-    min-height: 44px;
-  }
+  outline-offset: 1px;
 }
 
 .ProseMirror p.is-editor-empty:first-child::before {
@@ -517,8 +513,8 @@
 
 /* Mobile Optimizations */
 @media (max-width: 640px) {
-  /* Better touch targets (exclude task list checkboxes – they stay text-sized) */
-  button,
+  /* Better touch targets (exclude tiny editor chrome: link edit pen, task checkboxes) */
+  button:not(.link-edit-bubble),
   a {
     min-width: 44px;
     min-height: 44px;
