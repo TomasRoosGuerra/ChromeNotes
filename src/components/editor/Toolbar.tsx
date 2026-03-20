@@ -12,6 +12,7 @@ import {
   FiType,
 } from "react-icons/fi";
 import { FiBarChart2 } from "react-icons/fi";
+import { linkShortcutLabel } from "../../lib/platformShortcut";
 import { Button } from "../ui/Button";
 import { MoreOptionsMenu } from "../ui/MoreOptionsMenu";
 import { SyncIndicator } from "../ui/SyncIndicator";
@@ -116,7 +117,7 @@ export const Toolbar = ({
                 ? "bg-[var(--accent-color)] text-white"
                 : ""
             }`}
-            title="Add link (Ctrl+K)"
+            title={`Add link (${linkShortcutLabel()})`}
           >
             <FiLink className="w-5 h-5 sm:w-4 sm:h-4" />
           </Button>

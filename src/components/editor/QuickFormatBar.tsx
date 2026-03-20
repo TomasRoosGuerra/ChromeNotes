@@ -10,6 +10,7 @@ import {
   FiCornerUpLeft,
 } from "react-icons/fi";
 import { useEffect, useState } from "react";
+import { linkShortcutLabel } from "../../lib/platformShortcut";
 import { Button } from "../ui/Button";
 
 interface QuickFormatBarProps {
@@ -130,7 +131,7 @@ export const QuickFormatBar = ({
               ? "bg-[var(--accent-color)] text-white"
               : ""
           }`}
-          title="Add link (Ctrl+K)"
+          title={`Add link (${linkShortcutLabel()})`}
         >
           <FiLink className="w-5 h-5" />
         </Button>

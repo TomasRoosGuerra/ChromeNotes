@@ -59,10 +59,10 @@ const htmlToMarkdown = (html: string): string => {
   text = text.replace(/<s[^>]*>(.*?)<\/s>/gi, "~~$1~~");
   text = text.replace(/<strike[^>]*>(.*?)<\/strike>/gi, "~~$1~~");
 
-  // Convert links: <a href="url">text</a> -> [text](url)
+  // Convert links: <a href="url">text</a> -> [text](url) (double or single-quoted href)
   text = text.replace(
-    /<a\s+href="([^"]*)"[^>]*>(.*?)<\/a>/gi,
-    "[$2]($1)"
+    /<a\s+href=(["'])([^"']*)\1[^>]*>(.*?)<\/a>/gi,
+    "[$3]($2)"
   );
 
   // Convert paragraphs

@@ -10,6 +10,7 @@ import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNotesStore } from "../../store/notesStore";
+import { LinkEditBubble } from "./LinkEditBubble";
 import { LinkPopover } from "./LinkPopover";
 import { QuickFormatBar } from "./QuickFormatBar";
 import { Toolbar } from "./Toolbar";
@@ -798,6 +799,14 @@ export const Editor = () => {
         <LinkPopover
           editor={editor}
           onClose={() => setLinkPopoverOpen(false)}
+        />
+      )}
+
+      {editor && (
+        <LinkEditBubble
+          editor={editor}
+          onEditLink={() => setLinkPopoverOpen(true)}
+          linkPopoverOpen={linkPopoverOpen}
         />
       )}
 

@@ -69,6 +69,43 @@
   color: var(--accent-hover);
 }
 
+/* Link edit pen (BubbleMenu) – round, high z-index via tippy */
+.link-edit-bubble-root {
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+
+.link-edit-bubble {
+  @apply flex items-center justify-center rounded-full shrink-0;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0;
+  background: var(--accent-color);
+  color: white;
+  border: none;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.link-edit-bubble:hover {
+  background: var(--accent-hover);
+}
+
+.link-edit-bubble:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .link-edit-bubble {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
 .ProseMirror p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   float: left;
