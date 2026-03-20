@@ -744,7 +744,14 @@ export const Editor = () => {
     }
   }, [progressEditor]);
 
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const [scrollContainerEl, setScrollContainerEl] = useState<HTMLDivElement | null>(
+    null
+  );
+  const assignScrollContainer = useCallback((el: HTMLDivElement | null) => {
+    scrollContainerRef.current = el;
+    setScrollContainerEl(el);
+  }, []);
   const scrollKey = activeSubTab ? `${activeMainTabId}:${activeSubTab.id}` : "";
 
   // Save scroll position when switching away
@@ -802,15 +809,10 @@ export const Editor = () => {
         />
       )}
 
-      {editor && (
-        <LinkEditBubble
-          editor={editor}
-          onEditLink={() => setLinkPopoverOpen(true)}
-          linkPopoverOpen={linkPopoverOpen}
-        />
-      )}
-
-      <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-y-auto pb-16 sm:pb-0">
+      <div
+        ref={assignScrollContainer}
+        className="flex-1 min-h-0 overflow-y-auto pb-16 sm:pb-0"
+      >
         <div
           className={hideCompleted ? "hide-completed-tasks" : ""}
           onMouseDownCapture={handleEditorMouseDown}
@@ -818,6 +820,15 @@ export const Editor = () => {
           <EditorContent editor={editor} />
         </div>
       </div>
+
+      {editor && (
+        <LinkEditBubble
+          editor={editor}
+          onEditLink={() => setLinkPopoverOpen(true)}
+          linkPopoverOpen={linkPopoverOpen}
+          scrollContainerEl={scrollContainerEl}
+        />
+      )}
 
       <QuickFormatBar
         editor={editor}
