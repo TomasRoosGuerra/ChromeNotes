@@ -6,6 +6,7 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import GlobalDragHandle from "tiptap-extension-global-drag-handle";
 import { Extension } from "@tiptap/core";
+import type { Node as PMNode } from "@tiptap/pm/model";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -68,6 +69,42 @@ function hasNestedList(node: {
   return found;
 }
 
+/** Every list item / task item that contains a nested list (any depth). */
+function collectCollapsibleListPositions(doc: PMNode): number[] {
+  const out: number[] = [];
+  doc.descendants((node, pos) => {
+    if (
+      (node.type.name === "listItem" || node.type.name === "taskItem") &&
+      hasNestedList(node)
+    ) {
+      out.push(pos);
+    }
+  });
+  return out;
+}
+
+/** After a mapped position, resolve the containing collapsible list item start, or null. */
+function mapListCollapsePosition(doc: PMNode, mappedPos: number): number | null {
+  const size = doc.content.size;
+  const clamped = Math.max(0, Math.min(mappedPos, size));
+  const $pos = doc.resolve(clamped);
+  for (let d = $pos.depth; d > 0; d -= 1) {
+    const node = $pos.node(d);
+    if (
+      (node.type.name === "listItem" || node.type.name === "taskItem") &&
+      hasNestedList(node)
+    ) {
+      const parent = $pos.node(d - 1);
+      if (
+        ["bulletList", "orderedList", "taskList"].includes(parent.type.name)
+      ) {
+        return $pos.before(d);
+      }
+    }
+  }
+  return null;
+}
+
 const CollapsibleSections = Extension.create({
   name: "collapsibleSections",
   addProseMirrorPlugins() {
@@ -99,26 +136,8 @@ const CollapsibleSections = Extension.create({
                   const node = doc.nodeAt(mappedPos);
                   if (node?.type.name === "heading") mapped.push(mappedPos);
                 } else {
-                  const $pos = doc.resolve(mappedPos);
-                  for (let d = $pos.depth; d > 0; d -= 1) {
-                    const node = $pos.node(d);
-                    if (
-                      (node.type.name === "listItem" ||
-                        node.type.name === "taskItem") &&
-                      d === 2
-                    ) {
-                      const parent = $pos.node(1);
-                      if (
-                        ["bulletList", "orderedList", "taskList"].includes(
-                          parent.type.name
-                        ) &&
-                        hasNestedList(node)
-                      ) {
-                        mapped.push($pos.before(d));
-                      }
-                      break;
-                    }
-                  }
+                  const next = mapListCollapsePosition(doc, mappedPos);
+                  if (next != null && !mapped.includes(next)) mapped.push(next);
                 }
               }
               return mapped;
@@ -140,32 +159,14 @@ const CollapsibleSections = Extension.create({
             // Default: all sections collapsed when tab is opened
             if (meta?.initCollapsed) {
               const allHeadings: number[] = [];
-              const allLists: number[] = [];
               let offset = 0;
               for (let i = 0; i < doc.content.childCount; i++) {
                 const child = doc.content.child(i);
                 if (child.type.name === "heading") allHeadings.push(offset);
-                if (
-                  ["bulletList", "orderedList", "taskList"].includes(
-                    child.type.name
-                  )
-                ) {
-                  let itemOffset = offset + 1;
-                  for (let j = 0; j < child.content.childCount; j++) {
-                    const item = child.content.child(j);
-                    if (
-                      ["listItem", "taskItem"].includes(item.type.name) &&
-                      hasNestedList(item)
-                    ) {
-                      allLists.push(itemOffset);
-                    }
-                    itemOffset += item.nodeSize;
-                  }
-                }
                 offset += child.nodeSize;
               }
               headings = allHeadings;
-              lists = allLists;
+              lists = collectCollapsibleListPositions(doc);
             }
 
             // Collapse-all / expand-all: set entire arrays at once
@@ -237,7 +238,7 @@ const CollapsibleSections = Extension.create({
               return true;
             });
 
-            // Lists: collapse nested items under top-level list item
+            // Lists: collapse nested items under any list item (any depth) with nested lists
             doc.descendants((node, pos) => {
               if (
                 node.type.name !== "listItem" &&
@@ -245,30 +246,51 @@ const CollapsibleSections = Extension.create({
               )
                 return true;
               if (!listSet.has(pos)) return true;
+              if (!hasNestedList(node)) return true;
 
-              const $pos = doc.resolve(pos);
-              if ($pos.depth !== 2) return true;
-              const parent = $pos.node(1);
-              if (
-                !["bulletList", "orderedList", "taskList"].includes(
-                  parent.type.name
-                )
-              )
-                return true;
+              const $pos = doc.resolve(pos + 1);
+              let ok = false;
+              for (let d = $pos.depth; d > 0; d -= 1) {
+                const n = $pos.node(d);
+                if (
+                  (n.type.name === "listItem" || n.type.name === "taskItem") &&
+                  $pos.before(d) === pos
+                ) {
+                  const parent = $pos.node(d - 1);
+                  if (
+                    ["bulletList", "orderedList", "taskList"].includes(
+                      parent.type.name
+                    )
+                  ) {
+                    ok = true;
+                  }
+                  break;
+                }
+              }
+              if (!ok) return true;
 
               let hiddenItems = 0;
               doc.nodesBetween(pos, pos + node.nodeSize, (n, p) => {
                 if (p === pos) return true;
                 if (
-                  n.type.name === "listItem" ||
-                  n.type.name === "taskItem"
+                  ["bulletList", "orderedList", "taskList"].includes(
+                    n.type.name
+                  )
                 ) {
-                  hiddenItems++;
                   decorations.push(
                     Decoration.node(p, p + n.nodeSize, {
                       class: "collapsed-block",
                     })
                   );
+                  n.descendants((desc) => {
+                    if (
+                      desc.type.name === "listItem" ||
+                      desc.type.name === "taskItem"
+                    ) {
+                      hiddenItems++;
+                    }
+                  });
+                  return false;
                 }
                 return true;
               });
@@ -382,8 +404,7 @@ export const Editor = () => {
     content: activeSubTab?.content || "",
     editorProps: {
       attributes: {
-        class:
-          "prose prose-sm sm:prose lg:prose-lg focus:outline-none min-h-full p-6",
+        class: "focus:outline-none",
       },
       transformPastedHTML(html) {
         return html;
@@ -440,41 +461,42 @@ export const Editor = () => {
               }
             }
 
-            // Check if cursor is inside a top-level list item with nested lists
+            // Innermost list item with nested lists (any depth): walk from deepest ancestor
             for (let d = $from.depth; d > 0; d--) {
               const node = $from.node(d);
               if (
-                ["listItem", "taskItem"].includes(node.type.name) &&
-                d === 2
+                !["listItem", "taskItem"].includes(node.type.name) ||
+                !hasNestedList(node)
               ) {
-                const parent = $from.node(1);
-                if (
-                  ["bulletList", "orderedList", "taskList"].includes(
-                    parent.type.name
-                  ) &&
-                  hasNestedList(node)
-                ) {
-                  const listPos = $from.before(d);
-                  const pluginState = collapsiblePluginKey.getState(
-                    state
-                  ) as CollapsibleState | undefined;
-                  const isCollapsed =
-                    pluginState?.lists.includes(listPos) ?? false;
-                  if (
-                    (wantCollapse && !isCollapsed) ||
-                    (!wantCollapse && isCollapsed)
-                  ) {
-                    event.preventDefault();
-                    view.dispatch(
-                      state.tr.setMeta(collapsiblePluginKey, {
-                        listPos,
-                      })
-                    );
-                    return true;
-                  }
-                }
-                return false;
+                continue;
               }
+              const parent = $from.node(d - 1);
+              if (
+                !["bulletList", "orderedList", "taskList"].includes(
+                  parent.type.name
+                )
+              ) {
+                continue;
+              }
+              const listPos = $from.before(d);
+              const pluginState = collapsiblePluginKey.getState(
+                state
+              ) as CollapsibleState | undefined;
+              const isCollapsed =
+                pluginState?.lists.includes(listPos) ?? false;
+              if (
+                (wantCollapse && !isCollapsed) ||
+                (!wantCollapse && isCollapsed)
+              ) {
+                event.preventDefault();
+                view.dispatch(
+                  state.tr.setMeta(collapsiblePluginKey, {
+                    listPos,
+                  })
+                );
+                return true;
+              }
+              return false;
             }
             return false;
           }
@@ -566,46 +588,31 @@ export const Editor = () => {
         return;
       }
 
-      // 2) List item collapse — match clicked li to top-level list items
+      // 2) List item collapse — any nested depth with nested lists
       const liEl = target.closest("li") as HTMLElement | null;
       if (liEl) {
         const liRect = liEl.getBoundingClientRect();
         if (clickX <= liRect.left + gutter) {
-          let offset = 0;
-          for (let i = 0; i < state.doc.content.childCount; i++) {
-            const child = state.doc.content.child(i);
-            if (
-              ["bulletList", "orderedList", "taskList"].includes(
-                child.type.name
-              )
-            ) {
-              let itemOffset = offset + 1;
-              for (let j = 0; j < child.content.childCount; j++) {
-                const item = child.content.child(j);
-                if (
-                  ["listItem", "taskItem"].includes(item.type.name) &&
-                  hasNestedList(item)
-                ) {
-                  try {
-                    const domNode = view.nodeDOM(itemOffset) as
-                      | HTMLElement
-                      | undefined;
-                    if (domNode === liEl || domNode?.contains(liEl)) {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      view.dispatch(
-                        state.tr.setMeta(collapsiblePluginKey, {
-                          listPos: itemOffset,
-                        })
-                      );
-                      return;
-                    }
-                  } catch { /* nodeDOM can throw if view is updating */ }
-                }
-                itemOffset += item.nodeSize;
+          for (const itemOffset of collectCollapsibleListPositions(
+            state.doc
+          )) {
+            try {
+              const domNode = view.nodeDOM(itemOffset) as
+                | HTMLElement
+                | undefined;
+              if (domNode === liEl) {
+                e.preventDefault();
+                e.stopPropagation();
+                view.dispatch(
+                  state.tr.setMeta(collapsiblePluginKey, {
+                    listPos: itemOffset,
+                  })
+                );
+                return;
               }
+            } catch {
+              /* nodeDOM can throw if view is updating */
             }
-            offset += child.nodeSize;
           }
         }
       }
@@ -626,23 +633,9 @@ export const Editor = () => {
       if (child.type.name === "heading") {
         headingPositions.push(offset);
       }
-      if (
-        ["bulletList", "orderedList", "taskList"].includes(child.type.name)
-      ) {
-        let itemOffset = offset + 1;
-        for (let j = 0; j < child.content.childCount; j++) {
-          const item = child.content.child(j);
-          if (
-            ["listItem", "taskItem"].includes(item.type.name) &&
-            hasNestedList(item)
-          ) {
-            listPositions.push(itemOffset);
-          }
-          itemOffset += item.nodeSize;
-        }
-      }
       offset += child.nodeSize;
     }
+    listPositions.push(...collectCollapsibleListPositions(state.doc));
 
     const pluginState = collapsiblePluginKey.getState(state) as
       | CollapsibleState
