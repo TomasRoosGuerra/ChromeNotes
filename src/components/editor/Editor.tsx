@@ -225,16 +225,18 @@ const CollapsibleSections = Extension.create({
                 })
               );
 
-              doc.nodesBetween(pos + node.nodeSize, sectionEnd, (n, p) => {
-                if (n.isBlock) {
+              let blockOffset = 0;
+              for (let j = 0; j < doc.content.childCount; j++) {
+                const block = doc.content.child(j);
+                if (blockOffset > pos && blockOffset < sectionEnd) {
                   decorations.push(
-                    Decoration.node(p, p + n.nodeSize, {
+                    Decoration.node(blockOffset, blockOffset + block.nodeSize, {
                       class: "collapsed-block",
                     })
                   );
                 }
-                return true;
-              });
+                blockOffset += block.nodeSize;
+              }
               return true;
             });
 
@@ -270,19 +272,20 @@ const CollapsibleSections = Extension.create({
               if (!ok) return true;
 
               let hiddenItems = 0;
-              doc.nodesBetween(pos, pos + node.nodeSize, (n, p) => {
-                if (p === pos) return true;
+              let childPos = pos + 1;
+              for (let i = 0; i < node.content.childCount; i++) {
+                const child = node.content.child(i);
                 if (
                   ["bulletList", "orderedList", "taskList"].includes(
-                    n.type.name
+                    child.type.name
                   )
                 ) {
                   decorations.push(
-                    Decoration.node(p, p + n.nodeSize, {
+                    Decoration.node(childPos, childPos + child.nodeSize, {
                       class: "collapsed-block",
                     })
                   );
-                  n.descendants((desc) => {
+                  child.descendants((desc) => {
                     if (
                       desc.type.name === "listItem" ||
                       desc.type.name === "taskItem"
@@ -290,10 +293,9 @@ const CollapsibleSections = Extension.create({
                       hiddenItems++;
                     }
                   });
-                  return false;
                 }
-                return true;
-              });
+                childPos += child.nodeSize;
+              }
 
               decorations.push(
                 Decoration.node(pos, pos + node.nodeSize, {
