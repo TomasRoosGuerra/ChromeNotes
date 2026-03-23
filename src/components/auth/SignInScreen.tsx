@@ -9,21 +9,11 @@ export const SignInScreen = () => {
     <div className="flex items-center justify-center min-h-screen bg-[var(--bg-color)] p-4">
       <div className="text-center bg-[var(--bg-color)] p-10 sm:p-12 rounded-2xl border border-[var(--border-color)] shadow-xl max-w-md w-full">
         <div className="mb-6 flex justify-center">
-          <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-[var(--accent-color)]/10 text-[var(--accent-color)]">
-            <svg
-              className="w-8 h-8"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
-            </svg>
-          </div>
+          <img
+            src="/favicon.svg"
+            alt=""
+            className="w-16 h-16 rounded-xl"
+          />
         </div>
 
         <h1 className="text-2xl sm:text-3xl font-semibold mb-2 text-[var(--text-color)] tracking-tight">
