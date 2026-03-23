@@ -51,7 +51,7 @@
 /* TipTap Editor Styles - Mobile First */
 .ProseMirror {
   @apply outline-none min-h-full p-4 sm:p-6;
-  font-size: var(--step-0);
+  font-size: inherit;
   -webkit-tap-highlight-color: transparent;
   line-height: 1.65;
 }
