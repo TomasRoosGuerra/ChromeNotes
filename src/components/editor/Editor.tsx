@@ -10,6 +10,7 @@ import type { Node as PMNode } from "@tiptap/pm/model";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useAppChrome } from "../../context/AppChromeContext";
 import { useNotesStore } from "../../store/notesStore";
 import { LinkEditBubble } from "./LinkEditBubble";
 import { LinkPopover } from "./LinkPopover";
@@ -419,16 +420,11 @@ export const Editor = () => {
   const contentMaxWidth = WIDTH_STEPS[widthIdx] === 0 ? "none" : `${WIDTH_STEPS[widthIdx]}ch`;
   const contentWidthLabel = WIDTH_LABELS[widthIdx];
 
-  const [toolbarCollapsed, setToolbarCollapsed] = useState(false);
+  const { setCollapsed: setChromeCollapsed } = useAppChrome();
   const lastScrollY = useRef(0);
   const scrollAccum = useRef(0);
   const SCROLL_DOWN_THRESHOLD = 50;
   const SCROLL_UP_THRESHOLD = 30;
-
-  const handleToggleToolbar = useCallback(() => {
-    setToolbarCollapsed((prev) => !prev);
-    scrollAccum.current = 0;
-  }, []);
 
   const [progressEditor, setProgressEditor] = useState<{
     value: number;
@@ -840,17 +836,17 @@ export const Editor = () => {
       const y = el.scrollTop;
       const dy = y - lastScrollY.current;
       if (y < 10) {
-        setToolbarCollapsed(false);
+        setChromeCollapsed(false);
         scrollAccum.current = 0;
       } else if (dy > 0) {
         scrollAccum.current += dy;
         if (scrollAccum.current > SCROLL_DOWN_THRESHOLD) {
-          setToolbarCollapsed(true);
+          setChromeCollapsed(true);
         }
       } else if (dy < 0) {
         scrollAccum.current += dy;
         if (scrollAccum.current < -SCROLL_UP_THRESHOLD) {
-          setToolbarCollapsed(false);
+          setChromeCollapsed(false);
           scrollAccum.current = 0;
         }
       }
@@ -886,8 +882,6 @@ export const Editor = () => {
           canWider={widthIdx < WIDTH_STEPS.length - 1}
           onWidthNarrower={handleWidthNarrower}
           onWidthWider={handleWidthWider}
-          collapsed={toolbarCollapsed}
-          onToggleCollapse={handleToggleToolbar}
         />
       </div>
 

@@ -11,9 +11,10 @@ import { ToastContainer } from "./components/ui/Toast";
 import { useCloudSync } from "./hooks/useCloudSync";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { useAuthStore } from "./store/authStore";
+import { AppChromeProvider, useAppChrome } from "./context/AppChromeContext";
 import { setUserId, useNotesStore } from "./store/notesStore";
 
-function App() {
+function AppShell() {
   const user = useAuthStore((state) => state.user);
   const loading = useAuthStore((state) => state.loading);
   const initAuth = useAuthStore((state) => state.initAuth);
@@ -23,6 +24,7 @@ function App() {
   const setActiveMainTab = useNotesStore((state) => state.setActiveMainTab);
   const showMainTabs = useNotesStore((state) => state.showMainTabs);
   const showSubTabs = useNotesStore((state) => state.showSubTabs);
+  const { collapsed: chromeCollapsed } = useAppChrome();
 
   useEffect(() => {
     initAuth();
@@ -70,8 +72,9 @@ function App() {
       <div className="h-screen flex flex-col bg-[var(--bg-color)] safe-area-top">
         {/* Tabs stay fixed at top – no scroll */}
         <header className="flex-shrink-0 z-20 bg-[var(--bg-color)]/95 backdrop-blur-sm">
-          {showMainTabs && <MainTabs />}
-          {showSubTabs && <SubTabs />}
+          {/* Always show main tabs in planning mode (no editor toolbar to expand chrome) */}
+          {showMainTabs && (!chromeCollapsed || showPlanning) && <MainTabs />}
+          {showSubTabs && !chromeCollapsed && <SubTabs />}
         </header>
         {/* Only this content area scrolls; toolbar stays visible */}
         <div className="flex-grow min-h-0 flex flex-col">
@@ -93,6 +96,14 @@ function App() {
       </div>
       <ToastContainer />
     </>
+  );
+}
+
+function App() {
+  return (
+    <AppChromeProvider>
+      <AppShell />
+    </AppChromeProvider>
   );
 }
 

@@ -18,6 +18,7 @@ import {
   FiZoomIn,
   FiZoomOut,
 } from "react-icons/fi";
+import { useAppChrome } from "../../context/AppChromeContext";
 import { linkShortcutLabel } from "../../lib/platformShortcut";
 import { Button } from "../ui/Button";
 import { MoreOptionsMenu } from "../ui/MoreOptionsMenu";
@@ -54,8 +55,70 @@ interface ToolbarProps {
   canWider?: boolean;
   onWidthNarrower?: () => void;
   onWidthWider?: () => void;
-  collapsed?: boolean;
-  onToggleCollapse?: () => void;
+}
+
+/** Bottom row: word count (left) · centered hide/show · sync (right) */
+function ChromeToggleRow({
+  editor,
+  mode,
+}: {
+  editor: Editor | null;
+  mode: "hide" | "show";
+}) {
+  const { toggleCollapsed } = useAppChrome();
+  const words =
+    editor && mode === "hide"
+      ? getWordCount(editor).words
+      : 0;
+
+  return (
+    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1 border-t border-[var(--border-color)] pt-1.5 mt-1">
+      <div className="min-w-0 flex justify-start items-center">
+        {editor && mode === "hide" && words > 0 ? (
+          <span
+            className="text-[10px] text-[var(--placeholder-color)] tabular-nums select-none truncate pl-0.5"
+            title={`${getWordCount(editor).chars} characters`}
+          >
+            {words} {words === 1 ? "word" : "words"}
+          </span>
+        ) : (
+          <span className="w-px" aria-hidden />
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          toggleCollapsed();
+        }}
+        className="flex flex-col items-center justify-center gap-0.5 px-3 py-1 rounded-full bg-[var(--hover-bg-color)] hover:bg-[var(--border-color)] text-[var(--placeholder-color)] hover:text-[var(--text-color)] transition-colors touch-manipulation min-h-[36px] sm:min-h-[28px]"
+        title={
+          mode === "hide"
+            ? "Hide tabs & toolbar (more space for writing)"
+            : "Show tabs & toolbar"
+        }
+      >
+        {mode === "hide" ? (
+          <>
+            <FiChevronUp className="w-4 h-4" aria-hidden />
+            <span className="text-[9px] font-medium uppercase tracking-wide leading-none">
+              Hide
+            </span>
+          </>
+        ) : (
+          <>
+            <FiChevronDown className="w-4 h-4" aria-hidden />
+            <span className="text-[9px] font-medium uppercase tracking-wide leading-none max-w-[7rem] text-center">
+              Show tabs
+            </span>
+          </>
+        )}
+      </button>
+      <div className="min-w-0 flex justify-end items-center">
+        <SyncIndicator />
+      </div>
+    </div>
+  );
 }
 
 export const Toolbar = ({
@@ -76,57 +139,72 @@ export const Toolbar = ({
   canWider = false,
   onWidthNarrower,
   onWidthWider,
-  collapsed = false,
-  onToggleCollapse,
 }: ToolbarProps) => {
+  const { collapsed, toggleCollapsed } = useAppChrome();
   const inListItem =
     editor?.isActive("listItem") || editor?.isActive("taskItem") || false;
 
   if (!editor) {
+    if (collapsed) {
+      return (
+        <div className="border-b border-[var(--border-color)] bg-[var(--bg-color)]/95 backdrop-blur-sm px-2 py-1.5">
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1">
+            <div className="flex justify-start min-w-0">
+              <MoreOptionsMenu />
+            </div>
+            <button
+              type="button"
+              onClick={toggleCollapsed}
+              className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-full bg-[var(--hover-bg-color)] hover:bg-[var(--border-color)] text-[var(--placeholder-color)] hover:text-[var(--text-color)] transition-colors min-h-[36px] sm:min-h-[28px]"
+              title="Show tabs & toolbar"
+            >
+              <FiChevronDown className="w-4 h-4" aria-hidden />
+              <span className="text-[9px] font-medium uppercase tracking-wide text-center max-w-[5.5rem]">
+                Show tabs
+              </span>
+            </button>
+            <div className="flex justify-end">
+              <SyncIndicator />
+            </div>
+          </div>
+        </div>
+      );
+    }
     return (
-      <div className="border-b border-[var(--border-color)] px-2 py-1.5 sm:px-2 sm:py-1 bg-[var(--bg-color)]">
+      <div className="border-b border-[var(--border-color)] bg-[var(--bg-color)]/95 backdrop-blur-sm px-2 py-1.5 sm:py-1">
         <div className="flex items-center gap-1.5 sm:gap-1">
           <MoreOptionsMenu />
           <div className="flex-1" />
-          <SyncIndicator />
         </div>
+        <ChromeToggleRow editor={null} mode="hide" />
       </div>
     );
   }
 
   if (collapsed) {
     return (
-      <div
-        className="border-b border-[var(--border-color)] bg-[var(--bg-color)]/95 backdrop-blur-sm cursor-pointer select-none group"
-        onClick={onToggleCollapse}
-        title="Show toolbar"
-      >
-        <div className="flex items-center gap-1.5 px-2 py-1">
-          <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+      <div className="border-b border-[var(--border-color)] bg-[var(--bg-color)]/95 backdrop-blur-sm px-2 py-1.5">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1">
+          <div className="flex justify-start min-w-0" onClick={(e) => e.stopPropagation()}>
             <MoreOptionsMenu />
           </div>
-          <button
-            className="flex items-center gap-1 text-[10px] text-[var(--placeholder-color)] group-hover:text-[var(--text-color)] transition-colors"
-            title="Show toolbar"
-          >
-            <FiChevronDown className="w-3 h-3" />
-            <span className="hidden sm:inline">Toolbar</span>
-          </button>
-          <div className="flex-1" />
-          <SyncIndicator />
+          <CollapsedExpandButton />
+          <div className="flex justify-end">
+            <SyncIndicator />
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="border-b border-[var(--border-color)] px-2 py-1.5 sm:px-2 sm:py-1 bg-[var(--bg-color)]/95 backdrop-blur-sm">
+    <div className="border-b border-[var(--border-color)] bg-[var(--bg-color)]/95 backdrop-blur-sm px-2 py-1.5 sm:py-1">
       <div className="flex items-center gap-1.5 sm:gap-1">
         <div className="flex-shrink-0">
           <MoreOptionsMenu />
         </div>
 
-        <div className="flex items-center gap-1.5 sm:gap-0.5 flex-nowrap sm:flex-wrap overflow-x-auto scrollbar-thin">
+        <div className="flex items-center gap-1.5 sm:gap-0.5 flex-nowrap sm:flex-wrap overflow-x-auto scrollbar-thin flex-1 min-w-0">
           <Button
             size="sm"
             onClick={() => editor.chain().focus().toggleBold().run()}
@@ -355,38 +433,27 @@ export const Toolbar = ({
               </Button>
             </>
           )}
-
-          {onToggleCollapse && (
-            <>
-              <div className={SEP} />
-              <Button
-                size="sm"
-                onClick={onToggleCollapse}
-                className={TB}
-                title="Hide toolbar"
-              >
-                <FiChevronUp className={ICON} />
-              </Button>
-            </>
-          )}
-        </div>
-
-        <div className="flex-shrink-0 ml-auto hidden sm:flex items-center gap-2">
-          {(() => {
-            const { words, chars } = getWordCount(editor);
-            if (words === 0) return null;
-            return (
-              <span
-                className="text-[10px] text-[var(--placeholder-color)] tabular-nums select-none"
-                title={`${chars} characters`}
-              >
-                {words} {words === 1 ? "word" : "words"}
-              </span>
-            );
-          })()}
-          <SyncIndicator />
         </div>
       </div>
+
+      <ChromeToggleRow editor={editor} mode="hide" />
     </div>
   );
-};
+}
+
+function CollapsedExpandButton() {
+  const { toggleCollapsed } = useAppChrome();
+  return (
+    <button
+      type="button"
+      onClick={toggleCollapsed}
+      className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-full bg-[var(--hover-bg-color)] hover:bg-[var(--border-color)] text-[var(--placeholder-color)] hover:text-[var(--text-color)] transition-colors min-h-[36px] sm:min-h-[28px]"
+      title="Show tabs & toolbar"
+    >
+      <FiChevronDown className="w-4 h-4" aria-hidden />
+      <span className="text-[9px] font-medium uppercase tracking-wide leading-tight text-center max-w-[5.5rem]">
+        Show tabs
+      </span>
+    </button>
+  );
+}
