@@ -2,6 +2,8 @@ import type { Editor } from "@tiptap/react";
 import {
   FiBarChart2,
   FiBold,
+  FiChevronDown,
+  FiChevronUp,
   FiChevronsDown,
   FiItalic,
   FiLink,
@@ -21,10 +23,11 @@ import { Button } from "../ui/Button";
 import { MoreOptionsMenu } from "../ui/MoreOptionsMenu";
 import { SyncIndicator } from "../ui/SyncIndicator";
 
-const TB = "min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 transition-colors duration-150";
+const TB =
+  "min-w-[36px] min-h-[36px] sm:min-w-0 sm:min-h-0 transition-colors duration-150";
 const TB_ACTIVE = `${TB} bg-[var(--accent-color)] text-white`;
-const ICON = "w-5 h-5 sm:w-4 sm:h-4";
-const SEP = "w-px h-10 sm:h-6 bg-[var(--border-color)] mx-0.5";
+const ICON = "w-4 h-4 sm:w-[14px] sm:h-[14px]";
+const SEP = "w-px h-7 sm:h-5 bg-[var(--border-color)] mx-0.5";
 
 function getWordCount(editor: Editor): { words: number; chars: number } {
   const text = editor.state.doc.textContent;
@@ -51,6 +54,8 @@ interface ToolbarProps {
   canWider?: boolean;
   onWidthNarrower?: () => void;
   onWidthWider?: () => void;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 export const Toolbar = ({
@@ -71,14 +76,16 @@ export const Toolbar = ({
   canWider = false,
   onWidthNarrower,
   onWidthWider,
+  collapsed = false,
+  onToggleCollapse,
 }: ToolbarProps) => {
   const inListItem =
     editor?.isActive("listItem") || editor?.isActive("taskItem") || false;
 
   if (!editor) {
     return (
-      <div className="border-b border-[var(--border-color)] p-3 sm:p-2 bg-[var(--bg-color)]">
-        <div className="flex items-center gap-2 sm:gap-1">
+      <div className="border-b border-[var(--border-color)] px-2 py-1.5 sm:px-2 sm:py-1 bg-[var(--bg-color)]">
+        <div className="flex items-center gap-1.5 sm:gap-1">
           <MoreOptionsMenu />
           <div className="flex-1" />
           <SyncIndicator />
@@ -87,14 +94,39 @@ export const Toolbar = ({
     );
   }
 
+  if (collapsed) {
+    return (
+      <div
+        className="border-b border-[var(--border-color)] bg-[var(--bg-color)]/95 backdrop-blur-sm cursor-pointer select-none group"
+        onClick={onToggleCollapse}
+        title="Show toolbar"
+      >
+        <div className="flex items-center gap-1.5 px-2 py-1">
+          <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+            <MoreOptionsMenu />
+          </div>
+          <button
+            className="flex items-center gap-1 text-[10px] text-[var(--placeholder-color)] group-hover:text-[var(--text-color)] transition-colors"
+            title="Show toolbar"
+          >
+            <FiChevronDown className="w-3 h-3" />
+            <span className="hidden sm:inline">Toolbar</span>
+          </button>
+          <div className="flex-1" />
+          <SyncIndicator />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="border-b border-[var(--border-color)] p-3 sm:p-2 bg-[var(--bg-color)]/95 backdrop-blur-sm">
-      <div className="flex items-center gap-2 sm:gap-1">
+    <div className="border-b border-[var(--border-color)] px-2 py-1.5 sm:px-2 sm:py-1 bg-[var(--bg-color)]/95 backdrop-blur-sm">
+      <div className="flex items-center gap-1.5 sm:gap-1">
         <div className="flex-shrink-0">
           <MoreOptionsMenu />
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-1 flex-nowrap sm:flex-wrap overflow-x-auto scrollbar-thin">
+        <div className="flex items-center gap-1.5 sm:gap-0.5 flex-nowrap sm:flex-wrap overflow-x-auto scrollbar-thin">
           <Button
             size="sm"
             onClick={() => editor.chain().focus().toggleBold().run()}
@@ -142,7 +174,7 @@ export const Toolbar = ({
               }
               className={`${
                 editor.isActive("heading", { level }) ? TB_ACTIVE : TB
-              } text-base sm:text-sm font-semibold`}
+              } text-sm sm:text-xs font-semibold`}
               title={`Heading ${level} (${"#".repeat(level)})`}
             >
               H{level}
@@ -165,7 +197,7 @@ export const Toolbar = ({
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
             className={`${
               editor.isActive("orderedList") ? TB_ACTIVE : TB
-            } text-lg sm:text-sm font-semibold`}
+            } text-base sm:text-xs font-semibold`}
             title="Numbered List"
           >
             1.
@@ -176,7 +208,7 @@ export const Toolbar = ({
             onClick={() => editor.chain().focus().toggleTaskList().run()}
             className={`${
               editor.isActive("taskList") ? TB_ACTIVE : TB
-            } text-lg sm:text-base`}
+            } text-base sm:text-sm`}
             title="Task List (-.)"
           >
             ☑
@@ -323,9 +355,23 @@ export const Toolbar = ({
               </Button>
             </>
           )}
+
+          {onToggleCollapse && (
+            <>
+              <div className={SEP} />
+              <Button
+                size="sm"
+                onClick={onToggleCollapse}
+                className={TB}
+                title="Hide toolbar"
+              >
+                <FiChevronUp className={ICON} />
+              </Button>
+            </>
+          )}
         </div>
 
-        <div className="flex-shrink-0 ml-auto hidden sm:flex items-center gap-3">
+        <div className="flex-shrink-0 ml-auto hidden sm:flex items-center gap-2">
           {(() => {
             const { words, chars } = getWordCount(editor);
             if (words === 0) return null;

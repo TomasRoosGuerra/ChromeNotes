@@ -90,7 +90,7 @@ export const Tab = ({
       aria-selected={active}
       aria-label={name}
       title={titleProp}
-      className={`flex items-center gap-2 px-4 py-2.5 sm:px-3 sm:py-2 rounded-xl cursor-pointer transition-all duration-200 touch-manipulation min-h-[44px] sm:min-h-0 flex-shrink-0 min-w-[7ch] ${
+      className={`flex items-center gap-1.5 px-3 py-1.5 sm:px-2.5 sm:py-1 rounded-lg cursor-pointer transition-all duration-200 touch-manipulation min-h-[36px] sm:min-h-0 flex-shrink-0 min-w-[5ch] ${
         isDraggable && !isEditing ? "cursor-grab active:cursor-grabbing" : ""
       } ${
         active
@@ -107,11 +107,11 @@ export const Tab = ({
           onBlur={commitRename}
           onKeyDown={handleKeyDown}
           onClick={(e) => e.stopPropagation()}
-          className="flex-1 min-w-0 bg-transparent border-none outline-none text-base sm:text-sm font-medium text-inherit placeholder:opacity-60"
+          className="flex-1 min-w-0 bg-transparent border-none outline-none text-sm sm:text-xs font-medium text-inherit placeholder:opacity-60"
           placeholder="Tab name"
         />
       ) : (
-        <span className="text-base sm:text-sm font-medium truncate block min-w-[7ch] max-w-full">
+        <span className="text-sm sm:text-xs font-medium truncate block min-w-[5ch] max-w-full">
           {name}
         </span>
       )}
@@ -126,7 +126,7 @@ export const Tab = ({
               onDelete();
             }
           }}
-          className="p-1.5 sm:p-0.5 rounded-lg hover:bg-black/10 touch-manipulation min-w-[32px] min-h-[32px] sm:min-w-0 sm:min-h-0 flex items-center justify-center transition-colors"
+          className="p-1 sm:p-0.5 rounded hover:bg-black/10 touch-manipulation min-w-[24px] min-h-[24px] sm:min-w-0 sm:min-h-0 flex items-center justify-center transition-colors"
           aria-label={`Delete ${name}`}
         >
           <FiX className="w-4 h-4 sm:w-3 sm:h-3" />

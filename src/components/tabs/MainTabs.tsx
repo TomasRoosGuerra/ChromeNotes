@@ -89,8 +89,8 @@ export const MainTabs = () => {
   };
 
   return (
-    <div className="flex items-center gap-2 px-3 sm:px-4 py-3 sm:py-2 border-b border-[var(--border-color)] bg-[var(--bg-color)] min-w-0">
-      <div className="flex gap-2 sm:gap-1 flex-grow min-w-0 overflow-x-auto overflow-y-hidden scrollbar-thin flex-nowrap">
+    <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 sm:py-1 border-b border-[var(--border-color)] bg-[var(--bg-color)] min-w-0">
+      <div className="flex gap-1.5 sm:gap-1 flex-grow min-w-0 overflow-x-auto overflow-y-hidden scrollbar-thin flex-nowrap">
         {mainTabs.map((tab, index) => {
           const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.userAgent);
           const shortcutHint =
@@ -125,7 +125,7 @@ export const MainTabs = () => {
         <Button
           size="sm"
           title="Tap: new tab · Long-press: menu"
-          className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 transition-transform duration-150 ${
+          className={`min-w-[36px] min-h-[36px] sm:min-w-0 sm:min-h-0 transition-transform duration-150 ${
             isLongPressing ? "scale-110" : ""
           }`}
           onPointerDown={handleFabPointerDown}

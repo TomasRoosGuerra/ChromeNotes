@@ -419,6 +419,17 @@ export const Editor = () => {
   const contentMaxWidth = WIDTH_STEPS[widthIdx] === 0 ? "none" : `${WIDTH_STEPS[widthIdx]}ch`;
   const contentWidthLabel = WIDTH_LABELS[widthIdx];
 
+  const [toolbarCollapsed, setToolbarCollapsed] = useState(false);
+  const lastScrollY = useRef(0);
+  const scrollAccum = useRef(0);
+  const SCROLL_DOWN_THRESHOLD = 50;
+  const SCROLL_UP_THRESHOLD = 30;
+
+  const handleToggleToolbar = useCallback(() => {
+    setToolbarCollapsed((prev) => !prev);
+    scrollAccum.current = 0;
+  }, []);
+
   const [progressEditor, setProgressEditor] = useState<{
     value: number;
     durationMinutes: number;
@@ -822,6 +833,33 @@ export const Editor = () => {
     });
   }, [scrollKey]); // intentionally exclude scrollPositions to avoid re-triggering on save
 
+  useEffect(() => {
+    const el = scrollContainerEl;
+    if (!el) return;
+    const onScroll = () => {
+      const y = el.scrollTop;
+      const dy = y - lastScrollY.current;
+      if (y < 10) {
+        setToolbarCollapsed(false);
+        scrollAccum.current = 0;
+      } else if (dy > 0) {
+        scrollAccum.current += dy;
+        if (scrollAccum.current > SCROLL_DOWN_THRESHOLD) {
+          setToolbarCollapsed(true);
+        }
+      } else if (dy < 0) {
+        scrollAccum.current += dy;
+        if (scrollAccum.current < -SCROLL_UP_THRESHOLD) {
+          setToolbarCollapsed(false);
+          scrollAccum.current = 0;
+        }
+      }
+      lastScrollY.current = y;
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [scrollContainerEl]);
+
   const canUndo = editor?.can().undo() || false;
   const canRedo = editor?.can().redo() || false;
 
@@ -848,6 +886,8 @@ export const Editor = () => {
           canWider={widthIdx < WIDTH_STEPS.length - 1}
           onWidthNarrower={handleWidthNarrower}
           onWidthWider={handleWidthWider}
+          collapsed={toolbarCollapsed}
+          onToggleCollapse={handleToggleToolbar}
         />
       </div>
 

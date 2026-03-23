@@ -37,8 +37,8 @@ export const SubTabs = () => {
   const canReorder = subTabs.length > 1;
 
   return (
-    <div className="flex items-center gap-2 px-3 sm:px-4 py-3 sm:py-2 border-b border-[var(--border-color)] bg-[var(--bg-color)] min-w-0">
-      <div className="flex gap-2 sm:gap-1 flex-grow min-w-0 overflow-x-auto overflow-y-hidden scrollbar-thin flex-nowrap">
+    <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 sm:py-1 border-b border-[var(--border-color)] bg-[var(--bg-color)] min-w-0">
+      <div className="flex gap-1.5 sm:gap-1 flex-grow min-w-0 overflow-x-auto overflow-y-hidden scrollbar-thin flex-nowrap">
         {subTabs.map((subTab, index) => (
           <Tab
             key={subTab.id}
@@ -74,7 +74,7 @@ export const SubTabs = () => {
         size="sm"
         onClick={() => addSubTab(activeMainTab.id)}
         title="Add sub-tab"
-        className="flex-shrink-0 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0"
+        className="flex-shrink-0 min-w-[36px] min-h-[36px] sm:min-w-0 sm:min-h-0"
       >
         <FiPlus className="w-5 h-5 sm:w-4 sm:h-4" />
       </Button>
