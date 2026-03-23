@@ -565,8 +565,11 @@
     -webkit-overflow-scrolling: touch;
   }
 
+  /* dvh/svh: stable height on mobile browser chrome; fallback chain for older WebViews */
   .ProseMirror {
-    min-height: calc(100vh - 15rem);
+    min-height: calc(100vh - 14rem);
+    min-height: calc(100svh - 14rem);
+    min-height: calc(100dvh - 14rem);
   }
 
   .ProseMirror ul[data-type="taskList"] li > label {

@@ -832,7 +832,15 @@ export const Editor = () => {
   useEffect(() => {
     const el = scrollContainerEl;
     if (!el) return;
-    const onScroll = () => {
+    const isPhone =
+      typeof window !== "undefined" &&
+      window.matchMedia("(max-width: 640px)").matches;
+    const downTh = isPhone ? 72 : SCROLL_DOWN_THRESHOLD;
+    const upTh = isPhone ? 40 : SCROLL_UP_THRESHOLD;
+
+    let rafId: number | null = null;
+    const run = () => {
+      rafId = null;
       const y = el.scrollTop;
       const dy = y - lastScrollY.current;
       if (y < 10) {
@@ -840,21 +848,28 @@ export const Editor = () => {
         scrollAccum.current = 0;
       } else if (dy > 0) {
         scrollAccum.current += dy;
-        if (scrollAccum.current > SCROLL_DOWN_THRESHOLD) {
+        if (scrollAccum.current > downTh) {
           setChromeCollapsed(true);
         }
       } else if (dy < 0) {
         scrollAccum.current += dy;
-        if (scrollAccum.current < -SCROLL_UP_THRESHOLD) {
+        if (scrollAccum.current < -upTh) {
           setChromeCollapsed(false);
           scrollAccum.current = 0;
         }
       }
       lastScrollY.current = y;
     };
+    const onScroll = () => {
+      if (rafId != null) return;
+      rafId = requestAnimationFrame(run);
+    };
     el.addEventListener("scroll", onScroll, { passive: true });
-    return () => el.removeEventListener("scroll", onScroll);
-  }, [scrollContainerEl]);
+    return () => {
+      if (rafId != null) cancelAnimationFrame(rafId);
+      el.removeEventListener("scroll", onScroll);
+    };
+  }, [scrollContainerEl, setChromeCollapsed]);
 
   const canUndo = editor?.can().undo() || false;
   const canRedo = editor?.can().redo() || false;
@@ -898,7 +913,7 @@ export const Editor = () => {
 
       <div
         ref={assignScrollContainer}
-        className="flex-1 min-h-0 overflow-y-auto pb-16 sm:pb-0"
+        className="flex-1 min-h-0 overflow-y-auto pb-[max(4rem,env(safe-area-inset-bottom))] touch-pan-y overscroll-y-contain sm:pb-0"
       >
         <div
           className={hideCompleted ? "hide-completed-tasks" : ""}

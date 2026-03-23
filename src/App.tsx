@@ -69,7 +69,7 @@ function AppShell() {
 
   return (
     <>
-      <div className="h-screen flex flex-col bg-[var(--bg-color)] safe-area-top">
+      <div className="flex min-h-0 h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-[var(--bg-color)] safe-area-top">
         {/* Tabs stay fixed at top – no scroll */}
         <header className="flex-shrink-0 z-20 bg-[var(--bg-color)]/95 backdrop-blur-sm">
           {/* Always show main tabs in planning mode (no editor toolbar to expand chrome) */}
@@ -83,7 +83,7 @@ function AppShell() {
               <div className="flex-shrink-0">
                 <Toolbar editor={null} />
               </div>
-              <div className="flex-1 min-h-0 overflow-y-auto">
+              <div className="flex-1 min-h-0 overflow-y-auto touch-pan-y overscroll-y-contain pb-[max(1rem,env(safe-area-inset-bottom))]">
                 <DoneLog />
               </div>
             </>

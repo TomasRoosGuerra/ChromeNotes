@@ -30,6 +30,10 @@ const TB_ACTIVE = `${TB} bg-[var(--accent-color)] text-white`;
 const ICON = "w-4 h-4 sm:w-[14px] sm:h-[14px]";
 const SEP = "w-px h-7 sm:h-5 bg-[var(--border-color)] mx-0.5";
 
+/** Center Hide/Show pill — 44px min on phones (Apple HIG), active state for touch */
+const CHROME_TOGGLE =
+  "flex flex-col items-center justify-center gap-0.5 rounded-full shrink-0 bg-[var(--hover-bg-color)] active:bg-[var(--border-color)] text-[var(--placeholder-color)] transition-colors touch-manipulation select-none [-webkit-tap-highlight-color:transparent] min-h-[44px] min-w-[44px] max-w-[42vw] px-2 py-1.5 sm:min-h-8 sm:min-w-0 sm:max-w-none sm:px-3 sm:py-1 sm:hover:bg-[var(--border-color)] sm:hover:text-[var(--text-color)]";
+
 function getWordCount(editor: Editor): { words: number; chars: number } {
   const text = editor.state.doc.textContent;
   const chars = text.length;
@@ -72,17 +76,17 @@ function ChromeToggleRow({
       : 0;
 
   return (
-    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1 border-t border-[var(--border-color)] pt-1.5 mt-1">
+    <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1 border-t border-[var(--border-color)] pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:pt-1.5 sm:pb-0 mt-1">
       <div className="min-w-0 flex justify-start items-center">
         {editor && mode === "hide" && words > 0 ? (
           <span
-            className="text-[10px] text-[var(--placeholder-color)] tabular-nums select-none truncate pl-0.5"
+            className="text-[10px] text-[var(--placeholder-color)] tabular-nums select-none truncate pl-0.5 max-w-full"
             title={`${getWordCount(editor).chars} characters`}
           >
             {words} {words === 1 ? "word" : "words"}
           </span>
         ) : (
-          <span className="w-px" aria-hidden />
+          <span className="w-px shrink-0" aria-hidden />
         )}
       </div>
       <button
@@ -91,7 +95,7 @@ function ChromeToggleRow({
           e.stopPropagation();
           toggleCollapsed();
         }}
-        className="flex flex-col items-center justify-center gap-0.5 px-3 py-1 rounded-full bg-[var(--hover-bg-color)] hover:bg-[var(--border-color)] text-[var(--placeholder-color)] hover:text-[var(--text-color)] transition-colors touch-manipulation min-h-[36px] sm:min-h-[28px]"
+        className={CHROME_TOGGLE}
         title={
           mode === "hide"
             ? "Hide tabs & toolbar (more space for writing)"
@@ -100,21 +104,21 @@ function ChromeToggleRow({
       >
         {mode === "hide" ? (
           <>
-            <FiChevronUp className="w-4 h-4" aria-hidden />
-            <span className="text-[9px] font-medium uppercase tracking-wide leading-none">
+            <FiChevronUp className="w-5 h-5 sm:w-4 sm:h-4 shrink-0" aria-hidden />
+            <span className="text-[10px] sm:text-[9px] font-medium uppercase tracking-wide leading-none">
               Hide
             </span>
           </>
         ) : (
           <>
-            <FiChevronDown className="w-4 h-4" aria-hidden />
-            <span className="text-[9px] font-medium uppercase tracking-wide leading-none max-w-[7rem] text-center">
+            <FiChevronDown className="w-5 h-5 sm:w-4 sm:h-4 shrink-0" aria-hidden />
+            <span className="text-[10px] sm:text-[9px] font-medium uppercase tracking-wide leading-none max-w-[7rem] text-center">
               Show tabs
             </span>
           </>
         )}
       </button>
-      <div className="min-w-0 flex justify-end items-center">
+      <div className="min-w-0 flex justify-end items-center pr-0.5">
         <SyncIndicator />
       </div>
     </div>
@@ -147,19 +151,19 @@ export const Toolbar = ({
   if (!editor) {
     if (collapsed) {
       return (
-        <div className="border-b border-[var(--border-color)] bg-[var(--bg-color)]/95 backdrop-blur-sm px-2 py-1.5">
-          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1">
+        <div className="border-b border-[var(--border-color)] bg-[var(--bg-color)]/95 backdrop-blur-sm px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:py-1.5 sm:pb-0">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1">
             <div className="flex justify-start min-w-0">
               <MoreOptionsMenu />
             </div>
             <button
               type="button"
               onClick={toggleCollapsed}
-              className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-full bg-[var(--hover-bg-color)] hover:bg-[var(--border-color)] text-[var(--placeholder-color)] hover:text-[var(--text-color)] transition-colors min-h-[36px] sm:min-h-[28px]"
+              className={CHROME_TOGGLE}
               title="Show tabs & toolbar"
             >
-              <FiChevronDown className="w-4 h-4" aria-hidden />
-              <span className="text-[9px] font-medium uppercase tracking-wide text-center max-w-[5.5rem]">
+              <FiChevronDown className="w-5 h-5 sm:w-4 sm:h-4 shrink-0" aria-hidden />
+              <span className="text-[10px] sm:text-[9px] font-medium uppercase tracking-wide text-center max-w-[5.5rem]">
                 Show tabs
               </span>
             </button>
@@ -183,13 +187,16 @@ export const Toolbar = ({
 
   if (collapsed) {
     return (
-      <div className="border-b border-[var(--border-color)] bg-[var(--bg-color)]/95 backdrop-blur-sm px-2 py-1.5">
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1">
-          <div className="flex justify-start min-w-0" onClick={(e) => e.stopPropagation()}>
+      <div className="border-b border-[var(--border-color)] bg-[var(--bg-color)]/95 backdrop-blur-sm px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:py-1.5 sm:pb-0">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1">
+          <div
+            className="flex justify-start min-w-0"
+            onClick={(e) => e.stopPropagation()}
+          >
             <MoreOptionsMenu />
           </div>
           <CollapsedExpandButton />
-          <div className="flex justify-end">
+          <div className="flex justify-end pr-0.5">
             <SyncIndicator />
           </div>
         </div>
@@ -204,7 +211,7 @@ export const Toolbar = ({
           <MoreOptionsMenu />
         </div>
 
-        <div className="flex items-center gap-1.5 sm:gap-0.5 flex-nowrap sm:flex-wrap overflow-x-auto scrollbar-thin flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 sm:gap-0.5 flex-nowrap sm:flex-wrap overflow-x-auto scrollbar-thin flex-1 min-w-0 touch-pan-x overscroll-x-contain">
           <Button
             size="sm"
             onClick={() => editor.chain().focus().toggleBold().run()}
@@ -447,11 +454,11 @@ function CollapsedExpandButton() {
     <button
       type="button"
       onClick={toggleCollapsed}
-      className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-full bg-[var(--hover-bg-color)] hover:bg-[var(--border-color)] text-[var(--placeholder-color)] hover:text-[var(--text-color)] transition-colors min-h-[36px] sm:min-h-[28px]"
+      className={CHROME_TOGGLE}
       title="Show tabs & toolbar"
     >
-      <FiChevronDown className="w-4 h-4" aria-hidden />
-      <span className="text-[9px] font-medium uppercase tracking-wide leading-tight text-center max-w-[5.5rem]">
+      <FiChevronDown className="w-5 h-5 sm:w-4 sm:h-4 shrink-0" aria-hidden />
+      <span className="text-[10px] sm:text-[9px] font-medium uppercase tracking-wide leading-tight text-center max-w-[5.5rem]">
         Show tabs
       </span>
     </button>
