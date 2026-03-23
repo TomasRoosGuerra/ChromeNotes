@@ -392,6 +392,33 @@ export const Editor = () => {
     return () => window.removeEventListener("editor-zoom-reset", reset);
   }, [applyZoom]);
 
+  const WIDTH_STEPS = [50, 65, 80, 100, 0] as const;
+  const WIDTH_LABELS = ["Narrow", "Medium", "Comfortable", "Wide", "Full"] as const;
+  const WIDTH_DEFAULT_IDX = 4;
+  const [widthIdx, setWidthIdx] = useState<number>(() => {
+    const saved = localStorage.getItem("cn-width");
+    if (saved != null) {
+      const n = Number(saved);
+      if (n >= 0 && n < WIDTH_STEPS.length) return n;
+    }
+    return WIDTH_DEFAULT_IDX;
+  });
+  const applyWidth = useCallback((idx: number) => {
+    const clamped = Math.max(0, Math.min(WIDTH_STEPS.length - 1, idx));
+    setWidthIdx(clamped);
+    localStorage.setItem("cn-width", String(clamped));
+  }, []);
+  const handleWidthNarrower = useCallback(
+    () => applyWidth(widthIdx - 1),
+    [widthIdx, applyWidth]
+  );
+  const handleWidthWider = useCallback(
+    () => applyWidth(widthIdx + 1),
+    [widthIdx, applyWidth]
+  );
+  const contentMaxWidth = WIDTH_STEPS[widthIdx] === 0 ? "none" : `${WIDTH_STEPS[widthIdx]}ch`;
+  const contentWidthLabel = WIDTH_LABELS[widthIdx];
+
   const [progressEditor, setProgressEditor] = useState<{
     value: number;
     durationMinutes: number;
@@ -816,6 +843,11 @@ export const Editor = () => {
           zoomPercent={zoomPercent}
           onZoomIn={handleZoomIn}
           onZoomOut={handleZoomOut}
+          contentWidthLabel={contentWidthLabel}
+          canNarrower={widthIdx > 0}
+          canWider={widthIdx < WIDTH_STEPS.length - 1}
+          onWidthNarrower={handleWidthNarrower}
+          onWidthWider={handleWidthWider}
         />
       </div>
 
@@ -837,7 +869,12 @@ export const Editor = () => {
         <div
           className={hideCompleted ? "hide-completed-tasks" : ""}
           onMouseDownCapture={handleEditorMouseDown}
-          style={{ fontSize: `${zoomPercent}%` }}
+          style={{
+            fontSize: `${zoomPercent}%`,
+            maxWidth: contentMaxWidth,
+            margin: "0 auto",
+            transition: "max-width 0.25s ease",
+          }}
         >
           <EditorContent editor={editor} />
         </div>

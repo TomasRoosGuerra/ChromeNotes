@@ -6,6 +6,8 @@ import {
   FiItalic,
   FiLink,
   FiList,
+  FiMaximize2,
+  FiMinimize2,
   FiMinus,
   FiRotateCcw,
   FiRotateCw,
@@ -44,6 +46,11 @@ interface ToolbarProps {
   zoomPercent?: number;
   onZoomIn?: () => void;
   onZoomOut?: () => void;
+  contentWidthLabel?: string;
+  canNarrower?: boolean;
+  canWider?: boolean;
+  onWidthNarrower?: () => void;
+  onWidthWider?: () => void;
 }
 
 export const Toolbar = ({
@@ -59,6 +66,11 @@ export const Toolbar = ({
   zoomPercent = 100,
   onZoomIn,
   onZoomOut,
+  contentWidthLabel = "Full",
+  canNarrower = false,
+  canWider = false,
+  onWidthNarrower,
+  onWidthWider,
 }: ToolbarProps) => {
   const inListItem =
     editor?.isActive("listItem") || editor?.isActive("taskItem") || false;
@@ -278,6 +290,36 @@ export const Toolbar = ({
                 className={TB}
               >
                 <FiZoomIn className={ICON} />
+              </Button>
+            </>
+          )}
+
+          {(onWidthNarrower || onWidthWider) && (
+            <>
+              <div className={SEP} />
+              <Button
+                size="sm"
+                onClick={onWidthNarrower}
+                disabled={!canNarrower}
+                title="Narrower content"
+                className={TB}
+              >
+                <FiMinimize2 className={ICON} />
+              </Button>
+              <span
+                className="text-[10px] tabular-nums text-[var(--placeholder-color)] select-none min-w-[5ch] text-center"
+                title="Content width"
+              >
+                {contentWidthLabel}
+              </span>
+              <Button
+                size="sm"
+                onClick={onWidthWider}
+                disabled={!canWider}
+                title="Wider content"
+                className={TB}
+              >
+                <FiMaximize2 className={ICON} />
               </Button>
             </>
           )}
