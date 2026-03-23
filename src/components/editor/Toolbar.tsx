@@ -1,5 +1,6 @@
 import type { Editor } from "@tiptap/react";
 import {
+  FiBarChart2,
   FiBold,
   FiChevronsDown,
   FiItalic,
@@ -10,12 +11,18 @@ import {
   FiRotateCw,
   FiSearch,
   FiType,
+  FiZoomIn,
+  FiZoomOut,
 } from "react-icons/fi";
-import { FiBarChart2 } from "react-icons/fi";
 import { linkShortcutLabel } from "../../lib/platformShortcut";
 import { Button } from "../ui/Button";
 import { MoreOptionsMenu } from "../ui/MoreOptionsMenu";
 import { SyncIndicator } from "../ui/SyncIndicator";
+
+const TB = "min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 transition-colors duration-150";
+const TB_ACTIVE = `${TB} bg-[var(--accent-color)] text-white`;
+const ICON = "w-5 h-5 sm:w-4 sm:h-4";
+const SEP = "w-px h-10 sm:h-6 bg-[var(--border-color)] mx-0.5";
 
 function getWordCount(editor: Editor): { words: number; chars: number } {
   const text = editor.state.doc.textContent;
@@ -34,6 +41,9 @@ interface ToolbarProps {
   onSearch?: () => void;
   onCollapseAll?: () => void;
   onAddLink?: () => void;
+  zoomPercent?: number;
+  onZoomIn?: () => void;
+  onZoomOut?: () => void;
 }
 
 export const Toolbar = ({
@@ -46,6 +56,9 @@ export const Toolbar = ({
   onSearch,
   onCollapseAll,
   onAddLink,
+  zoomPercent = 100,
+  onZoomIn,
+  onZoomOut,
 }: ToolbarProps) => {
   const inListItem =
     editor?.isActive("listItem") || editor?.isActive("taskItem") || false;
@@ -73,125 +86,74 @@ export const Toolbar = ({
           <Button
             size="sm"
             onClick={() => editor.chain().focus().toggleBold().run()}
-            className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 transition-colors duration-150 ${
-              editor.isActive("bold")
-                ? "bg-[var(--accent-color)] text-white"
-                : ""
-            }`}
+            className={editor.isActive("bold") ? TB_ACTIVE : TB}
             title="Bold (Ctrl+B)"
           >
-            <FiBold className="w-5 h-5 sm:w-4 sm:h-4" />
+            <FiBold className={ICON} />
           </Button>
 
           <Button
             size="sm"
             onClick={() => editor.chain().focus().toggleItalic().run()}
-            className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 transition-colors duration-150 ${
-              editor.isActive("italic")
-                ? "bg-[var(--accent-color)] text-white"
-                : ""
-            }`}
+            className={editor.isActive("italic") ? TB_ACTIVE : TB}
             title="Italic (Ctrl+I)"
           >
-            <FiItalic className="w-5 h-5 sm:w-4 sm:h-4" />
+            <FiItalic className={ICON} />
           </Button>
 
           <Button
             size="sm"
             onClick={() => editor.chain().focus().toggleStrike().run()}
-            className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 transition-colors duration-150 ${
-              editor.isActive("strike")
-                ? "bg-[var(--accent-color)] text-white"
-                : ""
-            }`}
+            className={editor.isActive("strike") ? TB_ACTIVE : TB}
             title="Strikethrough"
           >
-            <FiMinus className="w-5 h-5 sm:w-4 sm:h-4" />
+            <FiMinus className={ICON} />
           </Button>
 
           <Button
             size="sm"
             onClick={onAddLink}
-            className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 transition-colors duration-150 ${
-              editor.isActive("link")
-                ? "bg-[var(--accent-color)] text-white"
-                : ""
-            }`}
+            className={editor.isActive("link") ? TB_ACTIVE : TB}
             title={`Add link (${linkShortcutLabel()})`}
           >
-            <FiLink className="w-5 h-5 sm:w-4 sm:h-4" />
+            <FiLink className={ICON} />
           </Button>
 
-          <div className="w-px h-10 sm:h-6 bg-[var(--border-color)] mx-0.5" />
+          <div className={SEP} />
 
-          <Button
-            size="sm"
-            onClick={() =>
-              editor.chain().focus().toggleHeading({ level: 1 }).run()
-            }
-            className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 text-base sm:text-sm font-semibold transition-colors duration-150 ${
-              editor.isActive("heading", { level: 1 })
-                ? "bg-[var(--accent-color)] text-white"
-                : ""
-            }`}
-            title="Heading 1 (#)"
-          >
-            H1
-          </Button>
+          {([1, 2, 3] as const).map((level) => (
+            <Button
+              key={level}
+              size="sm"
+              onClick={() =>
+                editor.chain().focus().toggleHeading({ level }).run()
+              }
+              className={`${
+                editor.isActive("heading", { level }) ? TB_ACTIVE : TB
+              } text-base sm:text-sm font-semibold`}
+              title={`Heading ${level} (${"#".repeat(level)})`}
+            >
+              H{level}
+            </Button>
+          ))}
 
-          <Button
-            size="sm"
-            onClick={() =>
-              editor.chain().focus().toggleHeading({ level: 2 }).run()
-            }
-            className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 text-base sm:text-sm font-semibold transition-colors duration-150 ${
-              editor.isActive("heading", { level: 2 })
-                ? "bg-[var(--accent-color)] text-white"
-                : ""
-            }`}
-            title="Heading 2 (##)"
-          >
-            H2
-          </Button>
-
-          <Button
-            size="sm"
-            onClick={() =>
-              editor.chain().focus().toggleHeading({ level: 3 }).run()
-            }
-            className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 text-base sm:text-sm font-semibold transition-colors duration-150 ${
-              editor.isActive("heading", { level: 3 })
-                ? "bg-[var(--accent-color)] text-white"
-                : ""
-            }`}
-            title="Heading 3 (###)"
-          >
-            H3
-          </Button>
-
-          <div className="w-px h-10 sm:h-6 bg-[var(--border-color)] mx-0.5" />
+          <div className={SEP} />
 
           <Button
             size="sm"
             onClick={() => editor.chain().focus().toggleBulletList().run()}
-            className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 transition-colors duration-150 ${
-              editor.isActive("bulletList")
-                ? "bg-[var(--accent-color)] text-white"
-                : ""
-            }`}
+            className={editor.isActive("bulletList") ? TB_ACTIVE : TB}
             title="Bullet List (-)"
           >
-            <FiList className="w-5 h-5 sm:w-4 sm:h-4" />
+            <FiList className={ICON} />
           </Button>
 
           <Button
             size="sm"
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
-            className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 text-lg sm:text-sm font-semibold transition-colors duration-150 ${
-              editor.isActive("orderedList")
-                ? "bg-[var(--accent-color)] text-white"
-                : ""
-            }`}
+            className={`${
+              editor.isActive("orderedList") ? TB_ACTIVE : TB
+            } text-lg sm:text-sm font-semibold`}
             title="Numbered List"
           >
             1.
@@ -200,11 +162,9 @@ export const Toolbar = ({
           <Button
             size="sm"
             onClick={() => editor.chain().focus().toggleTaskList().run()}
-            className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 text-lg sm:text-base transition-colors duration-150 ${
-              editor.isActive("taskList")
-                ? "bg-[var(--accent-color)] text-white"
-                : ""
-            }`}
+            className={`${
+              editor.isActive("taskList") ? TB_ACTIVE : TB
+            } text-lg sm:text-base`}
             title="Task List (-.)"
           >
             ☑
@@ -213,48 +173,42 @@ export const Toolbar = ({
           <Button
             size="sm"
             onClick={() => editor.chain().focus().toggleBlockquote().run()}
-            className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 transition-colors duration-150 ${
-              editor.isActive("blockquote")
-                ? "bg-[var(--accent-color)] text-white"
-                : ""
-            }`}
+            className={editor.isActive("blockquote") ? TB_ACTIVE : TB}
             title="Blockquote (>)"
           >
-            <FiType className="w-5 h-5 sm:w-4 sm:h-4" />
+            <FiType className={ICON} />
           </Button>
 
           {onSetProgress && (
             <>
-              <div className="w-px h-10 sm:h-6 bg-[var(--border-color)] mx-0.5" />
+              <div className={SEP} />
               <Button
                 size="sm"
                 onClick={onSetProgress}
                 disabled={!inListItem}
-                className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 gap-1 transition-colors duration-150 ${
-                  !inListItem ? "opacity-40" : ""
-                }`}
+                className={`${TB} gap-1 ${!inListItem ? "opacity-40" : ""}`}
                 title={
                   inListItem
                     ? "Set progress % (Alt+P)"
                     : "Place cursor in a list item first"
                 }
               >
-                <FiBarChart2 className="w-5 h-5 sm:w-4 sm:h-4 shrink-0" />
+                <FiBarChart2 className={`${ICON} shrink-0`} />
                 <span className="hidden sm:inline text-xs">%</span>
               </Button>
             </>
           )}
 
-          <div className="w-px h-10 sm:h-6 bg-[var(--border-color)] mx-0.5" />
+          <div className={SEP} />
 
           {onSearch && (
             <Button
               size="sm"
               onClick={onSearch}
-              className="min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 transition-colors duration-150"
+              className={TB}
               title="Find (Ctrl+F)"
             >
-              <FiSearch className="w-5 h-5 sm:w-4 sm:h-4" />
+              <FiSearch className={ICON} />
             </Button>
           )}
 
@@ -262,10 +216,10 @@ export const Toolbar = ({
             <Button
               size="sm"
               onClick={onCollapseAll}
-              className="min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 transition-colors duration-150"
+              className={TB}
               title="Collapse / Expand all sections"
             >
-              <FiChevronsDown className="w-5 h-5 sm:w-4 sm:h-4" />
+              <FiChevronsDown className={ICON} />
             </Button>
           )}
 
@@ -274,9 +228,9 @@ export const Toolbar = ({
             onClick={onUndo}
             disabled={!canUndo}
             title="Undo (Ctrl+Z)"
-            className="min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0"
+            className={TB}
           >
-            <FiRotateCcw className="w-5 h-5 sm:w-4 sm:h-4" />
+            <FiRotateCcw className={ICON} />
           </Button>
 
           <Button
@@ -284,18 +238,60 @@ export const Toolbar = ({
             onClick={onRedo}
             disabled={!canRedo}
             title="Redo (Ctrl+Y)"
-            className="min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0"
+            className={TB}
           >
-            <FiRotateCw className="w-5 h-5 sm:w-4 sm:h-4" />
+            <FiRotateCw className={ICON} />
           </Button>
+
+          {(onZoomIn || onZoomOut) && (
+            <>
+              <div className={SEP} />
+              <Button
+                size="sm"
+                onClick={onZoomOut}
+                disabled={zoomPercent <= 50}
+                title="Zoom out"
+                className={TB}
+              >
+                <FiZoomOut className={ICON} />
+              </Button>
+              <span
+                className="text-[10px] tabular-nums text-[var(--placeholder-color)] select-none min-w-[3ch] text-center cursor-pointer"
+                title="Reset zoom"
+                onClick={() => {
+                  if (onZoomIn && onZoomOut) {
+                    document.documentElement.style.setProperty(
+                      "--editor-zoom",
+                      "1"
+                    );
+                    window.dispatchEvent(new Event("editor-zoom-reset"));
+                  }
+                }}
+              >
+                {zoomPercent}%
+              </span>
+              <Button
+                size="sm"
+                onClick={onZoomIn}
+                disabled={zoomPercent >= 200}
+                title="Zoom in"
+                className={TB}
+              >
+                <FiZoomIn className={ICON} />
+              </Button>
+            </>
+          )}
         </div>
 
         <div className="flex-shrink-0 ml-auto hidden sm:flex items-center gap-3">
-          {editor && (() => {
-            const { words } = getWordCount(editor);
+          {(() => {
+            const { words, chars } = getWordCount(editor);
             if (words === 0) return null;
             return (
-              <span className="text-[10px] text-[var(--placeholder-color)] tabular-nums select-none" title={`${getWordCount(editor).chars} characters`}>
+              <span
+                className="text-[10px] text-[var(--placeholder-color)] tabular-nums select-none"
+                title={`${chars} characters`}
+              >
                 {words} {words === 1 ? "word" : "words"}
               </span>
             );

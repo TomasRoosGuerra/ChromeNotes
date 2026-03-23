@@ -366,6 +366,32 @@ export const Editor = () => {
     },
   });
 
+  const ZOOM_STEP = 10;
+  const ZOOM_MIN = 50;
+  const ZOOM_MAX = 200;
+  const [zoomPercent, setZoomPercent] = useState<number>(() => {
+    const saved = localStorage.getItem("cn-zoom");
+    return saved ? Number(saved) : 100;
+  });
+  const applyZoom = useCallback((pct: number) => {
+    const clamped = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, pct));
+    setZoomPercent(clamped);
+    localStorage.setItem("cn-zoom", String(clamped));
+  }, []);
+  const handleZoomIn = useCallback(
+    () => applyZoom(zoomPercent + ZOOM_STEP),
+    [zoomPercent, applyZoom]
+  );
+  const handleZoomOut = useCallback(
+    () => applyZoom(zoomPercent - ZOOM_STEP),
+    [zoomPercent, applyZoom]
+  );
+  useEffect(() => {
+    const reset = () => applyZoom(100);
+    window.addEventListener("editor-zoom-reset", reset);
+    return () => window.removeEventListener("editor-zoom-reset", reset);
+  }, [applyZoom]);
+
   const [progressEditor, setProgressEditor] = useState<{
     value: number;
     durationMinutes: number;
@@ -407,9 +433,6 @@ export const Editor = () => {
     editorProps: {
       attributes: {
         class: "focus:outline-none",
-      },
-      transformPastedHTML(html) {
-        return html;
       },
       handleDOMEvents: {
         keydown: (view, event) => {
@@ -790,6 +813,9 @@ export const Editor = () => {
           onSearch={() => setSearchOpen(true)}
           onCollapseAll={handleCollapseAll}
           onAddLink={() => setLinkPopoverOpen(true)}
+          zoomPercent={zoomPercent}
+          onZoomIn={handleZoomIn}
+          onZoomOut={handleZoomOut}
         />
       </div>
 
@@ -811,6 +837,7 @@ export const Editor = () => {
         <div
           className={hideCompleted ? "hide-completed-tasks" : ""}
           onMouseDownCapture={handleEditorMouseDown}
+          style={{ fontSize: `${zoomPercent}%` }}
         >
           <EditorContent editor={editor} />
         </div>
