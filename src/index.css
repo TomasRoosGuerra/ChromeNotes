@@ -18,11 +18,6 @@
     --completed-text-color: #78716c;
     --font-sans: "DM Sans", system-ui, sans-serif;
     --font-display: "DM Serif Display", Georgia, serif;
-
-    --step-0: 1rem;
-    --step-1: 1.25rem;
-    --step-2: 1.5625rem;
-    --step-3: 1.953rem;
   }
 
   @media (prefers-color-scheme: dark) {
@@ -48,9 +43,16 @@
   }
 }
 
+/*
+ * All sizes inside .ProseMirror use `em` so they scale with the zoom
+ * wrapper's font-size percentage. Only non-editor chrome (toolbar, tabs,
+ * link-edit bubble) stays in rem/px.
+ */
+
 /* TipTap Editor Styles - Mobile First */
 .ProseMirror {
-  @apply outline-none min-h-full p-4 sm:p-6;
+  @apply outline-none min-h-full;
+  padding: 1em 1.5em;
   font-size: inherit;
   -webkit-tap-highlight-color: transparent;
   line-height: 1.65;
@@ -60,7 +62,7 @@
   @apply outline-none;
 }
 
-/* Editor links – clickable, accent color, underline */
+/* Editor links */
 .ProseMirror a,
 .ProseMirror a.editor-link {
   color: var(--accent-color);
@@ -72,7 +74,7 @@
   color: var(--accent-hover);
 }
 
-/* Link edit pen – compact (cap-height scale), fixed size matches LinkEditBubble.tsx BTN_PX */
+/* Link edit pen – fixed px size, lives outside zoom context */
 .link-edit-bubble {
   @apply flex items-center justify-center rounded-full shrink-0 p-0;
   box-sizing: border-box;
@@ -105,6 +107,7 @@
   outline-offset: 1px;
 }
 
+/* Placeholder */
 .ProseMirror p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   float: left;
@@ -113,35 +116,42 @@
   height: 0;
 }
 
+/* ── Headings (em-based so they scale with zoom) ────────────────── */
 .ProseMirror h1 {
   font-family: var(--font-display);
-  font-size: var(--step-3);
-  @apply font-normal mt-8 mb-4 pb-2 border-b-2 border-[var(--border-color)] tracking-tight;
+  font-size: 1.95em;
+  @apply font-normal pb-2 border-b-2 border-[var(--border-color)] tracking-tight;
+  margin-top: 1.6em;
+  margin-bottom: 0.8em;
   position: relative;
-  padding-left: 2.25rem;
+  padding-left: 2.25em;
   letter-spacing: -0.02em;
   line-height: 1.3;
 }
 
 .ProseMirror h2 {
   font-family: var(--font-display);
-  font-size: var(--step-2);
-  @apply font-normal mt-6 mb-3 pb-1 border-b border-[var(--border-color)] tracking-tight;
+  font-size: 1.55em;
+  @apply font-normal pb-1 border-b border-[var(--border-color)] tracking-tight;
+  margin-top: 1.4em;
+  margin-bottom: 0.6em;
   position: relative;
-  padding-left: 2.25rem;
+  padding-left: 2.25em;
   letter-spacing: -0.01em;
   line-height: 1.35;
 }
 
 .ProseMirror h3 {
-  font-size: var(--step-1);
-  @apply font-semibold mt-5 mb-2 tracking-tight;
+  font-size: 1.25em;
+  @apply font-semibold tracking-tight;
+  margin-top: 1.2em;
+  margin-bottom: 0.5em;
   position: relative;
-  padding-left: 2.25rem;
+  padding-left: 2.25em;
   line-height: 1.4;
 }
 
-/* Heading collapse caret – large, hover-highlighted */
+/* Heading collapse caret */
 .ProseMirror h1::before,
 .ProseMirror h2::before,
 .ProseMirror h3::before {
@@ -150,13 +160,13 @@
   left: 0;
   top: 50%;
   transform: translateY(-50%);
-  width: 1.75rem;
+  width: 1.75em;
   text-align: center;
-  font-size: var(--step-0);
-  line-height: 1.75rem;
+  font-size: 0.65em;
+  line-height: 1.75em;
   color: var(--placeholder-color);
   cursor: pointer;
-  border-radius: 0.375rem;
+  border-radius: 0.375em;
   transition: background-color 0.15s, color 0.15s;
 }
 
@@ -181,38 +191,41 @@
 .ProseMirror h3[data-collapsed="true"][data-collapsed-count]::after {
   content: attr(data-collapsed-count) " hidden";
   position: absolute;
-  right: 0.5rem;
+  right: 0.5em;
   top: 50%;
   transform: translateY(-50%);
   font-family: var(--font-sans);
-  font-size: 0.6rem;
+  font-size: 0.4em;
   font-weight: 500;
   color: var(--placeholder-color);
   background-color: var(--hover-bg-color);
-  padding: 0.15rem 0.5rem;
+  padding: 0.3em 0.8em;
   border-radius: 9999px;
   border: 1px solid var(--border-color);
   pointer-events: none;
   white-space: nowrap;
 }
 
-/* Thin gutter separator between collapse zone and heading text (non-collapsed only) */
+/* Gutter separator line (non-collapsed headings) */
 .ProseMirror h1:not([data-collapsed="true"])::after,
 .ProseMirror h2:not([data-collapsed="true"])::after,
 .ProseMirror h3:not([data-collapsed="true"])::after {
   content: "";
   position: absolute;
-  left: 1.75rem;
-  top: 0.35rem;
-  bottom: 0.35rem;
+  left: 1.75em;
+  top: 0.35em;
+  bottom: 0.35em;
   width: 1px;
   background-color: rgba(148, 163, 184, 0.35);
   pointer-events: none;
 }
 
+/* ── Lists (em-based) ───────────────────────────────────────────── */
 .ProseMirror ul,
 .ProseMirror ol {
-  @apply pl-7 my-3;
+  padding-left: 1.75em;
+  margin-top: 0.6em;
+  margin-bottom: 0.6em;
 }
 
 .ProseMirror ul {
@@ -235,7 +248,7 @@
 
 .ProseMirror ol > li::after {
   content: counter(ol-counter-level1) ". ";
-  margin-right: 0.25rem;
+  margin-right: 0.25em;
 }
 
 .ProseMirror ol ol {
@@ -264,38 +277,40 @@
 }
 
 .ProseMirror li {
-  @apply my-1 relative;
+  margin-top: 0.2em;
+  margin-bottom: 0.2em;
+  position: relative;
 }
 
-/* Top-level list items: consistent gutter */
+/* Top-level list items: gutter */
 .ProseMirror > ul > li,
 .ProseMirror > ol > li,
 .ProseMirror > ul[data-type="taskList"] > li {
-  padding-left: 2rem;
+  padding-left: 2em;
 }
 
-/* Nested list items with sub-lists: same gutter + caret column as top-level collapsible rows */
+/* Nested collapsible list items: same gutter */
 .ProseMirror ul > li:has(ul > li, ol > li):not([data-progress]),
 .ProseMirror ol > li:has(ul > li, ol > li):not([data-progress]),
 .ProseMirror ul[data-type="taskList"] > li:has(ul > li, ol > li):not([data-progress]) {
-  padding-left: 2rem;
+  padding-left: 2em;
 }
 
-/* List item collapse caret – visible, hover-highlighted (any nesting depth) */
+/* List item collapse caret (any depth) */
 .ProseMirror ul > li:has(ul > li, ol > li):not([data-progress])::before,
 .ProseMirror ol > li:has(ul > li, ol > li):not([data-progress])::before,
 .ProseMirror ul[data-type="taskList"] > li:has(ul > li, ol > li):not([data-progress])::before {
   content: "▾";
   position: absolute;
   left: 0;
-  top: 0.15rem;
-  width: 1.5rem;
+  top: 0.15em;
+  width: 1.5em;
   text-align: center;
-  font-size: 0.85rem;
-  line-height: 1.5rem;
+  font-size: 0.85em;
+  line-height: 1.5em;
   color: var(--placeholder-color);
   cursor: pointer;
-  border-radius: 0.25rem;
+  border-radius: 0.25em;
   transition: background-color 0.15s, color 0.15s;
 }
 
@@ -319,59 +334,57 @@
 .ProseMirror ul[data-type="taskList"] > li[data-collapsed="true"][data-collapsed-count]::after {
   content: attr(data-collapsed-count) " items";
   display: inline-block;
-  font-size: 0.55rem;
+  font-size: 0.55em;
   font-weight: 500;
   color: var(--placeholder-color);
   background-color: var(--hover-bg-color);
-  padding: 0.1rem 0.4rem;
+  padding: 0.15em 0.5em;
   border-radius: 9999px;
   border: 1px solid var(--border-color);
-  margin-left: 0.5rem;
+  margin-left: 0.5em;
   vertical-align: middle;
   white-space: nowrap;
 }
 
-/* No "+" placeholder – progress is set via toolbar or Alt+P */
-
-/* Battery-style progress for list items */
+/* Progress pill on list items */
 .ProseMirror li[data-progress]::before {
   content: attr(data-progress) "% / " attr(data-remaining) "m left";
   display: inline-flex;
   align-items: center;
-  padding: 0 0.5rem;
-  margin-right: 0.75rem;
+  padding: 0 0.5em;
+  margin-right: 0.75em;
   border-radius: 9999px;
   border: 1px solid var(--border-color);
-  font-size: 0.6rem;
+  font-size: 0.6em;
   line-height: 1.1;
   white-space: nowrap;
   color: var(--text-color);
 }
 
-/* Align ordered-list numbers with pill and text */
+/* Ordered list counter width */
 .ProseMirror ol > li::after {
   display: inline-block;
-  min-width: 2.5rem;
+  min-width: 2.5em;
   text-align: right;
 }
 
 .ProseMirror li[data-progress-level="1"]::before {
-  background-color: rgba(220, 38, 38, 0.15); /* red-ish */
+  background-color: rgba(220, 38, 38, 0.15);
 }
 
 .ProseMirror li[data-progress-level="2"]::before {
-  background-color: rgba(245, 158, 11, 0.18); /* amber */
+  background-color: rgba(245, 158, 11, 0.18);
 }
 
 .ProseMirror li[data-progress-level="3"]::before {
-  background-color: rgba(34, 197, 94, 0.18); /* green mid */
+  background-color: rgba(34, 197, 94, 0.18);
 }
 
 .ProseMirror li[data-progress-level="4"]::before {
-  background-color: rgba(34, 197, 94, 0.35); /* full */
+  background-color: rgba(34, 197, 94, 0.35);
 }
 
-/* Collapsed sections: hidden content with subtle visual border on the container */
+/* ── Collapsed sections ─────────────────────────────────────────── */
 .ProseMirror .collapsed-block {
   display: none;
 }
@@ -380,21 +393,27 @@
 .ProseMirror h2[data-collapsed="true"],
 .ProseMirror h3[data-collapsed="true"] {
   border-left: 3px solid var(--accent-color);
-  border-radius: 0.25rem 0 0 0.25rem;
-  padding-left: calc(2.25rem - 3px);
+  border-radius: 0.25em 0 0 0.25em;
+  padding-left: calc(2.25em - 3px);
 }
 
 .ProseMirror ul > li[data-collapsed="true"],
 .ProseMirror ol > li[data-collapsed="true"],
 .ProseMirror ul[data-type="taskList"] > li[data-collapsed="true"] {
   border-left: 2px solid var(--accent-color);
-  border-radius: 0.25rem 0 0 0.25rem;
-  padding-left: calc(2rem - 2px);
+  border-radius: 0.25em 0 0 0.25em;
+  padding-left: calc(2em - 2px);
   background-color: color-mix(in srgb, var(--accent-color) 3%, transparent);
 }
 
+/* ── Blockquote ─────────────────────────────────────────────────── */
 .ProseMirror blockquote {
-  @apply my-4 px-5 py-3 border-l-4 border-[var(--accent-color)] rounded-r italic;
+  margin-top: 1em;
+  margin-bottom: 1em;
+  padding: 0.6em 1.2em;
+  border-left: 4px solid var(--accent-color);
+  border-radius: 0 0.25em 0.25em 0;
+  font-style: italic;
   background-color: rgba(37, 99, 235, 0.06);
 }
 
@@ -404,17 +423,20 @@
   }
 }
 
-/* Task List Styles */
+/* ── Task List ──────────────────────────────────────────────────── */
 .ProseMirror ul[data-type="taskList"] {
   @apply list-none pl-0;
 }
 
 .ProseMirror ul[data-type="taskList"] li {
-  @apply flex items-start my-2;
+  @apply flex items-start;
+  margin-top: 0.4em;
+  margin-bottom: 0.4em;
 }
 
 .ProseMirror ul[data-type="taskList"] li > label {
-  @apply flex-shrink-0 mr-3;
+  @apply flex-shrink-0;
+  margin-right: 0.75em;
 }
 
 .ProseMirror ul[data-type="taskList"] li > div {
@@ -426,10 +448,13 @@
 }
 
 .ProseMirror ul[data-type="taskList"] input[type="checkbox"] {
-  @apply w-4 h-4 cursor-pointer accent-[var(--accent-color)];
+  width: 1em;
+  height: 1em;
+  cursor: pointer;
+  accent-color: var(--accent-color);
 }
 
-/* Global drag handle for list items */
+/* ── Drag handle (fixed px – outside zoom context) ──────────────── */
 .drag-handle {
   position: fixed;
   opacity: 1;
@@ -477,22 +502,29 @@
   }
 }
 
-/* Table styles – pasted or inserted tables */
+/* ── Table styles ───────────────────────────────────────────────── */
 .ProseMirror .tableWrapper {
-  @apply overflow-x-auto my-4 rounded-lg border border-[var(--border-color)];
+  overflow-x: auto;
+  margin-top: 1em;
+  margin-bottom: 1em;
+  border-radius: 0.5em;
+  border: 1px solid var(--border-color);
 }
 .ProseMirror table {
   @apply w-full border-collapse;
 }
 .ProseMirror th,
 .ProseMirror td {
-  @apply border border-[var(--border-color)] px-3 py-2 text-left;
+  border: 1px solid var(--border-color);
+  padding: 0.4em 0.6em;
+  text-align: left;
 }
 .ProseMirror th {
-  @apply bg-[var(--hover-bg-color)] font-semibold;
+  background-color: var(--hover-bg-color);
+  font-weight: 600;
 }
 
-/* Hide completed tasks when toggle is active */
+/* Hide completed tasks toggle */
 .hide-completed-tasks
   .ProseMirror
   ul[data-type="taskList"]
@@ -500,7 +532,7 @@
   display: none;
 }
 
-/* Scrollbar Styles */
+/* ── Scrollbar (rem – outside editor zoom) ──────────────────────── */
 ::-webkit-scrollbar {
   @apply w-2 h-2 sm:w-3 sm:h-3;
 }
@@ -517,31 +549,26 @@
   background-color: var(--accent-color);
 }
 
-/* Mobile Optimizations */
+/* ── Mobile Optimizations ───────────────────────────────────────── */
 @media (max-width: 640px) {
-  /* Better touch targets (exclude tiny editor chrome: link edit pen, task checkboxes) */
   button:not(.link-edit-bubble),
   a {
     min-width: 44px;
     min-height: 44px;
   }
 
-  /* Prevent text size adjustment */
   html {
     -webkit-text-size-adjust: 100%;
   }
 
-  /* Smooth scrolling */
   * {
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Better keyboard handling */
   .ProseMirror {
     min-height: calc(100vh - 15rem);
   }
 
-  /* Task list checkboxes: match text size, label provides tap area */
   .ProseMirror ul[data-type="taskList"] li > label {
     min-width: 44px;
     min-height: 44px;
@@ -549,18 +576,19 @@
     align-items: center;
     justify-content: center;
   }
+
   .ProseMirror ul[data-type="taskList"] input[type="checkbox"] {
-    @apply w-4 h-4;
+    width: 1em;
+    height: 1em;
   }
 
-  /* Better line height for readability */
   .ProseMirror p,
   .ProseMirror li {
     line-height: 1.8;
   }
 }
 
-/* Touch-friendly utilities */
+/* ── Utility classes ────────────────────────────────────────────── */
 .touch-manipulation {
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
@@ -570,7 +598,6 @@
   @apply w-1 h-1;
 }
 
-/* Safe area helpers for iOS notch / home indicator */
 .safe-area-top {
   padding-top: env(safe-area-inset-top);
 }
@@ -583,7 +610,7 @@
   bottom: env(safe-area-inset-bottom);
 }
 
-/* Animations */
+/* ── Animations ─────────────────────────────────────────────────── */
 @keyframes slide-up {
   from {
     transform: translateY(100%);
