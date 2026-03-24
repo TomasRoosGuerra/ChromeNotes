@@ -15,6 +15,7 @@ import { useNotesStore } from "../../store/notesStore";
 import { LinkEditBubble } from "./LinkEditBubble";
 import { LinkPopover } from "./LinkPopover";
 import { QuickFormatBar } from "./QuickFormatBar";
+import { NoteHeadingsOutline } from "./NoteHeadingsOutline";
 import { Toolbar } from "./Toolbar";
 import { SearchBar } from "./SearchBar";
 import { moveListItem } from "./listItemReorder";
@@ -898,6 +899,7 @@ export const Editor = () => {
           onWidthNarrower={handleWidthNarrower}
           onWidthWider={handleWidthWider}
         />
+        <NoteHeadingsOutline editor={editor} />
       </div>
 
       {searchOpen && editor && (
