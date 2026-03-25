@@ -10,7 +10,6 @@ import type { Node as PMNode } from "@tiptap/pm/model";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useAppChrome } from "../../context/AppChromeContext";
 import { useNotesStore } from "../../store/notesStore";
 import { LinkEditBubble } from "./LinkEditBubble";
 import { LinkPopover } from "./LinkPopover";
@@ -421,12 +420,6 @@ export const Editor = () => {
   const contentMaxWidth = WIDTH_STEPS[widthIdx] === 0 ? "none" : `${WIDTH_STEPS[widthIdx]}ch`;
   const contentWidthLabel = WIDTH_LABELS[widthIdx];
 
-  const { setCollapsed: setChromeCollapsed } = useAppChrome();
-  const lastScrollY = useRef(0);
-  const scrollAccum = useRef(0);
-  const SCROLL_DOWN_THRESHOLD = 50;
-  const SCROLL_UP_THRESHOLD = 30;
-
   const [progressEditor, setProgressEditor] = useState<{
     value: number;
     durationMinutes: number;
@@ -829,48 +822,6 @@ export const Editor = () => {
       el.scrollTop = saved ?? 0;
     });
   }, [scrollKey]); // intentionally exclude scrollPositions to avoid re-triggering on save
-
-  useEffect(() => {
-    const el = scrollContainerEl;
-    if (!el) return;
-    const isPhone =
-      typeof window !== "undefined" &&
-      window.matchMedia("(max-width: 640px)").matches;
-    const downTh = isPhone ? 72 : SCROLL_DOWN_THRESHOLD;
-    const upTh = isPhone ? 40 : SCROLL_UP_THRESHOLD;
-
-    let rafId: number | null = null;
-    const run = () => {
-      rafId = null;
-      const y = el.scrollTop;
-      const dy = y - lastScrollY.current;
-      if (y < 10) {
-        setChromeCollapsed(false);
-        scrollAccum.current = 0;
-      } else if (dy > 0) {
-        scrollAccum.current += dy;
-        if (scrollAccum.current > downTh) {
-          setChromeCollapsed(true);
-        }
-      } else if (dy < 0) {
-        scrollAccum.current += dy;
-        if (scrollAccum.current < -upTh) {
-          setChromeCollapsed(false);
-          scrollAccum.current = 0;
-        }
-      }
-      lastScrollY.current = y;
-    };
-    const onScroll = () => {
-      if (rafId != null) return;
-      rafId = requestAnimationFrame(run);
-    };
-    el.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      if (rafId != null) cancelAnimationFrame(rafId);
-      el.removeEventListener("scroll", onScroll);
-    };
-  }, [scrollContainerEl, setChromeCollapsed]);
 
   const canUndo = editor?.can().undo() || false;
   const canRedo = editor?.can().redo() || false;
