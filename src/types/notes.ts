@@ -51,5 +51,7 @@ export interface NotesState {
   showSubTabs: boolean;
   useSidebarLayout: boolean;
   showLineNumbers: boolean;
+  /** Subtle background on the block containing the caret (no extra chrome). */
+  highlightCurrentLine: boolean;
   planning: PlanningState;
 }

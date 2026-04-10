@@ -37,6 +37,7 @@ interface NotesActions {
   toggleShowSubTabs: () => void;
   toggleSidebarLayout: () => void;
   toggleLineNumbers: () => void;
+  toggleHighlightCurrentLine: () => void;
   // Planning tab actions
   setPlanningStartMinutes: (minutes: number) => void;
   setPlanningEndMinutes: (minutes: number) => void;
@@ -73,6 +74,7 @@ const initialState: NotesState = {
   showSubTabs: true,
   useSidebarLayout: true,
   showLineNumbers: false,
+  highlightCurrentLine: true,
   planning: {
     dayStartMinutes: getDefaultPlanningStartMinutes(),
     dayEndMinutes: 24 * 60,
@@ -356,6 +358,18 @@ export const useNotesStore = create<NotesState & NotesActions>()(
       saveState(get);
     },
 
+    toggleHighlightCurrentLine: () => {
+      set((state) => {
+        state.highlightCurrentLine = !state.highlightCurrentLine;
+      });
+      saveState(get);
+      queueMicrotask(() => {
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("cn-editor-prefs"));
+        }
+      });
+    },
+
     setPlanningStartMinutes: (minutes) => {
       set((state) => {
         state.planning.dayStartMinutes = minutes;
@@ -466,6 +480,10 @@ export const useNotesStore = create<NotesState & NotesActions>()(
           newState.useSidebarLayout ?? state.useSidebarLayout ?? initialState.useSidebarLayout;
         state.showLineNumbers =
           newState.showLineNumbers ?? state.showLineNumbers ?? initialState.showLineNumbers;
+        state.highlightCurrentLine =
+          newState.highlightCurrentLine ??
+          state.highlightCurrentLine ??
+          initialState.highlightCurrentLine;
         const loaded = newState.planning ?? state.planning;
         state.planning = {
           dayStartMinutes: loaded?.dayStartMinutes ?? initialState.planning.dayStartMinutes,
@@ -514,6 +532,7 @@ export const useNotesStore = create<NotesState & NotesActions>()(
         showSubTabs: state.showSubTabs,
         useSidebarLayout: state.useSidebarLayout,
         showLineNumbers: state.showLineNumbers,
+        highlightCurrentLine: state.highlightCurrentLine,
         planning: state.planning,
       };
     },

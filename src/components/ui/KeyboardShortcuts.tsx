@@ -27,6 +27,8 @@ const shortcuts = [
   { keys: "Shift+Tab", label: "Outdent list item" },
   { section: "Navigation & Tools" },
   { keys: `${mod}+F`, label: "Find in note" },
+  { keys: `${mod}+Shift+L`, label: "Toggle line numbers (margin)" },
+  { keys: `${mod}+Shift+H`, label: "Toggle current-line highlight" },
   { keys: "Alt+P", label: "Set progress %" },
   { keys: "Alt+↑ / Alt+↓", label: "Move list item up/down" },
   { keys: `${mod}+Z`, label: "Undo" },

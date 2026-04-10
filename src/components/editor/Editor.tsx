@@ -367,6 +367,9 @@ export const Editor = () => {
           key: currentLinePluginKey,
           props: {
             decorations(state) {
+              if (!useNotesStore.getState().highlightCurrentLine) {
+                return DecorationSet.empty;
+              }
               const { selection, doc } = state;
               if (!selection.empty) return DecorationSet.empty;
               const { $from } = selection;
@@ -494,6 +497,24 @@ export const Editor = () => {
       },
       handleDOMEvents: {
         keydown: (view, event) => {
+          if (
+            (event.metaKey || event.ctrlKey) &&
+            event.shiftKey &&
+            (event.key === "l" || event.key === "L")
+          ) {
+            event.preventDefault();
+            useNotesStore.getState().toggleLineNumbers();
+            return true;
+          }
+          if (
+            (event.metaKey || event.ctrlKey) &&
+            event.shiftKey &&
+            (event.key === "h" || event.key === "H")
+          ) {
+            event.preventDefault();
+            useNotesStore.getState().toggleHighlightCurrentLine();
+            return true;
+          }
           if ((event.metaKey || event.ctrlKey) && event.key === "f") {
             event.preventDefault();
             setSearchOpen(true);
@@ -631,6 +652,15 @@ export const Editor = () => {
     }
   }, [editor, activeSubTab]);
 
+  useEffect(() => {
+    if (!editor) return;
+    const onPrefs = () => {
+      editor.view.dispatch(editor.state.tr);
+    };
+    window.addEventListener("cn-editor-prefs", onPrefs);
+    return () => window.removeEventListener("cn-editor-prefs", onPrefs);
+  }, [editor]);
+
   // ── Collapse/Expand handler ──────────────────────────────────────
   // Uses mousedown (fires before ProseMirror click handlers) and
   // DOM node comparison via view.nodeDOM() for bulletproof detection.
@@ -640,7 +670,10 @@ export const Editor = () => {
       const target = e.target as HTMLElement;
       const clickX = e.clientX;
       const { view, state } = editor;
-      const gutter = window.innerWidth <= 640 ? 56 : 48;
+      const baseGutter = window.innerWidth <= 640 ? 56 : 48;
+      // Widen hit zone when line-number gutter is visible (CSS padding-left on .ProseMirror)
+      const gutter =
+        baseGutter + (showLineNumbers ? (window.innerWidth <= 640 ? 40 : 32) : 0);
 
       // 1) Heading collapse — match clicked heading to doc positions via DOM
       const headingEl = target.closest("h1, h2, h3") as HTMLElement | null;
@@ -700,7 +733,7 @@ export const Editor = () => {
         }
       }
     },
-    [editor]
+    [editor, showLineNumbers]
   );
 
   // ── Collapse All / Expand All ────────────────────────────────────

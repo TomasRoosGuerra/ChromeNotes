@@ -7,6 +7,7 @@ import {
   FiEye,
   FiEyeOff,
   FiHash,
+  FiCrosshair,
   FiHelpCircle,
   FiLayout,
   FiLogOut,
@@ -24,6 +25,11 @@ import { KeyboardShortcuts } from "./KeyboardShortcuts";
 
 const MENU_WIDTH = 288; // w-72
 const GAP = 8;
+const SHORTCUT_MOD =
+  typeof navigator !== "undefined" &&
+  /Mac|iPod|iPhone|iPad/.test(navigator.userAgent)
+    ? "⌘"
+    : "Ctrl";
 
 type MenuLayout =
   | { kind: "mobile" }
@@ -56,6 +62,12 @@ export const MoreOptionsMenu = () => {
   );
   const showLineNumbers = useNotesStore((state) => state.showLineNumbers);
   const toggleLineNumbers = useNotesStore((state) => state.toggleLineNumbers);
+  const highlightCurrentLine = useNotesStore(
+    (state) => state.highlightCurrentLine,
+  );
+  const toggleHighlightCurrentLine = useNotesStore(
+    (state) => state.toggleHighlightCurrentLine,
+  );
   const setState = useNotesStore((state) => state.loadState);
   const getState = useNotesStore((state) => state.getState);
 
@@ -329,11 +341,32 @@ export const MoreOptionsMenu = () => {
       <button
         type="button"
         onClick={toggleLineNumbers}
+        title={`Toggle line numbers in the margin (${SHORTCUT_MOD}+Shift+L)`}
         className="w-full px-4 py-3 sm:px-3 sm:py-2 text-left flex items-center gap-3 hover:bg-[var(--hover-bg-color)] transition-colors touch-manipulation text-[var(--text-color)]"
       >
         <FiHash className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-        <span className="text-base sm:text-sm font-medium">
+        <span className="text-base sm:text-sm font-medium flex-1 min-w-0">
           {showLineNumbers ? "Hide line numbers" : "Show line numbers"}
+        </span>
+        <span className="text-[10px] text-[var(--placeholder-color)] hidden sm:inline tabular-nums">
+          {SHORTCUT_MOD}⇧L
+        </span>
+      </button>
+
+      <button
+        type="button"
+        onClick={toggleHighlightCurrentLine}
+        title={`Subtle highlight on the active line (${SHORTCUT_MOD}+Shift+H)`}
+        className="w-full px-4 py-3 sm:px-3 sm:py-2 text-left flex items-center gap-3 hover:bg-[var(--hover-bg-color)] transition-colors touch-manipulation text-[var(--text-color)]"
+      >
+        <FiCrosshair className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+        <span className="text-base sm:text-sm font-medium flex-1 min-w-0">
+          {highlightCurrentLine
+            ? "Hide current-line highlight"
+            : "Show current-line highlight"}
+        </span>
+        <span className="text-[10px] text-[var(--placeholder-color)] hidden sm:inline tabular-nums">
+          {SHORTCUT_MOD}⇧H
         </span>
       </button>
 
