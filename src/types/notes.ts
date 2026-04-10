@@ -49,5 +49,7 @@ export interface NotesState {
   // UI preferences
   showMainTabs: boolean;
   showSubTabs: boolean;
+  useSidebarLayout: boolean;
+  showLineNumbers: boolean;
   planning: PlanningState;
 }

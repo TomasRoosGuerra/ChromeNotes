@@ -327,6 +327,7 @@ export const Editor = () => {
   const setActiveSubTab = useNotesStore((s) => s.setActiveSubTab);
   const updateContent = useNotesStore((s) => s.updateContent);
   const hideCompleted = useNotesStore((s) => s.hideCompleted);
+  const showLineNumbers = useNotesStore((s) => s.showLineNumbers);
   const scrollPositions = useNotesStore((s) => s.scrollPositions);
   const setScrollPosition = useNotesStore((s) => s.setScrollPosition);
 
@@ -356,6 +357,34 @@ export const Editor = () => {
     setActiveMainTab,
     setActiveSubTab,
   ]);
+
+  const currentLinePluginKey = new PluginKey("currentLineHighlight");
+  const CurrentLineHighlight = Extension.create({
+    name: "currentLineHighlight",
+    addProseMirrorPlugins() {
+      return [
+        new Plugin({
+          key: currentLinePluginKey,
+          props: {
+            decorations(state) {
+              const { selection, doc } = state;
+              if (!selection.empty) return DecorationSet.empty;
+              const { $from } = selection;
+              let depth = $from.depth;
+              while (depth > 0 && $from.node(depth).isInline) depth--;
+              const pos = depth > 0 ? $from.before(depth) : 0;
+              const node = doc.nodeAt(pos);
+              if (!node) return DecorationSet.empty;
+              const deco = Decoration.node(pos, pos + node.nodeSize, {
+                class: "current-line-active",
+              });
+              return DecorationSet.create(doc, [deco]);
+            },
+          },
+        }),
+      ];
+    },
+  });
 
   const ListItemReorder = Extension.create({
     name: "listItemReorder",
@@ -456,6 +485,7 @@ export const Editor = () => {
       ListItemReorder,
       ListItemProgress,
       CollapsibleSections,
+      CurrentLineHighlight,
     ],
     content: activeSubTab?.content || "",
     editorProps: {
@@ -866,7 +896,7 @@ export const Editor = () => {
 
       <div
         ref={assignScrollContainer}
-        className="flex-1 min-h-0 overflow-y-auto pb-[max(4rem,env(safe-area-inset-bottom))] touch-pan-y overscroll-y-contain sm:pb-0"
+        className={`flex-1 min-h-0 overflow-y-auto pb-[max(4rem,env(safe-area-inset-bottom))] touch-pan-y overscroll-y-contain sm:pb-0 ${showLineNumbers ? "editor-line-numbers" : ""}`}
       >
         <div
           className={hideCompleted ? "hide-completed-tasks" : ""}

@@ -643,3 +643,95 @@
 .animate-slide-down {
   animation: slide-down 0.15s ease-out;
 }
+
+@keyframes sidebar-slide-in {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes sidebar-backdrop-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.sidebar-slide-enter {
+  animation: sidebar-slide-in 0.2s ease-out;
+}
+
+.sidebar-backdrop-enter {
+  animation: sidebar-backdrop-fade 0.2s ease-out;
+}
+
+/* ── Line numbers ───────────────────────────────────────────────── */
+.editor-line-numbers .ProseMirror {
+  counter-reset: editor-line;
+  padding-left: 3.5em;
+}
+
+.editor-line-numbers .ProseMirror > * {
+  position: relative;
+  counter-increment: editor-line;
+}
+
+.editor-line-numbers .ProseMirror > *::before {
+  content: counter(editor-line);
+  position: absolute;
+  left: -3em;
+  width: 2.2em;
+  text-align: right;
+  font-size: 0.7em;
+  line-height: inherit;
+  color: var(--placeholder-color);
+  opacity: 0.5;
+  pointer-events: none;
+  user-select: none;
+  font-variant-numeric: tabular-nums;
+  top: 0.15em;
+}
+
+/* Override heading carets when line numbers are on — they coexist fine
+   since headings use ::before for the collapse caret via content:"▾".
+   The line-number ::before is on the wrapper node, not the heading itself,
+   but headings ARE direct children of ProseMirror, so we skip them. */
+.editor-line-numbers .ProseMirror > h1::before,
+.editor-line-numbers .ProseMirror > h2::before,
+.editor-line-numbers .ProseMirror > h3::before {
+  content: "▾";
+  left: 0;
+  width: auto;
+  text-align: left;
+  font-size: inherit;
+  opacity: 1;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.editor-line-numbers .ProseMirror > h1[data-collapsed="true"]::before,
+.editor-line-numbers .ProseMirror > h2[data-collapsed="true"]::before,
+.editor-line-numbers .ProseMirror > h3[data-collapsed="true"]::before {
+  content: "▸";
+}
+
+/* ── Current line highlight ─────────────────────────────────────── */
+.ProseMirror .current-line-active {
+  position: relative;
+}
+
+.ProseMirror .current-line-active::after {
+  content: "";
+  position: absolute;
+  inset: -1px -0.75em;
+  background-color: var(--accent-color);
+  opacity: 0.06;
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: -1;
+}

@@ -1,13 +1,16 @@
 import { useCallback, useEffect } from "react";
+import { FiMenu } from "react-icons/fi";
 import { LoadingScreen } from "./components/auth/LoadingScreen";
 import { SignInScreen } from "./components/auth/SignInScreen";
 import { Editor } from "./components/editor/Editor";
 import { Toolbar } from "./components/editor/Toolbar";
-import { DoneLog } from "./components/tabs/DoneLog";
-import { PlanningView } from "./components/planning/PlanningView";
+import { Sidebar } from "./components/layout/Sidebar";
 import { MainTabs } from "./components/tabs/MainTabs";
 import { SubTabs } from "./components/tabs/SubTabs";
+import { DoneLog } from "./components/tabs/DoneLog";
+import { PlanningView } from "./components/planning/PlanningView";
 import { ToastContainer } from "./components/ui/Toast";
+import { SyncIndicator } from "./components/ui/SyncIndicator";
 import { useCloudSync } from "./hooks/useCloudSync";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { useAuthStore } from "./store/authStore";
@@ -24,7 +27,8 @@ function AppShell() {
   const setActiveMainTab = useNotesStore((state) => state.setActiveMainTab);
   const showMainTabs = useNotesStore((state) => state.showMainTabs);
   const showSubTabs = useNotesStore((state) => state.showSubTabs);
-  const { collapsed: chromeCollapsed } = useAppChrome();
+  const useSidebarLayout = useNotesStore((state) => state.useSidebarLayout);
+  const { toggleSidebar, collapsed: chromeCollapsed } = useAppChrome();
 
   useEffect(() => {
     initAuth();
@@ -67,32 +71,62 @@ function AppShell() {
   const showDoneLog = activeSubTabId === "done-log";
   const showPlanning = activeMainTab?.mode === "planning" && !showDoneLog;
 
+  const contentArea = (
+    <div className="flex-grow min-h-0 flex flex-col">
+      {showDoneLog ? (
+        <>
+          <div className="flex-shrink-0">
+            <Toolbar editor={null} />
+          </div>
+          <div className="flex-1 min-h-0 overflow-y-auto touch-pan-y overscroll-y-contain pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <DoneLog />
+          </div>
+        </>
+      ) : showPlanning ? (
+        <PlanningView />
+      ) : (
+        <Editor />
+      )}
+    </div>
+  );
+
+  if (useSidebarLayout) {
+    return (
+      <>
+        <div className="flex min-h-0 h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-[var(--bg-color)] safe-area-top">
+          <header className="flex-shrink-0 z-20 bg-[var(--bg-color)]/95 backdrop-blur-sm border-b border-[var(--border-color)]">
+            <div className="flex items-center gap-2 px-2 py-1.5 min-h-[44px] sm:min-h-[36px]">
+              <button
+                type="button"
+                onClick={toggleSidebar}
+                className="p-2 rounded-lg hover:bg-[var(--hover-bg-color)] text-[var(--text-color)] touch-manipulation flex-shrink-0"
+                aria-label="Open navigation"
+                title="Open navigation"
+              >
+                <FiMenu className="w-5 h-5" />
+              </button>
+              <span className="text-sm font-medium text-[var(--text-color)] truncate flex-1 min-w-0">
+                {activeMainTab?.name ?? "Chrome Notes"}
+              </span>
+              <SyncIndicator />
+            </div>
+          </header>
+          {contentArea}
+        </div>
+        <Sidebar />
+        <ToastContainer />
+      </>
+    );
+  }
+
   return (
     <>
       <div className="flex min-h-0 h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-[var(--bg-color)] safe-area-top">
-        {/* Tabs stay fixed at top – no scroll */}
         <header className="flex-shrink-0 z-20 bg-[var(--bg-color)]/95 backdrop-blur-sm">
-          {/* Always show main tabs in planning mode (no editor toolbar to expand chrome) */}
           {showMainTabs && (!chromeCollapsed || showPlanning) && <MainTabs />}
           {showSubTabs && !chromeCollapsed && <SubTabs />}
         </header>
-        {/* Only this content area scrolls; toolbar stays visible */}
-        <div className="flex-grow min-h-0 flex flex-col">
-          {showDoneLog ? (
-            <>
-              <div className="flex-shrink-0">
-                <Toolbar editor={null} />
-              </div>
-              <div className="flex-1 min-h-0 overflow-y-auto touch-pan-y overscroll-y-contain pb-[max(1rem,env(safe-area-inset-bottom))]">
-                <DoneLog />
-              </div>
-            </>
-          ) : showPlanning ? (
-            <PlanningView />
-          ) : (
-            <Editor />
-          )}
-        </div>
+        {contentArea}
       </div>
       <ToastContainer />
     </>

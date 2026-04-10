@@ -35,6 +35,8 @@ interface NotesActions {
   setScrollPosition: (key: string, position: number) => void;
   toggleShowMainTabs: () => void;
   toggleShowSubTabs: () => void;
+  toggleSidebarLayout: () => void;
+  toggleLineNumbers: () => void;
   // Planning tab actions
   setPlanningStartMinutes: (minutes: number) => void;
   setPlanningEndMinutes: (minutes: number) => void;
@@ -69,6 +71,8 @@ const initialState: NotesState = {
   scrollPositions: {},
   showMainTabs: true,
   showSubTabs: true,
+  useSidebarLayout: true,
+  showLineNumbers: false,
   planning: {
     dayStartMinutes: getDefaultPlanningStartMinutes(),
     dayEndMinutes: 24 * 60,
@@ -162,8 +166,10 @@ export const useNotesStore = create<NotesState & NotesActions>()(
         state.mainTabs.splice(index, 1);
 
         if (state.activeMainTabId === id) {
-          state.activeMainTabId = state.mainTabs[0].id;
-          state.activeSubTabId = state.mainTabs[0].subTabs[0].id;
+          const fallback = state.mainTabs[0];
+          state.activeMainTabId = fallback.id;
+          state.activeSubTabId =
+            fallback.subTabs?.[0]?.id ?? state.activeSubTabId;
         }
       });
       saveState(get);
@@ -197,7 +203,7 @@ export const useNotesStore = create<NotesState & NotesActions>()(
 
           state.activeSubTabId = subTabExists
             ? lastSubTabId
-            : mainTab.subTabs[0].id;
+            : mainTab.subTabs[0]?.id ?? state.activeSubTabId;
         } else if (mainTab && mainTab.mode === "planning") {
           // For planning tabs we don't use sub-tabs; keep the last selected for notes.
           state.activeSubTabId = state.activeSubTabId;
@@ -336,6 +342,20 @@ export const useNotesStore = create<NotesState & NotesActions>()(
       saveState(get);
     },
 
+    toggleSidebarLayout: () => {
+      set((state) => {
+        state.useSidebarLayout = !state.useSidebarLayout;
+      });
+      saveState(get);
+    },
+
+    toggleLineNumbers: () => {
+      set((state) => {
+        state.showLineNumbers = !state.showLineNumbers;
+      });
+      saveState(get);
+    },
+
     setPlanningStartMinutes: (minutes) => {
       set((state) => {
         state.planning.dayStartMinutes = minutes;
@@ -423,9 +443,9 @@ export const useNotesStore = create<NotesState & NotesActions>()(
       set((state) => {
         state.mainTabs =
           (newState.mainTabs ?? state.mainTabs).map((tab) => ({
-            // default mode to "notes" for older saved data
-            mode: "notes",
+            mode: "notes" as const,
             ...tab,
+            subTabs: Array.isArray(tab.subTabs) ? tab.subTabs : [],
           }));
         state.activeMainTabId =
           newState.activeMainTabId ?? state.activeMainTabId;
@@ -442,6 +462,10 @@ export const useNotesStore = create<NotesState & NotesActions>()(
           initialState.showMainTabs;
         state.showSubTabs =
           newState.showSubTabs ?? state.showSubTabs ?? initialState.showSubTabs;
+        state.useSidebarLayout =
+          newState.useSidebarLayout ?? state.useSidebarLayout ?? initialState.useSidebarLayout;
+        state.showLineNumbers =
+          newState.showLineNumbers ?? state.showLineNumbers ?? initialState.showLineNumbers;
         const loaded = newState.planning ?? state.planning;
         state.planning = {
           dayStartMinutes: loaded?.dayStartMinutes ?? initialState.planning.dayStartMinutes,
@@ -488,6 +512,8 @@ export const useNotesStore = create<NotesState & NotesActions>()(
         scrollPositions: state.scrollPositions,
         showMainTabs: state.showMainTabs,
         showSubTabs: state.showSubTabs,
+        useSidebarLayout: state.useSidebarLayout,
+        showLineNumbers: state.showLineNumbers,
         planning: state.planning,
       };
     },

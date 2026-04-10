@@ -8,23 +8,36 @@ import {
 } from "react";
 
 type AppChromeContextValue = {
-  /** When true, main/sub tabs are hidden and the editor toolbar is minimal */
   collapsed: boolean;
   setCollapsed: (v: boolean) => void;
   toggleCollapsed: () => void;
+  sidebarOpen: boolean;
+  setSidebarOpen: (v: boolean) => void;
+  toggleSidebar: () => void;
 };
 
 const AppChromeContext = createContext<AppChromeContextValue | null>(null);
 
 export function AppChromeProvider({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const toggleCollapsed = useCallback(() => {
     setCollapsed((c) => !c);
   }, []);
+  const toggleSidebar = useCallback(() => {
+    setSidebarOpen((o) => !o);
+  }, []);
 
   const value = useMemo(
-    () => ({ collapsed, setCollapsed, toggleCollapsed }),
-    [collapsed]
+    () => ({
+      collapsed,
+      setCollapsed,
+      toggleCollapsed,
+      sidebarOpen,
+      setSidebarOpen,
+      toggleSidebar,
+    }),
+    [collapsed, sidebarOpen],
   );
 
   return (

@@ -48,6 +48,12 @@ export const MoreOptionsMenu = () => {
     (state) => state.toggleShowMainTabs
   );
   const toggleShowSubTabs = useNotesStore((state) => state.toggleShowSubTabs);
+  const useSidebarLayout = useNotesStore((state) => state.useSidebarLayout);
+  const toggleSidebarLayout = useNotesStore(
+    (state) => state.toggleSidebarLayout,
+  );
+  const showLineNumbers = useNotesStore((state) => state.showLineNumbers);
+  const toggleLineNumbers = useNotesStore((state) => state.toggleLineNumbers);
   const setState = useNotesStore((state) => state.loadState);
   const getState = useNotesStore((state) => state.getState);
 
@@ -296,6 +302,38 @@ export const MoreOptionsMenu = () => {
           {showSubTabs
             ? "Hide middle tabs (sub)"
             : "Show middle tabs (sub)"}
+        </span>
+      </button>
+
+      <div className="border-t border-[var(--border-color)] my-1" />
+
+      <button
+        type="button"
+        onClick={toggleSidebarLayout}
+        className="w-full px-4 py-3 sm:px-3 sm:py-2 text-left flex items-center gap-3 hover:bg-[var(--hover-bg-color)] transition-colors touch-manipulation text-[var(--text-color)]"
+      >
+        {useSidebarLayout ? (
+          <FiEye className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+        ) : (
+          <FiEyeOff className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+        )}
+        <span className="text-base sm:text-sm font-medium">
+          {useSidebarLayout ? "Use top tab bar" : "Use sidebar menu"}
+        </span>
+      </button>
+
+      <button
+        type="button"
+        onClick={toggleLineNumbers}
+        className="w-full px-4 py-3 sm:px-3 sm:py-2 text-left flex items-center gap-3 hover:bg-[var(--hover-bg-color)] transition-colors touch-manipulation text-[var(--text-color)]"
+      >
+        {showLineNumbers ? (
+          <FiEyeOff className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+        ) : (
+          <FiEye className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+        )}
+        <span className="text-base sm:text-sm font-medium">
+          {showLineNumbers ? "Hide line numbers" : "Show line numbers"}
         </span>
       </button>
 

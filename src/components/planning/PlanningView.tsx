@@ -49,23 +49,27 @@ export const PlanningView = () => {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [scheduleMenuOpen]);
 
+  const applySortOrder = (sortedIds: string[]) => {
+    for (let target = 0; target < sortedIds.length; target++) {
+      const currentTasks = useNotesStore.getState().planning.tasks;
+      const from = currentTasks.findIndex((t) => t.id === sortedIds[target]);
+      if (from !== target && from !== -1) reorderPlanningTasks(from, target);
+    }
+  };
+
   const handleSortByBenefit = () => {
-    const incomplete = tasks.filter((t) => !t.completed);
-    const sorted = [...incomplete].sort((a, b) => b.benefit - a.benefit || a.effort - b.effort);
-    sorted.forEach((task, i) => {
-      const currentIdx = tasks.findIndex((t) => t.id === task.id);
-      if (currentIdx !== i) reorderPlanningTasks(currentIdx, i);
-    });
+    const sorted = [...tasks.filter((t) => !t.completed)].sort(
+      (a, b) => b.benefit - a.benefit || a.effort - b.effort,
+    );
+    applySortOrder(sorted.map((t) => t.id));
     setScheduleMenuOpen(false);
   };
 
   const handleSortByEffort = () => {
-    const incomplete = tasks.filter((t) => !t.completed);
-    const sorted = [...incomplete].sort((a, b) => a.effort - b.effort || b.benefit - a.benefit);
-    sorted.forEach((task, i) => {
-      const currentIdx = tasks.findIndex((t) => t.id === task.id);
-      if (currentIdx !== i) reorderPlanningTasks(currentIdx, i);
-    });
+    const sorted = [...tasks.filter((t) => !t.completed)].sort(
+      (a, b) => a.effort - b.effort || b.benefit - a.benefit,
+    );
+    applySortOrder(sorted.map((t) => t.id));
     setScheduleMenuOpen(false);
   };
 
@@ -132,9 +136,10 @@ export const PlanningView = () => {
     return () => clearInterval(id);
   }, []);
 
-  // Ensure at least one planning row exists and is focused
+  const didInitRef = useRef(false);
   useEffect(() => {
-    if (tasks.length === 0) {
+    if (tasks.length === 0 && !didInitRef.current) {
+      didInitRef.current = true;
       const id = addTask({
         title: "",
         durationMinutes: 15,
@@ -303,9 +308,28 @@ export const PlanningView = () => {
     return 24 * 60 - start + end;
   }, [planning.dayStartMinutes, planning.dayEndMinutes]);
 
-  const trackHeightPx = useMemo(
-    () => Math.max(totalMinutes * PIXELS_PER_MINUTE, 400),
-    [totalMinutes],
+  const ROW_MIN_HEIGHT = 56;
+  const ROW_SPACING = 2;
+
+  const trackHeightPx = useMemo(() => {
+    const timeBasedHeight = Math.max(totalMinutes * PIXELS_PER_MINUTE, 400);
+    let cursor = 0;
+    for (const item of scheduled) {
+      const baseTop =
+        (item.start >= planning.dayStartMinutes
+          ? item.start - planning.dayStartMinutes
+          : 24 * 60 - planning.dayStartMinutes + item.start) *
+        PIXELS_PER_MINUTE;
+      const durationHeight = Math.max(
+        (item.end - item.start) * PIXELS_PER_MINUTE,
+        1,
+      );
+      const visualHeight = Math.max(durationHeight, ROW_MIN_HEIGHT);
+      const top = Math.max(baseTop, cursor);
+      cursor = top + visualHeight + ROW_SPACING;
+    }
+    return Math.max(timeBasedHeight, cursor + 30);
+  }, [totalMinutes, scheduled, planning.dayStartMinutes],
   );
 
   const handleEnterNextFromIndex = (index: number) => {
@@ -378,7 +402,7 @@ export const PlanningView = () => {
   };
 
   return (
-    <div className="h-full bg-[var(--bg-color)] text-[var(--text-color)]">
+    <div className="h-full flex flex-col min-h-0 bg-[var(--bg-color)] text-[var(--text-color)]">
       <div className="sticky top-0 z-10 px-4 py-2 border-b border-[var(--border-color)] bg-[var(--bg-color)]/95 backdrop-blur">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-semibold text-[var(--placeholder-color)] uppercase tracking-wider">Schedule</span>
@@ -645,7 +669,6 @@ export const PlanningView = () => {
           {/* Scheduled items: position by time, prevent visual overlap */}
           {(() => {
             let cursor = 0;
-            const rowMinHeight = 56;
 
             return scheduled.map((item, index) => {
               const baseTop =
@@ -657,10 +680,10 @@ export const PlanningView = () => {
                 (item.end - item.start) * PIXELS_PER_MINUTE,
                 1,
               );
-              const visualHeight = Math.max(durationHeight, rowMinHeight);
+              const visualHeight = Math.max(durationHeight, ROW_MIN_HEIGHT);
               const top = Math.max(baseTop, cursor);
               const height = visualHeight;
-              cursor = top + height + 2;
+              cursor = top + height + ROW_SPACING;
 
               if (item.type === "gap") {
                 return (
