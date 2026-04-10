@@ -89,7 +89,7 @@ export const MainTabs = () => {
   };
 
   return (
-    <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 sm:py-1 border-b border-[var(--border-color)] bg-[var(--bg-color)] min-w-0">
+    <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1 sm:py-0.5 border-b border-[var(--border-color)] bg-[var(--bg-color)] min-w-0">
       <div className="flex gap-1.5 sm:gap-1 flex-grow min-w-0 overflow-x-auto overflow-y-hidden scrollbar-thin flex-nowrap">
         {mainTabs.map((tab, index) => {
           const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.userAgent);
@@ -124,7 +124,7 @@ export const MainTabs = () => {
       <div className="relative flex-shrink-0" ref={fabMenuRef}>
         <Button
           size="sm"
-          title="Tap: new tab · Long-press: menu"
+          title="New notebook (hold for options)"
           className={`min-w-[36px] min-h-[36px] sm:min-w-0 sm:min-h-0 transition-transform duration-150 ${
             isLongPressing ? "scale-110" : ""
           }`}
@@ -152,7 +152,7 @@ export const MainTabs = () => {
                 setIsFabMenuOpen(false);
               }}
             >
-              Create Planning Tab
+              New planning tab
             </button>
           </div>
         )}

@@ -3,10 +3,9 @@ import { FiPlus, FiX } from "react-icons/fi";
 import { useAppChrome } from "../../context/AppChromeContext";
 import { useNotesStore } from "../../store/notesStore";
 import { MoreOptionsMenu } from "../ui/MoreOptionsMenu";
-import { SyncIndicator } from "../ui/SyncIndicator";
 
 const NAV_ITEM =
-  "w-full text-left px-4 py-2.5 text-sm rounded-lg transition-colors touch-manipulation";
+  "w-full text-left px-4 py-2 text-sm rounded-lg transition-colors touch-manipulation flex items-center gap-2";
 const NAV_ACTIVE =
   "bg-[var(--accent-color)]/10 text-[var(--accent-color)] font-medium";
 const NAV_INACTIVE =
@@ -69,9 +68,9 @@ export const Sidebar = () => {
         aria-label="Navigation sidebar"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-color)] flex-shrink-0">
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--border-color)] flex-shrink-0">
           <span className="text-sm font-semibold text-[var(--text-color)]">
-            Tabs
+            Notebooks
           </span>
           <button
             type="button"
@@ -94,10 +93,10 @@ export const Sidebar = () => {
                   tab.id === activeMainTabId ? NAV_ACTIVE : NAV_INACTIVE
                 }`}
               >
-                <span className="truncate block">{tab.name}</span>
+                <span className="truncate">{tab.name}</span>
                 {tab.mode === "planning" && (
-                  <span className="text-[10px] text-[var(--placeholder-color)] ml-1">
-                    (plan)
+                  <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-[var(--accent-color)]/10 text-[var(--accent-color)] font-medium shrink-0">
+                    Plan
                   </span>
                 )}
               </button>
@@ -185,10 +184,9 @@ export const Sidebar = () => {
           </button>
         </div>
 
-        {/* Footer: options + sync */}
-        <div className="border-t border-[var(--border-color)] px-3 py-2 flex items-center justify-between flex-shrink-0">
+        {/* Footer: options */}
+        <div className="border-t border-[var(--border-color)] px-3 py-2 flex items-center flex-shrink-0">
           <MoreOptionsMenu />
-          <SyncIndicator />
         </div>
       </nav>
     </>

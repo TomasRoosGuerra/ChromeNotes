@@ -20,6 +20,7 @@ import {
 } from "react-icons/fi";
 import { useAppChrome } from "../../context/AppChromeContext";
 import { linkShortcutLabel } from "../../lib/platformShortcut";
+import { useNotesStore } from "../../store/notesStore";
 import { Button } from "../ui/Button";
 import { MoreOptionsMenu } from "../ui/MoreOptionsMenu";
 import { SyncIndicator } from "../ui/SyncIndicator";
@@ -114,6 +115,19 @@ function ToolbarMeta({ editor }: { editor: Editor | null }) {
   );
 }
 
+/** Current page label for collapsed toolbar context */
+function usePageLabel() {
+  const mainTabs = useNotesStore((s) => s.mainTabs);
+  const activeMainTabId = useNotesStore((s) => s.activeMainTabId);
+  const activeSubTabId = useNotesStore((s) => s.activeSubTabId);
+  const tab = mainTabs.find((t) => t.id === activeMainTabId);
+  if (!tab) return "";
+  if (activeSubTabId === "done-log") return "Done";
+  if (tab.mode === "planning") return tab.name;
+  const sub = tab.subTabs.find((s) => s.id === activeSubTabId);
+  return sub?.name ?? tab.name;
+}
+
 export const Toolbar = ({
   editor,
   onUndo,
@@ -134,24 +148,25 @@ export const Toolbar = ({
   onWidthWider,
 }: ToolbarProps) => {
   const { collapsed, toggleCollapsed } = useAppChrome();
+  const pageLabel = usePageLabel();
   const inListItem =
     editor?.isActive("listItem") || editor?.isActive("taskItem") || false;
 
   if (!editor) {
     if (collapsed) {
       return (
-        <div className="border-b border-[var(--border-color)] bg-[var(--bg-color)]/95 backdrop-blur-sm px-2 py-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:pb-1.5">
+        <div className="border-b border-[var(--border-color)] bg-[var(--bg-color)]/95 backdrop-blur-sm px-2 py-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] sm:pb-1">
           <div className="flex items-center gap-1.5 sm:gap-1 min-h-[44px] sm:min-h-0">
             <div className="flex-shrink-0">
               <MoreOptionsMenu />
             </div>
-            <div className="flex-1 min-w-0" />
+            <span className="flex-1 min-w-0 text-xs text-[var(--placeholder-color)] truncate text-center">{pageLabel}</span>
             <button
               type="button"
               onClick={toggleCollapsed}
               className={CHROME_ARROW}
-              title="Show tabs & toolbar"
-              aria-label="Show tabs & toolbar"
+              title="Show toolbar"
+              aria-label="Show toolbar"
             >
               <FiChevronDown className="w-5 h-5 sm:w-[18px] sm:h-[18px]" aria-hidden />
             </button>
@@ -161,7 +176,7 @@ export const Toolbar = ({
       );
     }
     return (
-      <div className="border-b border-[var(--border-color)] bg-[var(--bg-color)]/95 backdrop-blur-sm px-2 py-1.5 sm:py-1">
+      <div className="border-b border-[var(--border-color)] bg-[var(--bg-color)]/95 backdrop-blur-sm px-2 py-1 sm:py-0.5">
         <div className="flex items-center gap-1.5 sm:gap-1 min-h-[44px] sm:min-h-0">
           <div className="flex-shrink-0">
             <MoreOptionsMenu />
@@ -169,7 +184,7 @@ export const Toolbar = ({
           <div className="flex-1 min-w-0" />
           <ChromeArrowButton
             direction="collapse"
-            title="Hide tabs & toolbar"
+            title="Hide toolbar"
           />
           <ToolbarMeta editor={null} />
         </div>
@@ -179,7 +194,7 @@ export const Toolbar = ({
 
   if (collapsed) {
     return (
-      <div className="border-b border-[var(--border-color)] bg-[var(--bg-color)]/95 backdrop-blur-sm px-2 py-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:pb-1.5">
+      <div className="border-b border-[var(--border-color)] bg-[var(--bg-color)]/95 backdrop-blur-sm px-2 py-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] sm:pb-1">
         <div className="flex items-center gap-1.5 sm:gap-1 min-h-[44px] sm:min-h-0">
           <div
             className="flex-shrink-0"
@@ -187,13 +202,13 @@ export const Toolbar = ({
           >
             <MoreOptionsMenu />
           </div>
-          <div className="flex-1 min-w-0" />
+          <span className="flex-1 min-w-0 text-xs text-[var(--placeholder-color)] truncate text-center">{pageLabel}</span>
           <button
             type="button"
             onClick={toggleCollapsed}
             className={CHROME_ARROW}
-            title="Show tabs & toolbar"
-            aria-label="Show tabs & toolbar"
+            title="Show toolbar"
+            aria-label="Show toolbar"
           >
             <FiChevronDown className="w-5 h-5 sm:w-[18px] sm:h-[18px]" aria-hidden />
           </button>
@@ -204,7 +219,7 @@ export const Toolbar = ({
   }
 
   return (
-    <div className="border-b border-[var(--border-color)] bg-[var(--bg-color)]/95 backdrop-blur-sm px-2 py-1.5 sm:py-1">
+    <div className="border-b border-[var(--border-color)] bg-[var(--bg-color)]/95 backdrop-blur-sm px-2 py-1 sm:py-0.5">
       <div className="flex items-center gap-1.5 sm:gap-1 min-h-[44px] sm:min-h-0">
         <div className="flex-shrink-0">
           <MoreOptionsMenu />
@@ -383,9 +398,10 @@ export const Toolbar = ({
               >
                 <FiZoomOut className={ICON} />
               </Button>
-              <span
-                className="text-[10px] tabular-nums text-[var(--placeholder-color)] select-none min-w-[3ch] text-center cursor-pointer"
-                title="Reset zoom"
+              <button
+                type="button"
+                className="text-[10px] tabular-nums text-[var(--placeholder-color)] hover:text-[var(--text-color)] select-none min-w-[3ch] text-center cursor-pointer rounded px-1 hover:bg-[var(--hover-bg-color)] transition-colors"
+                title="Reset zoom to 100%"
                 onClick={() => {
                   if (onZoomIn && onZoomOut) {
                     document.documentElement.style.setProperty(
@@ -397,7 +413,7 @@ export const Toolbar = ({
                 }}
               >
                 {zoomPercent}%
-              </span>
+              </button>
               <Button
                 size="sm"
                 onClick={onZoomIn}
@@ -443,7 +459,7 @@ export const Toolbar = ({
 
         <ChromeArrowButton
           direction="collapse"
-          title="Hide tabs & toolbar"
+          title="Hide toolbar"
         />
 
         <ToolbarMeta editor={editor} />

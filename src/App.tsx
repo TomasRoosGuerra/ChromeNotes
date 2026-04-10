@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from "react";
-import { FiMenu } from "react-icons/fi";
+import { FiChevronRight, FiMenu } from "react-icons/fi";
 import { LoadingScreen } from "./components/auth/LoadingScreen";
 import { SignInScreen } from "./components/auth/SignInScreen";
 import { Editor } from "./components/editor/Editor";
@@ -68,6 +68,10 @@ function AppShell() {
   }
 
   const activeMainTab = mainTabs.find((t) => t.id === activeMainTabId);
+  const activeSubTab =
+    activeMainTab?.mode !== "planning"
+      ? activeMainTab?.subTabs.find((s) => s.id === activeSubTabId)
+      : undefined;
   const showDoneLog = activeSubTabId === "done-log";
   const showPlanning = activeMainTab?.mode === "planning" && !showDoneLog;
 
@@ -95,7 +99,7 @@ function AppShell() {
       <>
         <div className="flex min-h-0 h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-[var(--bg-color)] safe-area-top">
           <header className="flex-shrink-0 z-20 bg-[var(--bg-color)]/95 backdrop-blur-sm border-b border-[var(--border-color)]">
-            <div className="flex items-center gap-2 px-2 py-1.5 min-h-[44px] sm:min-h-[36px]">
+            <div className="flex items-center gap-1.5 px-2 py-1 min-h-[44px] sm:min-h-[34px]">
               <button
                 type="button"
                 onClick={toggleSidebar}
@@ -105,9 +109,29 @@ function AppShell() {
               >
                 <FiMenu className="w-5 h-5" />
               </button>
-              <span className="text-sm font-medium text-[var(--text-color)] truncate flex-1 min-w-0">
-                {activeMainTab?.name ?? "Chrome Notes"}
-              </span>
+              <div className="flex items-center gap-1 min-w-0 flex-1 text-sm">
+                <span className="font-medium text-[var(--text-color)] truncate shrink-0 max-w-[40%]">
+                  {activeMainTab?.name ?? "Chrome Notes"}
+                </span>
+                {showDoneLog && (
+                  <>
+                    <FiChevronRight className="w-3 h-3 text-[var(--placeholder-color)] shrink-0" />
+                    <span className="text-[var(--placeholder-color)] truncate">Done</span>
+                  </>
+                )}
+                {activeSubTab && !showDoneLog && (
+                  <>
+                    <FiChevronRight className="w-3 h-3 text-[var(--placeholder-color)] shrink-0" />
+                    <span className="text-[var(--placeholder-color)] truncate">{activeSubTab.name}</span>
+                  </>
+                )}
+                {showPlanning && (
+                  <>
+                    <FiChevronRight className="w-3 h-3 text-[var(--placeholder-color)] shrink-0" />
+                    <span className="text-[var(--placeholder-color)] truncate">Schedule</span>
+                  </>
+                )}
+              </div>
               <SyncIndicator />
             </div>
           </header>

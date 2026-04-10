@@ -6,12 +6,14 @@ import {
   FiDownload,
   FiEye,
   FiEyeOff,
+  FiHash,
   FiHelpCircle,
+  FiLayout,
   FiLogOut,
   FiMail,
   FiMoreVertical,
+  FiSidebar,
   FiTrash2,
-  FiUser,
 } from "react-icons/fi";
 import { emailNotes } from "../../lib/email";
 import { formatTabsForCopy, parseImportedContent } from "../../lib/markdown";
@@ -239,7 +241,7 @@ export const MoreOptionsMenu = () => {
       >
         <FiCopy className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
         <span className="text-base sm:text-sm font-medium">
-          Copy all tabs
+          Copy all notebooks
         </span>
       </button>
 
@@ -273,37 +275,39 @@ export const MoreOptionsMenu = () => {
         </span>
       </button>
 
-      <button
-        type="button"
-        onClick={toggleShowMainTabs}
-        className="w-full px-4 py-3 sm:px-3 sm:py-2 text-left flex items-center gap-3 hover:bg-[var(--hover-bg-color)] transition-colors touch-manipulation text-[var(--text-color)]"
-      >
-        {showMainTabs ? (
-          <FiEyeOff className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-        ) : (
-          <FiEye className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-        )}
-        <span className="text-base sm:text-sm font-medium">
-          {showMainTabs ? "Hide top tabs (main)" : "Show top tabs (main)"}
-        </span>
-      </button>
+      {!useSidebarLayout && (
+        <>
+          <button
+            type="button"
+            onClick={toggleShowMainTabs}
+            className="w-full px-4 py-3 sm:px-3 sm:py-2 text-left flex items-center gap-3 hover:bg-[var(--hover-bg-color)] transition-colors touch-manipulation text-[var(--text-color)]"
+          >
+            {showMainTabs ? (
+              <FiEyeOff className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+            ) : (
+              <FiEye className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+            )}
+            <span className="text-base sm:text-sm font-medium">
+              {showMainTabs ? "Hide notebook tabs" : "Show notebook tabs"}
+            </span>
+          </button>
 
-      <button
-        type="button"
-        onClick={toggleShowSubTabs}
-        className="w-full px-4 py-3 sm:px-3 sm:py-2 text-left flex items-center gap-3 hover:bg-[var(--hover-bg-color)] transition-colors touch-manipulation text-[var(--text-color)]"
-      >
-        {showSubTabs ? (
-          <FiEyeOff className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-        ) : (
-          <FiEye className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-        )}
-        <span className="text-base sm:text-sm font-medium">
-          {showSubTabs
-            ? "Hide middle tabs (sub)"
-            : "Show middle tabs (sub)"}
-        </span>
-      </button>
+          <button
+            type="button"
+            onClick={toggleShowSubTabs}
+            className="w-full px-4 py-3 sm:px-3 sm:py-2 text-left flex items-center gap-3 hover:bg-[var(--hover-bg-color)] transition-colors touch-manipulation text-[var(--text-color)]"
+          >
+            {showSubTabs ? (
+              <FiEyeOff className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+            ) : (
+              <FiEye className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+            )}
+            <span className="text-base sm:text-sm font-medium">
+              {showSubTabs ? "Hide page tabs" : "Show page tabs"}
+            </span>
+          </button>
+        </>
+      )}
 
       <div className="border-t border-[var(--border-color)] my-1" />
 
@@ -313,12 +317,12 @@ export const MoreOptionsMenu = () => {
         className="w-full px-4 py-3 sm:px-3 sm:py-2 text-left flex items-center gap-3 hover:bg-[var(--hover-bg-color)] transition-colors touch-manipulation text-[var(--text-color)]"
       >
         {useSidebarLayout ? (
-          <FiEye className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+          <FiLayout className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
         ) : (
-          <FiEyeOff className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+          <FiSidebar className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
         )}
         <span className="text-base sm:text-sm font-medium">
-          {useSidebarLayout ? "Use top tab bar" : "Use sidebar menu"}
+          {useSidebarLayout ? "Switch to tab bar" : "Switch to sidebar"}
         </span>
       </button>
 
@@ -327,11 +331,7 @@ export const MoreOptionsMenu = () => {
         onClick={toggleLineNumbers}
         className="w-full px-4 py-3 sm:px-3 sm:py-2 text-left flex items-center gap-3 hover:bg-[var(--hover-bg-color)] transition-colors touch-manipulation text-[var(--text-color)]"
       >
-        {showLineNumbers ? (
-          <FiEyeOff className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-        ) : (
-          <FiEye className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-        )}
+        <FiHash className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
         <span className="text-base sm:text-sm font-medium">
           {showLineNumbers ? "Hide line numbers" : "Show line numbers"}
         </span>
@@ -363,7 +363,7 @@ export const MoreOptionsMenu = () => {
       >
         <FiTrash2 className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
         <span className="text-base sm:text-sm font-medium">
-          Clean all tabs
+          Clear all content
         </span>
       </button>
 
@@ -430,16 +430,7 @@ export const MoreOptionsMenu = () => {
       : null;
 
   return (
-    <div className="relative flex items-center gap-2">
-      {user && (
-        <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-[var(--hover-bg-color)] rounded-lg border border-[var(--border-color)]">
-          <FiUser className="w-4 h-4 text-[var(--accent-color)]" />
-          <span className="text-sm text-[var(--text-color)] truncate max-w-[150px]">
-            {user.email}
-          </span>
-        </div>
-      )}
-
+    <div className="relative flex items-center">
       <div ref={triggerRef} className="inline-flex flex-shrink-0">
         <Button
           size="sm"
