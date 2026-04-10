@@ -26,7 +26,7 @@ import { MoreOptionsMenu } from "../ui/MoreOptionsMenu";
 import { SyncIndicator } from "../ui/SyncIndicator";
 
 const TB =
-  "min-w-[36px] min-h-[36px] sm:min-w-0 sm:min-h-0 transition-colors duration-150";
+  "min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 transition-colors duration-150";
 const TB_ACTIVE = `${TB} bg-[var(--accent-color)] text-white`;
 const ICON = "w-4 h-4 sm:w-[14px] sm:h-[14px]";
 const SEP = "w-px h-7 sm:h-5 bg-[var(--border-color)] mx-0.5";

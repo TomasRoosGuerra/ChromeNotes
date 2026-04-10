@@ -67,8 +67,11 @@ export const QuickFormatBar = ({
 
   return (
     <div
-      className="sm:hidden fixed left-0 right-0 bg-[var(--bg-color)]/95 backdrop-blur-sm border-t border-[var(--border-color)] p-2 z-30 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]"
-      style={{ bottom: bottomOffset }}
+      className="sm:hidden fixed left-0 right-0 bg-[var(--bg-color)]/95 backdrop-blur-sm border-t border-[var(--border-color)] px-2 pt-2 z-30 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]"
+      style={{
+        bottom: bottomOffset,
+        paddingBottom: bottomOffset > 0 ? 8 : `max(8px, env(safe-area-inset-bottom))`,
+      }}
     >
       <div className="flex items-center justify-around gap-2 overflow-x-auto flex-nowrap scrollbar-thin pb-1 -mb-1">
         <Button

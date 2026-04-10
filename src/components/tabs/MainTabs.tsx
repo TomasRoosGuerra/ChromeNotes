@@ -125,7 +125,7 @@ export const MainTabs = () => {
         <Button
           size="sm"
           title="New notebook (hold for options)"
-          className={`min-w-[36px] min-h-[36px] sm:min-w-0 sm:min-h-0 transition-transform duration-150 ${
+          className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 transition-transform duration-150 ${
             isLongPressing ? "scale-110" : ""
           }`}
           onPointerDown={handleFabPointerDown}

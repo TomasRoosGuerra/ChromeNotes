@@ -90,7 +90,7 @@ export const Tab = ({
       aria-selected={active}
       aria-label={name}
       title={titleProp}
-      className={`flex items-center gap-1.5 px-3 py-1.5 sm:px-2.5 sm:py-1 rounded-lg cursor-pointer transition-all duration-200 touch-manipulation min-h-[36px] sm:min-h-0 flex-shrink-0 min-w-[5ch] ${
+      className={`flex items-center gap-1.5 px-3 py-1.5 sm:px-2.5 sm:py-1 rounded-lg cursor-pointer transition-all duration-200 touch-manipulation min-h-[44px] sm:min-h-0 flex-shrink-0 min-w-[5ch] ${
         isDraggable && !isEditing ? "cursor-grab active:cursor-grabbing" : ""
       } ${
         active
@@ -126,7 +126,7 @@ export const Tab = ({
               onDelete();
             }
           }}
-          className="p-1 sm:p-0.5 rounded hover:bg-black/10 touch-manipulation min-w-[24px] min-h-[24px] sm:min-w-0 sm:min-h-0 flex items-center justify-center transition-colors"
+          className="p-1.5 sm:p-0.5 rounded hover:bg-black/10 touch-manipulation min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center transition-colors -mr-1.5"
           aria-label={`Delete ${name}`}
         >
           <FiX className="w-4 h-4 sm:w-3 sm:h-3" />

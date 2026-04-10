@@ -185,7 +185,7 @@ export const Sidebar = () => {
         </div>
 
         {/* Footer: options */}
-        <div className="border-t border-[var(--border-color)] px-3 py-2 flex items-center flex-shrink-0">
+        <div className="border-t border-[var(--border-color)] px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] flex items-center flex-shrink-0">
           <MoreOptionsMenu />
         </div>
       </nav>

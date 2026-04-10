@@ -36,18 +36,7 @@ export const PlanningView = () => {
   );
 
   const deletePlanningTask = useNotesStore((state) => state.deletePlanningTask);
-  const [scheduleMenuOpen, setScheduleMenuOpen] = useState(false);
   const scheduleMenuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!scheduleMenuOpen) return;
-    const handleClick = (e: MouseEvent) => {
-      if (scheduleMenuRef.current?.contains(e.target as Node)) return;
-      setScheduleMenuOpen(false);
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [scheduleMenuOpen]);
 
   const applySortOrder = (sortedIds: string[]) => {
     for (let target = 0; target < sortedIds.length; target++) {
@@ -62,7 +51,6 @@ export const PlanningView = () => {
       (a, b) => b.benefit - a.benefit || a.effort - b.effort,
     );
     applySortOrder(sorted.map((t) => t.id));
-    setScheduleMenuOpen(false);
   };
 
   const handleSortByEffort = () => {
@@ -70,13 +58,11 @@ export const PlanningView = () => {
       (a, b) => a.effort - b.effort || b.benefit - a.benefit,
     );
     applySortOrder(sorted.map((t) => t.id));
-    setScheduleMenuOpen(false);
   };
 
   const handleClearCompleted = () => {
     const completedIds = tasks.filter((t) => t.completed).map((t) => t.id);
     completedIds.forEach((id) => deletePlanningTask(id));
-    setScheduleMenuOpen(false);
   };
 
   const [isHeaderExpanded, setIsHeaderExpanded] = useState(false);
@@ -523,88 +509,43 @@ export const PlanningView = () => {
         >
           + Add task
         </button>
-        <div
-          className="hidden sm:grid grid-cols-[auto_1fr_auto_auto_auto] gap-2 px-3 py-1.5 text-[11px] text-[var(--placeholder-color)] border-[var(--border-color)] whitespace-nowrap"
-          role="row"
-          aria-label="Column headers for schedule"
-        >
-          <span
-            className="flex items-center min-w-0 truncate"
-            role="columnheader"
-            id="planning-col-time"
-            title="Scheduled time block"
-          >
-            Time
-          </span>
-          <span
-            className="min-w-0 truncate"
-            role="columnheader"
-            id="planning-col-task"
-            title="Task name"
-          >
-            Task
-          </span>
-          <span
-            className="flex items-center justify-end min-w-0 truncate"
-            role="columnheader"
-            id="planning-col-duration"
-            title="Estimated duration"
-          >
-            Duration
-          </span>
-          <span
-            className="flex items-center justify-end min-w-0 truncate"
-            role="columnheader"
-            id="planning-col-score"
-            title="Effort and benefit score"
-          >
-            Score
-          </span>
-          <span className="flex items-center justify-end min-w-0 relative" ref={scheduleMenuRef}>
+        {/* Schedule actions row -- visible on all screen sizes */}
+        <div className="flex items-center gap-2 px-3 py-1.5" ref={scheduleMenuRef}>
+          <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-x-auto scrollbar-thin">
             <button
               type="button"
-              className="p-1 rounded-lg border border-[var(--border-color)] bg-[var(--hover-bg-color)] text-[10px]"
-              title="Schedule options"
-              aria-label="Schedule options"
-              onClick={() => setScheduleMenuOpen(!scheduleMenuOpen)}
+              className="px-2.5 py-1 rounded-lg border border-[var(--border-color)] bg-[var(--hover-bg-color)] text-xs text-[var(--text-color)] whitespace-nowrap touch-manipulation"
+              onClick={handleSortByBenefit}
             >
-              ⋯
+              Sort: Benefit
             </button>
-            {scheduleMenuOpen && (
-              <div className="absolute right-0 top-full mt-1 w-48 rounded-lg bg-[var(--bg-color)] border border-[var(--border-color)] shadow-xl z-30 py-1 animate-slide-down">
-                <button
-                  className="w-full text-left px-3 py-2 text-xs hover:bg-[var(--hover-bg-color)] text-[var(--text-color)]"
-                  onClick={handleSortByBenefit}
-                >
-                  Sort by benefit (high → low)
-                </button>
-                <button
-                  className="w-full text-left px-3 py-2 text-xs hover:bg-[var(--hover-bg-color)] text-[var(--text-color)]"
-                  onClick={handleSortByEffort}
-                >
-                  Sort by effort (low → high)
-                </button>
-                {tasks.some((t) => t.completed) && (
-                  <>
-                    <div className="border-t border-[var(--border-color)] my-1" />
-                    <button
-                      className="w-full text-left px-3 py-2 text-xs hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400"
-                      onClick={handleClearCompleted}
-                    >
-                      Clear completed tasks
-                    </button>
-                  </>
-                )}
-              </div>
+            <button
+              type="button"
+              className="px-2.5 py-1 rounded-lg border border-[var(--border-color)] bg-[var(--hover-bg-color)] text-xs text-[var(--text-color)] whitespace-nowrap touch-manipulation"
+              onClick={handleSortByEffort}
+            >
+              Sort: Effort
+            </button>
+            {tasks.some((t) => t.completed) && (
+              <button
+                type="button"
+                className="px-2.5 py-1 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 text-xs text-red-600 dark:text-red-400 whitespace-nowrap touch-manipulation"
+                onClick={handleClearCompleted}
+              >
+                Clear done
+              </button>
             )}
+          </div>
+          <span className="text-[10px] text-[var(--placeholder-color)] hidden sm:inline whitespace-nowrap">
+            {tasks.length} task{tasks.length !== 1 ? "s" : ""}
           </span>
         </div>
       </div>
 
       {/* Single scroll container: timeline + track with time-scaled height */}
-      <div className="flex min-h-0 flex-1 overflow-y-auto">
+      <div className="flex min-h-0 flex-1 overflow-y-auto pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         <div
-          className="flex-shrink-0 w-14 sm:w-16 border-r border-[var(--border-color)] relative text-[10px] sm:text-xs text-[var(--placeholder-color)]"
+          className="flex-shrink-0 w-14 sm:w-16 border-r border-[var(--border-color)] relative text-[11px] sm:text-xs text-[var(--placeholder-color)]"
           style={{ height: trackHeightPx }}
         >
           {timelineTicks.map((mins) => {

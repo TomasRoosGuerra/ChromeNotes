@@ -74,7 +74,7 @@ export const SubTabs = () => {
         size="sm"
         onClick={() => addSubTab(activeMainTab.id)}
         title="Add page"
-        className="flex-shrink-0 min-w-[36px] min-h-[36px] sm:min-w-0 sm:min-h-0"
+        className="flex-shrink-0 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0"
       >
         <FiPlus className="w-5 h-5 sm:w-4 sm:h-4" />
       </Button>
