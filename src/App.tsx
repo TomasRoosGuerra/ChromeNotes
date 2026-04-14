@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Component, useCallback, useEffect, useRef, useState } from "react";
+import type { ErrorInfo, ReactNode } from "react";
 import { FiChevronRight, FiMenu, FiPlus } from "react-icons/fi";
 import { LoadingScreen } from "./components/auth/LoadingScreen";
 import { SignInScreen } from "./components/auth/SignInScreen";
@@ -242,11 +243,36 @@ function AppShell() {
   );
 }
 
+class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  state: { error: Error | null } = { error: null };
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error("SpontaNotes crash:", error, info.componentStack);
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{ padding: 32, color: "#ef4444", fontFamily: "monospace", whiteSpace: "pre-wrap" }}>
+          <h2>Something went wrong</h2>
+          <p>{this.state.error.message}</p>
+          <pre style={{ fontSize: 12, opacity: 0.7 }}>{this.state.error.stack}</pre>
+          <button onClick={() => window.location.reload()} style={{ marginTop: 16, padding: "8px 16px", cursor: "pointer" }}>
+            Reload
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function App() {
   return (
-    <AppChromeProvider>
-      <AppShell />
-    </AppChromeProvider>
+    <ErrorBoundary>
+      <AppChromeProvider>
+        <AppShell />
+      </AppChromeProvider>
+    </ErrorBoundary>
   );
 }
 

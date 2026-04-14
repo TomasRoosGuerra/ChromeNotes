@@ -653,13 +653,15 @@ export const Editor = () => {
     }
   }, [editor, activeSubTab]);
 
+  const didAutoFocusRef = useRef(false);
   useEffect(() => {
-    if (!editor || !activeSubTab) return;
+    if (!editor || !activeSubTab || didAutoFocusRef.current) return;
+    didAutoFocusRef.current = true;
     const timer = setTimeout(() => {
       if (!editor.isFocused) editor.commands.focus("end");
-    }, 80);
+    }, 120);
     return () => clearTimeout(timer);
-  }, [editor, activeSubTab?.id]);
+  }, [editor, activeSubTab]);
 
   useEffect(() => {
     if (!editor) return;
