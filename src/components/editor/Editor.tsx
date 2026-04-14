@@ -616,32 +616,34 @@ export const Editor = () => {
   const prevSubTabIdRef = useRef<string | null>(null);
   const visitedTabsRef = useRef<Set<string>>(new Set());
 
+  const activeSubTabContent = activeSubTab?.content;
+  const activeSubTabIdStable = activeSubTab?.id;
+
   useEffect(() => {
-    if (editor && activeSubTab) {
-      if (editor.getHTML() !== activeSubTab.content) {
-        editor.commands.setContent(activeSubTab.content);
-      }
-      prevCheckedRef.current = extractCheckedTasks(editor.state.doc);
-      const tabJustSwitched = prevSubTabIdRef.current !== activeSubTab.id;
-      prevSubTabIdRef.current = activeSubTab.id;
-      if (tabJustSwitched && !visitedTabsRef.current.has(activeSubTab.id)) {
-        visitedTabsRef.current.add(activeSubTab.id);
-        editor.view.dispatch(
-          editor.state.tr.setMeta(collapsiblePluginKey, { initCollapsed: true })
-        );
-      }
+    if (!editor || !activeSubTabIdStable) return;
+    if (editor.getHTML() !== activeSubTabContent) {
+      editor.commands.setContent(activeSubTabContent ?? "", false);
     }
-  }, [editor, activeSubTab]);
+    prevCheckedRef.current = extractCheckedTasks(editor.state.doc);
+    const tabJustSwitched = prevSubTabIdRef.current !== activeSubTabIdStable;
+    prevSubTabIdRef.current = activeSubTabIdStable;
+    if (tabJustSwitched && !visitedTabsRef.current.has(activeSubTabIdStable)) {
+      visitedTabsRef.current.add(activeSubTabIdStable);
+      editor.view.dispatch(
+        editor.state.tr.setMeta(collapsiblePluginKey, { initCollapsed: true })
+      );
+    }
+  }, [editor, activeSubTabIdStable, activeSubTabContent]);
 
   const didAutoFocusRef = useRef(false);
   useEffect(() => {
-    if (!editor || !activeSubTab || didAutoFocusRef.current) return;
+    if (!editor || !activeSubTabIdStable || didAutoFocusRef.current) return;
     didAutoFocusRef.current = true;
     const timer = setTimeout(() => {
       if (!editor.isFocused) editor.commands.focus("end");
     }, 120);
     return () => clearTimeout(timer);
-  }, [editor, activeSubTab]);
+  }, [editor, activeSubTabIdStable]);
 
   useEffect(() => {
     if (!editor) return;
