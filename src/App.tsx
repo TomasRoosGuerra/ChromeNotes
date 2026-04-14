@@ -33,6 +33,9 @@ function AppShell() {
   const setActiveSubTab = useNotesStore((state) => state.setActiveSubTab);
   const { toggleSidebar, collapsed: chromeCollapsed } = useAppChrome();
 
+  const [fabMenuOpen, setFabMenuOpen] = useState(false);
+  const fabRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     initAuth();
   }, [initAuth]);
@@ -102,9 +105,6 @@ function AppShell() {
       : undefined;
   const showDoneLog = activeSubTabId === "done-log";
   const showPlanning = activeMainTab?.mode === "planning" && !showDoneLog;
-
-  const [fabMenuOpen, setFabMenuOpen] = useState(false);
-  const fabRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!fabMenuOpen) return;
