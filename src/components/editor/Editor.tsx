@@ -323,8 +323,6 @@ export const Editor = () => {
   const mainTabs = useNotesStore((s) => s.mainTabs);
   const activeMainTabId = useNotesStore((s) => s.activeMainTabId);
   const activeSubTabId = useNotesStore((s) => s.activeSubTabId);
-  const setActiveMainTab = useNotesStore((s) => s.setActiveMainTab);
-  const setActiveSubTab = useNotesStore((s) => s.setActiveSubTab);
   const updateContent = useNotesStore((s) => s.updateContent);
   const hideCompleted = useNotesStore((s) => s.hideCompleted);
   const showLineNumbers = useNotesStore((s) => s.showLineNumbers);
@@ -339,24 +337,6 @@ export const Editor = () => {
   );
 
   const prevCheckedRef = useRef<Map<string, boolean>>(new Map());
-
-  useEffect(() => {
-    if (activeSubTabId === "done-log" || mainTabs.length === 0) return;
-    if (!activeMainTab) {
-      setActiveMainTab(mainTabs[0].id);
-      return;
-    }
-    if (!activeSubTab && activeMainTab.subTabs.length > 0) {
-      setActiveSubTab(activeMainTab.subTabs[0].id);
-    }
-  }, [
-    mainTabs,
-    activeMainTab,
-    activeSubTab,
-    activeSubTabId,
-    setActiveMainTab,
-    setActiveSubTab,
-  ]);
 
   const currentLinePluginKey = new PluginKey("currentLineHighlight");
   const CurrentLineHighlight = Extension.create({
