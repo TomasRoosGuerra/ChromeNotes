@@ -88,6 +88,20 @@ function AppShell() {
     setUserId(user?.uid ?? null);
   }, [user]);
 
+  useEffect(() => {
+    if (!fabMenuOpen) return;
+    const close = (e: MouseEvent | TouchEvent) => {
+      if (fabRef.current?.contains(e.target as Node)) return;
+      setFabMenuOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("touchstart", close, { passive: true });
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("touchstart", close);
+    };
+  }, [fabMenuOpen]);
+
   useLocalStorage();
   useCloudSync();
 
@@ -106,20 +120,6 @@ function AppShell() {
       : undefined;
   const showDoneLog = activeSubTabId === "done-log";
   const showPlanning = activeMainTab?.mode === "planning" && !showDoneLog;
-
-  useEffect(() => {
-    if (!fabMenuOpen) return;
-    const close = (e: MouseEvent | TouchEvent) => {
-      if (fabRef.current?.contains(e.target as Node)) return;
-      setFabMenuOpen(false);
-    };
-    document.addEventListener("mousedown", close);
-    document.addEventListener("touchstart", close, { passive: true });
-    return () => {
-      document.removeEventListener("mousedown", close);
-      document.removeEventListener("touchstart", close);
-    };
-  }, [fabMenuOpen]);
 
   const contentArea = (
     <div className="flex-grow min-h-0 flex flex-col relative">
