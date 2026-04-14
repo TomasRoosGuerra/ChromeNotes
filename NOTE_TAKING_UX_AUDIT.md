@@ -1,4 +1,4 @@
-# ChromeNotes: Feature Analysis & UX Audit
+# SpontaNotes: Feature Analysis & UX Audit
 
 ## Industry Best Practices (2024–2026)
 
@@ -29,7 +29,7 @@ Based on research from AppFlowy, NoteApps.info, Fellow.ai, and The Tool Chief:
 
 ---
 
-## ChromeNotes Feature Inventory
+## SpontaNotes Feature Inventory
 
 ### ✅ Strong Areas
 

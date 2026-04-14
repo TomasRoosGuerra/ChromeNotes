@@ -38,8 +38,13 @@ const shortcuts = [
   { keys: "Click ▾ on list item", label: "Collapse/expand nested items" },
   { keys: `${mod}+Shift+[`, label: "Collapse at cursor" },
   { keys: `${mod}+Shift+]`, label: "Expand at cursor" },
+  { section: "Quick Capture" },
+  { keys: `${mod}+N`, label: "New page" },
+  { keys: `${mod}+Shift+N`, label: "New notebook" },
   { section: "Tabs & Navigation" },
-  { keys: `${mod}+1–9`, label: "Switch to tab 1–9" },
+  { keys: `${mod}+1–9`, label: "Switch to notebook 1–9" },
+  { keys: `${mod}+Shift+[`, label: "Previous page" },
+  { keys: `${mod}+Shift+]`, label: "Next page" },
   { keys: `${mod}+/`, label: "Show keyboard shortcuts" },
 ];
 

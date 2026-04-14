@@ -35,7 +35,7 @@
 ## 📁 Current Project Structure
 
 ```
-ChromeNotes/
+SpontaNotes/
 ├── .git/                    # Git repository (preserved)
 ├── .gitignore              # Git ignore rules
 ├── README.md               # Project description

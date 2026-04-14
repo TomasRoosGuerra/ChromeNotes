@@ -1,4 +1,4 @@
-# 📋 Chrome Notes - Complete Feature Specification
+# 📋 SpontaNotes - Complete Feature Specification
 
 > **Purpose**: Document ALL features for rebuilding the app from scratch
 > **Review Status**: ⏳ Pending approval from Tomas
@@ -458,7 +458,7 @@ interface CompletedTask {
 ## 📦 **Project Structure**
 
 ```
-ChromeNotes/
+SpontaNotes/
 ├── src/
 │   ├── components/
 │   │   ├── auth/

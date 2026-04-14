@@ -1,6 +1,7 @@
 import type { NotesState } from "../types/notes";
 
-const STORAGE_KEY = "chrome-notes-data-v1";
+const STORAGE_KEY = "spontanotes-data-v1";
+const LEGACY_KEY = "chrome-notes-data-v1";
 
 export const saveToLocalStorage = (data: NotesState): void => {
   try {
@@ -12,7 +13,12 @@ export const saveToLocalStorage = (data: NotesState): void => {
 
 export const loadFromLocalStorage = (): NotesState | null => {
   try {
-    const data = localStorage.getItem(STORAGE_KEY);
+    const data =
+      localStorage.getItem(STORAGE_KEY) ??
+      localStorage.getItem(LEGACY_KEY);
+    if (data && !localStorage.getItem(STORAGE_KEY)) {
+      localStorage.setItem(STORAGE_KEY, data);
+    }
     return data ? JSON.parse(data) : null;
   } catch (error) {
     console.error("Error loading from localStorage:", error);

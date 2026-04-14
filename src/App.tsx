@@ -1,5 +1,5 @@
-import { useCallback, useEffect } from "react";
-import { FiChevronRight, FiMenu } from "react-icons/fi";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { FiChevronRight, FiMenu, FiPlus } from "react-icons/fi";
 import { LoadingScreen } from "./components/auth/LoadingScreen";
 import { SignInScreen } from "./components/auth/SignInScreen";
 import { Editor } from "./components/editor/Editor";
@@ -28,23 +28,51 @@ function AppShell() {
   const showMainTabs = useNotesStore((state) => state.showMainTabs);
   const showSubTabs = useNotesStore((state) => state.showSubTabs);
   const useSidebarLayout = useNotesStore((state) => state.useSidebarLayout);
+  const addSubTab = useNotesStore((state) => state.addSubTab);
+  const addMainTab = useNotesStore((state) => state.addMainTab);
+  const setActiveSubTab = useNotesStore((state) => state.setActiveSubTab);
   const { toggleSidebar, collapsed: chromeCollapsed } = useAppChrome();
 
   useEffect(() => {
     initAuth();
   }, [initAuth]);
 
-  // Cmd/Ctrl+1-9 to switch main tabs
   const handleGlobalKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (!(e.metaKey || e.ctrlKey)) return;
+
       const num = parseInt(e.key, 10);
       if (num >= 1 && num <= 9 && num <= mainTabs.length) {
         e.preventDefault();
         setActiveMainTab(mainTabs[num - 1].id);
+        return;
+      }
+
+      if (e.key === "n" || e.key === "N") {
+        e.preventDefault();
+        const tab = mainTabs.find((t) => t.id === activeMainTabId);
+        if (e.shiftKey) {
+          addMainTab();
+        } else if (tab && tab.mode !== "planning") {
+          addSubTab(tab.id);
+        }
+        return;
+      }
+
+      if (e.shiftKey && (e.key === "[" || e.key === "]")) {
+        const tab = mainTabs.find((t) => t.id === activeMainTabId);
+        if (!tab || tab.mode === "planning" || tab.subTabs.length < 2) return;
+        const idx = tab.subTabs.findIndex((s) => s.id === activeSubTabId);
+        if (idx === -1) return;
+        const nextIdx =
+          e.key === "["
+            ? (idx - 1 + tab.subTabs.length) % tab.subTabs.length
+            : (idx + 1) % tab.subTabs.length;
+        e.preventDefault();
+        setActiveSubTab(tab.subTabs[nextIdx].id);
       }
     },
-    [mainTabs, setActiveMainTab]
+    [mainTabs, activeMainTabId, activeSubTabId, setActiveMainTab, addMainTab, addSubTab, setActiveSubTab],
   );
 
   useEffect(() => {
@@ -75,8 +103,25 @@ function AppShell() {
   const showDoneLog = activeSubTabId === "done-log";
   const showPlanning = activeMainTab?.mode === "planning" && !showDoneLog;
 
+  const [fabMenuOpen, setFabMenuOpen] = useState(false);
+  const fabRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!fabMenuOpen) return;
+    const close = (e: MouseEvent | TouchEvent) => {
+      if (fabRef.current?.contains(e.target as Node)) return;
+      setFabMenuOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("touchstart", close, { passive: true });
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("touchstart", close);
+    };
+  }, [fabMenuOpen]);
+
   const contentArea = (
-    <div className="flex-grow min-h-0 flex flex-col">
+    <div className="flex-grow min-h-0 flex flex-col relative">
       {showDoneLog ? (
         <>
           <div className="flex-shrink-0">
@@ -90,6 +135,46 @@ function AppShell() {
         <PlanningView />
       ) : (
         <Editor />
+      )}
+
+      {useSidebarLayout && !showPlanning && !showDoneLog && (
+        <div ref={fabRef} className="absolute right-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-20">
+          {fabMenuOpen && (
+            <div className="absolute right-0 bottom-full mb-2 w-44 rounded-xl bg-[var(--bg-color)] border border-[var(--border-color)] shadow-xl py-1 animate-slide-up">
+              <button
+                className="w-full text-left px-4 py-2.5 text-sm hover:bg-[var(--hover-bg-color)] text-[var(--text-color)] touch-manipulation"
+                onClick={() => {
+                  if (activeMainTab && activeMainTab.mode !== "planning") addSubTab(activeMainTab.id);
+                  setFabMenuOpen(false);
+                }}
+              >
+                New page
+              </button>
+              <button
+                className="w-full text-left px-4 py-2.5 text-sm hover:bg-[var(--hover-bg-color)] text-[var(--text-color)] touch-manipulation"
+                onClick={() => { addMainTab(); setFabMenuOpen(false); }}
+              >
+                New notebook
+              </button>
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              if (activeMainTab && activeMainTab.mode !== "planning") {
+                addSubTab(activeMainTab.id);
+              } else {
+                setFabMenuOpen(true);
+              }
+            }}
+            onContextMenu={(e) => { e.preventDefault(); setFabMenuOpen((v) => !v); }}
+            className="w-12 h-12 rounded-full bg-[var(--accent-color)] text-white shadow-lg hover:bg-[var(--accent-hover)] active:scale-95 flex items-center justify-center transition-all touch-manipulation"
+            title="New page (hold for options)"
+            aria-label="New page"
+          >
+            <FiPlus className="w-5 h-5" />
+          </button>
+        </div>
       )}
     </div>
   );
@@ -111,7 +196,7 @@ function AppShell() {
               </button>
               <div className="flex items-center gap-1 min-w-0 flex-1 text-sm">
                 <span className="font-medium text-[var(--text-color)] truncate shrink-0 max-w-[40%]">
-                  {activeMainTab?.name ?? "Chrome Notes"}
+                  {activeMainTab?.name ?? "SpontaNotes"}
                 </span>
                 {showDoneLog && (
                   <>

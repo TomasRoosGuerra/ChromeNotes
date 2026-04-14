@@ -17,10 +17,10 @@ export const SignInScreen = () => {
         </div>
 
         <h1 className="text-2xl sm:text-3xl font-semibold mb-2 text-[var(--text-color)] tracking-tight">
-          Chrome Notes
+          SpontaNotes
         </h1>
         <p className="text-[var(--placeholder-color)] mb-8 text-sm sm:text-base">
-          Your notes, synced across devices
+          Capture thoughts the moment they happen
         </p>
 
         {error && (

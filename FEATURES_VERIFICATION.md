@@ -134,7 +134,7 @@ More content...
 1. Click ⋮ button
 2. Click "Email all notes"
 3. Default email client should open
-4. Subject: "Chrome Notes - [today's date]"
+4. Subject: "SpontaNotes - [today's date]"
 5. Body: Formatted notes
 
 ---

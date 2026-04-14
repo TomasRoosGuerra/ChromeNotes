@@ -1,4 +1,4 @@
-# Chrome Notes - React Web App
+# SpontaNotes - React Web App
 
 A modern, feature-rich note-taking web application built with React, TypeScript, and Firebase.
 
@@ -6,7 +6,7 @@ A modern, feature-rich note-taking web application built with React, TypeScript,
 
 ## 📖 Description
 
-Chrome Notes is a hierarchical note-taking app designed for organizing thoughts, tasks, and information efficiently. It features a two-level tab system (main tabs with sub-tabs) and a rich text editor with markdown support.
+SpontaNotes is a hierarchical note-taking app designed for organizing thoughts, tasks, and information efficiently. It features a two-level tab system (main tabs with sub-tabs) and a rich text editor with markdown support.
 
 ### Key Highlights
 

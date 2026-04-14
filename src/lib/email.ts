@@ -1,7 +1,7 @@
 import type { MainTab } from "../types/notes";
 
 export const emailNotes = (mainTabs: MainTab[], defaultEmail: string = "") => {
-  const subject = `Chrome Notes - ${new Date().toLocaleDateString()}`;
+  const subject = `SpontaNotes - ${new Date().toLocaleDateString()}`;
   let body = "";
 
   mainTabs.forEach((mainTab) => {

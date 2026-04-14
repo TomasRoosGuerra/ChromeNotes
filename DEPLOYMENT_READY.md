@@ -1,8 +1,8 @@
-# 🚀 Chrome Notes - Deployment Ready!
+# 🚀 SpontaNotes - Deployment Ready!
 
 **Date**: October 12, 2025  
 **Status**: ✅ **PUSHED TO GITHUB**  
-**Repository**: https://github.com/TomasRoosGuerra/ChromeNotes  
+**Repository**: https://github.com/TomasRoosGuerra/SpontaNotes  
 **Commit**: 380c6a1
 
 ---
@@ -35,7 +35,7 @@
 
 According to your README, the app is configured to auto-deploy to:
 
-**Live URL**: https://chrome-notes-webapp.netlify.app
+**Live URL**: https://spontanotes.netlify.app
 
 ### **Netlify Setup**
 
@@ -44,7 +44,7 @@ The push to `main` branch should trigger automatic deployment to Netlify.
 **Check deployment status:**
 
 1. Go to: https://app.netlify.com/
-2. Find your "chrome-notes-webapp" site
+2. Find your "spontanotes" site
 3. Check deploy status
 4. Should deploy automatically in ~2-3 minutes
 
@@ -58,7 +58,7 @@ Before the deployed app works, you need to:
 
 1. Go to: https://console.firebase.google.com/project/chromenotes-52954/authentication/settings
 2. Scroll to "Authorized domains"
-3. Add: `chrome-notes-webapp.netlify.app`
+3. Add: `spontanotes.netlify.app`
 4. Click "Add domain"
 
 ### **2. Verify Firestore Rules**
@@ -151,7 +151,7 @@ service cloud.firestore {
 
 ### **Production Testing** (After Deploy)
 
-- [ ] Visit https://chrome-notes-webapp.netlify.app
+- [ ] Visit https://spontanotes.netlify.app
 - [ ] Sign in with Google
 - [ ] Test all features
 - [ ] Test on real mobile device
@@ -202,8 +202,8 @@ service cloud.firestore {
 
 ## 🔗 **Important Links**
 
-- **GitHub**: https://github.com/TomasRoosGuerra/ChromeNotes
-- **Live App**: https://chrome-notes-webapp.netlify.app
+- **GitHub**: https://github.com/TomasRoosGuerra/SpontaNotes
+- **Live App**: https://spontanotes.netlify.app
 - **Firebase Console**: https://console.firebase.google.com/project/chromenotes-52954
 - **Netlify Dashboard**: https://app.netlify.com/
 

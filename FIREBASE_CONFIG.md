@@ -1,6 +1,6 @@
 # 🔥 Firebase Configuration - SAFE BACKUP
 
-**Project**: Chrome Notes
+**Project**: SpontaNotes
 **Project ID**: chromenotes-52954
 **Date**: October 12, 2025
 
@@ -65,7 +65,7 @@ service cloud.firestore {
 Ensure these are added:
 
 - `localhost` (for development)
-- Your production domain (e.g., `chrome-notes-webapp.netlify.app`)
+- Your production domain (e.g., `spontanotes.com`)
 
 ---
 

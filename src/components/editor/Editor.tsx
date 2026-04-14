@@ -634,6 +634,7 @@ export const Editor = () => {
   });
 
   const prevSubTabIdRef = useRef<string | null>(null);
+  const visitedTabsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (editor && activeSubTab) {
@@ -641,16 +642,24 @@ export const Editor = () => {
         editor.commands.setContent(activeSubTab.content);
       }
       prevCheckedRef.current = extractCheckedTasks(editor.state.doc);
-      // Only collapse all when switching tabs, not on every content edit
       const tabJustSwitched = prevSubTabIdRef.current !== activeSubTab.id;
       prevSubTabIdRef.current = activeSubTab.id;
-      if (tabJustSwitched) {
+      if (tabJustSwitched && !visitedTabsRef.current.has(activeSubTab.id)) {
+        visitedTabsRef.current.add(activeSubTab.id);
         editor.view.dispatch(
           editor.state.tr.setMeta(collapsiblePluginKey, { initCollapsed: true })
         );
       }
     }
   }, [editor, activeSubTab]);
+
+  useEffect(() => {
+    if (!editor || !activeSubTab) return;
+    const timer = setTimeout(() => {
+      if (!editor.isFocused) editor.commands.focus("end");
+    }, 80);
+    return () => clearTimeout(timer);
+  }, [editor, activeSubTab?.id]);
 
   useEffect(() => {
     if (!editor) return;
